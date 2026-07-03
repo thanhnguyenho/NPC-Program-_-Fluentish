@@ -1,6 +1,19 @@
+# Fluentish
+
 <p align="center">
   <img src="assets/images/fluentish_logo.png" alt="Fluentish logo" width="160" />
 </p>
+
+Stack: Flutter, Dart
+
+## Quick Start
+
+```sh
+flutter pub get
+flutter run
+```
+
+## Directory
 
 ```txt
 assets/
