@@ -41,14 +41,16 @@ class AppCard extends StatelessWidget {
         ],
         color: AppColors.cardSurface,
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: borderRadius,
-          onTap: onTap,
-          child: Padding(
-            padding: padding,
-            child: child,
+      child: ClipRRect(
+        borderRadius: borderRadius,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: padding,
+              child: child,
+            ),
           ),
         ),
       ),

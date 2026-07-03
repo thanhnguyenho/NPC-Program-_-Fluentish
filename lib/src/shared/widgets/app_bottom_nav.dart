@@ -24,25 +24,28 @@ class AppBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderRadius = BorderRadius.circular(AppSpacing.bottomNavRadius);
+
     return SafeArea(
       top: false,
-      child: Container(
+      child: SizedBox(
         height: AppSpacing.bottomNavHeight,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppSpacing.bottomNavRadius),
+        child: Material(
+          borderRadius: borderRadius,
+          clipBehavior: Clip.antiAlias,
           color: AppColors.pine,
-        ),
-        child: Row(
-          children: [
-            for (var index = 0; index < items.length; index++)
-              Expanded(
-                child: _BottomNavTile(
-                  isSelected: index == currentIndex,
-                  item: items[index],
-                  onTap: () => onItemSelected(index),
+          child: Row(
+            children: [
+              for (var index = 0; index < items.length; index++)
+                Expanded(
+                  child: _BottomNavTile(
+                    isSelected: index == currentIndex,
+                    item: items[index],
+                    onTap: () => onItemSelected(index),
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
