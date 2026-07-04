@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'src/features/soundboard/soundboard_page.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Fluentish'),
+      home: const SoundboardPage(),
     );
   }
 }
