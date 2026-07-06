@@ -33,9 +33,8 @@ class LanguageToggle extends StatelessWidget {
             ),
           ),
         ),
-
+        
         const SizedBox(height: 6),
-
         const Text(
           "Tiếng Việt",
           style: TextStyle(
