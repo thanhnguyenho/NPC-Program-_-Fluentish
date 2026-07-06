@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:fluentish/main.dart';
+import 'package:fluentish/src/shared/theme/app_colors.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+  testWidgets('Fluentish app starts with the shared theme', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(const MyApp());
 
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
 
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(materialApp.title, 'Fluentish');
+    expect(materialApp.theme?.colorScheme.primary, AppColors.pine);
+    expect(find.byType(Scaffold), findsOneWidget);
   });
 }
