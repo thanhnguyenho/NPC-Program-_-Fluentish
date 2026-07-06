@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'widgets/language_toggle.dart';
+import 'widgets/category_filter.dart';
 
 
 class SoundboardPage extends StatelessWidget {
@@ -19,6 +20,10 @@ class SoundboardPage extends StatelessWidget {
                 alignment: Alignment.topRight,
                 child: LanguageToggle(),
               ),
+
+              const SizedBox(height:24),
+
+              CategoryFilter(),
             ],
           ),
         ),
