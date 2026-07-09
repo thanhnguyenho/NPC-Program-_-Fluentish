@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:fluentish/src/shared/theme/app_text_styles.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class CategoryFilter extends StatelessWidget {
   const CategoryFilter({super.key});
@@ -44,14 +46,15 @@ class CategoryFilter extends StatelessWidget {
                 Icon(
                   category['icon'] as IconData,
                   color: Colors.white,
-                  size: 18,
+                  size: 20,
                 ),
 
                 const SizedBox(width: 8),
                 Text(
                   category['label'] as String,
-                  style: const TextStyle(
+                  style: GoogleFonts.itim(
                     color: Colors.white,
+                    fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

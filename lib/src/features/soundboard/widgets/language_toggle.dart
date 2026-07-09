@@ -58,10 +58,12 @@ class _LanguageToggleState extends State<LanguageToggle> {
 
         const SizedBox(height: 6),
         Text(
-          isVietnamese ? 'Tiếng Việt' : 'English',
+          isVietnamese
+          ? 'Tiếng Việt'
+          : 'English',
           style: const TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 18,
+            fontSize: 16,
             color: Color(0xFF3E4E31)
           ),
         ),
