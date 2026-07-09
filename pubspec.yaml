@@ -21,3 +21,5 @@ flutter:
   assets:
     - assets/images/fluentish_logo.png
     - assets/google_fonts/
+    - assets/images/Vietnam-Flag.webp
+    - assets/images/UK-Flag.webp

@@ -20,6 +20,7 @@ class CategoryFilter extends StatelessWidget {
     return SizedBox(
       height: 45,
       child: ListView.separated(
+        physics: const ClampingScrollPhysics(),
         scrollDirection: Axis.horizontal,
         itemCount: categories.length,
         separatorBuilder: (_, __) => const SizedBox(width: 10),
@@ -45,7 +46,7 @@ class CategoryFilter extends StatelessWidget {
                   color: Colors.white,
                   size: 18,
                 ),
-                
+
                 const SizedBox(width: 8),
                 Text(
                   category['label'] as String,

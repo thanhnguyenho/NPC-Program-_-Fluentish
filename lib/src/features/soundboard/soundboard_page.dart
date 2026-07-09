@@ -27,6 +27,7 @@ class SoundboardPage extends StatelessWidget {
               const SizedBox(height: 24),
               Expanded(
                   child: GridView.count(
+                      physics: const ClampingScrollPhysics(),
                       crossAxisCount: 2,
                       crossAxisSpacing: 16,
                       mainAxisSpacing: 16,
@@ -39,7 +40,6 @@ class SoundboardPage extends StatelessWidget {
                     WordCard(
                       english: 'Thank you',
                       vietnamese: 'Cảm ơn',
-                      favourite: true,
                     ),
                     WordCard(
                       english: 'Goodbye',
