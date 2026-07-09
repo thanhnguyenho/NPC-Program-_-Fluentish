@@ -14,10 +14,29 @@ void main() {
 
     expect(find.text('Friends'), findsNWidgets(2));
     expect(find.text('Search friends...'), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
     expect(find.text('Requests'), findsOneWidget);
     expect(find.text('Nearby'), findsOneWidget);
     expect(find.byIcon(Icons.chevron_left), findsOneWidget);
     expect(find.byIcon(Icons.add), findsOneWidget);
+  });
+
+  testWidgets('Friends page tabs can change selection', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: const FriendsPage(),
+      ),
+    );
+
+    await tester.tap(find.text('Requests'));
+    await tester.pumpAndSettle();
+
+    final requestsTab = tester.widget<Semantics>(
+      find.byKey(const ValueKey('friends-tab-Requests')),
+    );
+
+    expect(requestsTab.properties.selected, isTrue);
   });
 
   testWidgets('Friends page shows friends nearby list', (tester) async {

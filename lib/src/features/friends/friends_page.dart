@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../shared/shared.dart';
 
-class FriendsPage extends StatelessWidget {
+class FriendsPage extends StatefulWidget {
   const FriendsPage({super.key});
 
   static const _friends = [
@@ -65,26 +65,38 @@ class FriendsPage extends StatelessWidget {
   ];
 
   @override
+  State<FriendsPage> createState() => _FriendsPageState();
+}
+
+class _FriendsPageState extends State<FriendsPage> {
+  int _selectedTabIndex = 0;
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.blush,
+      bottomNavigationBar: const AppBottomNav(
+        currentIndex: 3,
+        onItemSelected: _ignoreNavTap,
+      ),
       body: SingleChildScrollView(
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(
               maxWidth: AppSpacing.figmaFrameWidth,
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _FriendsHeader(),
-                _FriendsNearbySection(),
-                AppBottomNav(
-                  currentIndex: 3,
-                  onItemSelected: _ignoreNavTap,
+                _FriendsHeader(
+                  selectedTabIndex: _selectedTabIndex,
+                  onTabSelected: (index) {
+                    setState(() => _selectedTabIndex = index);
+                  },
                 ),
-                _CloseNowSection(),
-                _FriendsFooter(),
+                const _FriendsNearbySection(),
+                const _CloseNowSection(),
+                const _FriendsFooter(),
               ],
             ),
           ),
@@ -115,7 +127,13 @@ class _Friend {
 }
 
 class _FriendsHeader extends StatelessWidget {
-  const _FriendsHeader();
+  const _FriendsHeader({
+    required this.onTabSelected,
+    required this.selectedTabIndex,
+  });
+
+  final ValueChanged<int> onTabSelected;
+  final int selectedTabIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -180,7 +198,10 @@ class _FriendsHeader extends StatelessWidget {
           const SizedBox(height: 17),
           const _SearchField(),
           const SizedBox(height: 16),
-          const _FriendTabs(),
+          _FriendTabs(
+            onTabSelected: onTabSelected,
+            selectedIndex: selectedTabIndex,
+          ),
         ],
       ),
     );
@@ -198,31 +219,51 @@ class _SearchField extends StatelessWidget {
         color: const Color(0xEBD7D0C5),
         borderRadius: BorderRadius.circular(24),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 17),
-      child: Row(
-        children: [
-          Icon(Icons.search, color: Colors.black.withValues(alpha: 0.62)),
-          const SizedBox(width: 11),
-          Text(
-            'Search friends...',
-            style: GoogleFonts.inter(
-              color: Colors.black.withValues(alpha: 0.55),
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-              height: 22 / 16,
-              letterSpacing: 0,
-            ),
+      padding: const EdgeInsets.only(left: 17, right: 14),
+      alignment: Alignment.center,
+      child: TextField(
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          filled: false,
+          hintText: 'Search friends...',
+          hintStyle: GoogleFonts.inter(
+            color: Colors.black.withValues(alpha: 0.55),
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            height: 22 / 16,
+            letterSpacing: 0,
           ),
-        ],
+          icon: Icon(
+            Icons.search,
+            color: Colors.black.withValues(alpha: 0.62),
+          ),
+          isDense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+        style: GoogleFonts.inter(
+          color: Colors.black.withValues(alpha: 0.78),
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+          height: 22 / 16,
+          letterSpacing: 0,
+        ),
       ),
     );
   }
 }
 
 class _FriendTabs extends StatelessWidget {
-  const _FriendTabs();
+  const _FriendTabs({
+    required this.onTabSelected,
+    required this.selectedIndex,
+  });
 
   static const _tabs = ['Friends', 'Requests', 'Nearby'];
+
+  final ValueChanged<int> onTabSelected;
+  final int selectedIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -231,8 +272,9 @@ class _FriendTabs extends StatelessWidget {
         for (var index = 0; index < _tabs.length; index++) ...[
           Expanded(
             child: _FriendTab(
-              isSelected: index == 0,
+              isSelected: index == selectedIndex,
               label: _tabs[index],
+              onTap: () => onTabSelected(index),
             ),
           ),
           if (index != _tabs.length - 1) const SizedBox(width: 18),
@@ -246,29 +288,38 @@ class _FriendTab extends StatelessWidget {
   const _FriendTab({
     required this.isSelected,
     required this.label,
+    required this.onTap,
   });
 
   final bool isSelected;
   final String label;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 34,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.pine : const Color(0xFF868F54),
+    return Semantics(
+      key: ValueKey('friends-tab-$label'),
+      button: true,
+      selected: isSelected,
+      child: SizedBox(
+        height: 34,
+        child: Material(
           borderRadius: BorderRadius.circular(6),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: GoogleFonts.inter(
-              color: isSelected ? AppColors.blush : Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              height: 18 / 13,
-              letterSpacing: 0,
+          color: isSelected ? AppColors.pine : const Color(0xFF868F54),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(6),
+            onTap: onTap,
+            child: Center(
+              child: Text(
+                label,
+                style: GoogleFonts.inter(
+                  color: isSelected ? AppColors.blush : Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  height: 18 / 13,
+                  letterSpacing: 0,
+                ),
+              ),
             ),
           ),
         ),
@@ -309,7 +360,7 @@ class _FriendsNearbySection extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 10),
                 child: Text(
-                  '8 friends',
+                  '${FriendsPage._friends.length} friends',
                   style: GoogleFonts.inter(
                     color: const Color(0xFF4E5A45),
                     fontSize: 11,
@@ -557,7 +608,7 @@ class _CloseNowSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              const _NearbyPill(),
+              _NearbyPill(count: _routes.length),
             ],
           ),
           const SizedBox(height: 16),
@@ -626,7 +677,9 @@ class _CloseFriend {
 }
 
 class _NearbyPill extends StatelessWidget {
-  const _NearbyPill();
+  const _NearbyPill({required this.count});
+
+  final int count;
 
   @override
   Widget build(BuildContext context) {
@@ -649,7 +702,7 @@ class _NearbyPill extends StatelessWidget {
       ),
       alignment: Alignment.center,
       child: Text(
-        '2 nearby',
+        '$count nearby',
         style: GoogleFonts.inter(
           color: AppColors.pine,
           fontSize: 10,
