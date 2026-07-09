@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-
 import 'src/shared/theme/app_theme.dart';
+import 'src/features/home/home_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Fluentish',
       theme: AppTheme.light,
-      home: const Scaffold(),
+      home: const HomePage(),
     );
   }
 }
