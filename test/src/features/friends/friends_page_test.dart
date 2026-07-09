@@ -19,4 +19,22 @@ void main() {
     expect(find.byIcon(Icons.chevron_left), findsOneWidget);
     expect(find.byIcon(Icons.add), findsOneWidget);
   });
+
+  testWidgets('Friends page shows friends nearby list', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: const FriendsPage(),
+      ),
+    );
+
+    expect(find.text('Friends nearby'), findsOneWidget);
+    expect(find.text('8 friends'), findsOneWidget);
+    expect(find.text('Thanh Nguyen (Chloe)'), findsOneWidget);
+    expect(find.text('Chris Crowne'), findsOneWidget);
+    expect(find.text('mary ⟡ ﾟ.'), findsOneWidget);
+    expect(find.text('Vĩnh Tiến'), findsOneWidget);
+    expect(find.text('0.2 km'), findsOneWidget);
+    expect(find.text('Route'), findsOneWidget);
+  });
 }

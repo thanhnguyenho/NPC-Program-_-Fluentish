@@ -6,6 +6,64 @@ import '../../shared/shared.dart';
 class FriendsPage extends StatelessWidget {
   const FriendsPage({super.key});
 
+  static const _friends = [
+    _Friend(
+      avatar: AppAssets.friendChloe,
+      distance: '0.8 km',
+      isOnline: true,
+      name: 'Thanh Nguyen (Chloe)',
+      note: 'Coffee after class?',
+    ),
+    _Friend(
+      avatar: AppAssets.friendChris,
+      distance: '1.1 km',
+      hasRoute: true,
+      isOnline: true,
+      name: 'Chris Crowne',
+      note: 'OMW in 8 min.',
+    ),
+    _Friend(
+      avatar: AppAssets.friendMary,
+      distance: '1.3 km',
+      isOnline: true,
+      name: 'mary ⟡ ﾟ.',
+      note: 'Saved you a seat.',
+    ),
+    _Friend(
+      avatar: AppAssets.friendMinh,
+      distance: '1.6 km',
+      isOnline: true,
+      name: 'Đồng Minh',
+      note: 'Study room later.',
+    ),
+    _Friend(
+      avatar: AppAssets.friendKeem,
+      distance: '1.9 km',
+      isOnline: true,
+      name: 'Keem',
+      note: 'New vocab drop.',
+    ),
+    _Friend(
+      avatar: AppAssets.friendPhat,
+      distance: '2.3 km',
+      name: 'Tấn Phát',
+      note: 'On campus now.',
+    ),
+    _Friend(
+      avatar: AppAssets.friendAnhQuan,
+      distance: '0.4 km',
+      isOnline: true,
+      name: 'AnhQuan',
+      note: 'Free to chat.',
+    ),
+    _Friend(
+      avatar: AppAssets.friendVinhTien,
+      distance: '0.2 km',
+      name: 'Vĩnh Tiến',
+      note: 'Library later.',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -20,6 +78,7 @@ class FriendsPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _FriendsHeader(),
+                _FriendsNearbySection(),
               ],
             ),
           ),
@@ -27,6 +86,24 @@ class FriendsPage extends StatelessWidget {
       ),
     );
   }
+}
+
+class _Friend {
+  const _Friend({
+    required this.avatar,
+    required this.distance,
+    this.hasRoute = false,
+    this.isOnline = false,
+    required this.name,
+    required this.note,
+  });
+
+  final String avatar;
+  final String distance;
+  final bool hasRoute;
+  final bool isOnline;
+  final String name;
+  final String note;
 }
 
 class _FriendsHeader extends StatelessWidget {
@@ -186,6 +263,231 @@ class _FriendTab extends StatelessWidget {
               letterSpacing: 0,
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FriendsNearbySection extends StatelessWidget {
+  const _FriendsNearbySection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(22, 14, 22, 0),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: FittedBox(
+                  alignment: Alignment.centerLeft,
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Friends nearby',
+                    style: GoogleFonts.gulzar(
+                      color: AppColors.pine,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w400,
+                      height: 30 / 24,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Text(
+                  '8 friends',
+                  style: GoogleFonts.inter(
+                    color: const Color(0xFF4E5A45),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    height: 14 / 11,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          for (final friend in FriendsPage._friends) ...[
+            _FriendRow(friend: friend),
+            if (friend != FriendsPage._friends.last) const SizedBox(height: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _FriendRow extends StatelessWidget {
+  const _FriendRow({required this.friend});
+
+  final _Friend friend;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 54,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white.withValues(alpha: 0.52)),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 14,
+            color: const Color(0xFF2B3824).withValues(alpha: 0.08),
+            offset: const Offset(0, 6),
+            spreadRadius: -8,
+          ),
+        ],
+        color: Colors.white.withValues(alpha: 0.34),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Row(
+        children: [
+          _FriendAvatar(friend: friend),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  friend.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: AppColors.pine,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    height: 15 / 12,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  friend.note,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: const Color(0xE64E5A45),
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w400,
+                    height: 12 / 9.5,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 50,
+            child: Text(
+              friend.distance,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                color: const Color(0xFF868F54),
+                fontSize: 9.5,
+                fontWeight: FontWeight.w700,
+                height: 12 / 9.5,
+                letterSpacing: 0,
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
+          if (friend.hasRoute) ...[
+            const SizedBox(width: 6),
+            const _RouteChip(),
+          ],
+          const SizedBox(width: 6),
+          SizedBox(
+            height: 32,
+            width: 42,
+            child: FilledButton(
+              onPressed: () {},
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.pine.withValues(alpha: 0.94),
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: const Icon(Icons.chat_bubble_outline, size: 16),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FriendAvatar extends StatelessWidget {
+  const _FriendAvatar({required this.friend});
+
+  final _Friend friend;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 42,
+      width: 42,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: ClipOval(
+              child: Image.asset(friend.avatar, fit: BoxFit.cover),
+            ),
+          ),
+          if (friend.isOnline)
+            Positioned(
+              bottom: 1,
+              right: 0,
+              child: Container(
+                height: 10,
+                width: 10,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.white, width: 1.5),
+                  color: const Color(0xFF93CF75),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RouteChip extends StatelessWidget {
+  const _RouteChip();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 32,
+      width: 46,
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0x470F4DB2)),
+        borderRadius: BorderRadius.circular(16),
+        color: const Color(0x1F1A75F2),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        'Route',
+        style: GoogleFonts.inter(
+          color: const Color(0xFF0F4DB2),
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          height: 1,
+          letterSpacing: 0,
         ),
       ),
     );
