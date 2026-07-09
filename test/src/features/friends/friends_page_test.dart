@@ -33,8 +33,24 @@ void main() {
     expect(find.text('Thanh Nguyen (Chloe)'), findsOneWidget);
     expect(find.text('Chris Crowne'), findsOneWidget);
     expect(find.text('mary ⟡ ﾟ.'), findsOneWidget);
-    expect(find.text('Vĩnh Tiến'), findsOneWidget);
+    expect(find.text('Vĩnh Tiến'), findsWidgets);
     expect(find.text('0.2 km'), findsOneWidget);
-    expect(find.text('Route'), findsOneWidget);
+    expect(find.text('Route'), findsWidgets);
+  });
+
+  testWidgets('Friends page shows close now routes', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: const FriendsPage(),
+      ),
+    );
+
+    expect(find.text('Close Now'), findsOneWidget);
+    expect(find.text('Nearest friends with route shortcuts'), findsOneWidget);
+    expect(find.text('2 nearby'), findsOneWidget);
+    expect(find.text('0.2 km · 5 min walk'), findsOneWidget);
+    expect(find.text('0.4 km · 8 min walk'), findsOneWidget);
+    expect(find.text('Route'), findsNWidgets(3));
   });
 }

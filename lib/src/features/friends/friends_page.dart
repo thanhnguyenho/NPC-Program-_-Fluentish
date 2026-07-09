@@ -79,6 +79,7 @@ class FriendsPage extends StatelessWidget {
               children: [
                 _FriendsHeader(),
                 _FriendsNearbySection(),
+                _CloseNowSection(),
               ],
             ),
           ),
@@ -489,6 +490,290 @@ class _RouteChip extends StatelessWidget {
           height: 1,
           letterSpacing: 0,
         ),
+      ),
+    );
+  }
+}
+
+class _CloseNowSection extends StatelessWidget {
+  const _CloseNowSection();
+
+  static const _routes = [
+    _CloseFriend(
+      avatar: AppAssets.friendVinhTien,
+      distance: '0.2 km · 5 min walk',
+      name: 'Vĩnh Tiến',
+    ),
+    _CloseFriend(
+      avatar: AppAssets.friendAnhQuan,
+      distance: '0.4 km · 8 min walk',
+      name: 'AnhQuan',
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 120, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Close Now',
+                      style: GoogleFonts.gulzar(
+                        color: Colors.black,
+                        fontSize: 27,
+                        fontWeight: FontWeight.w400,
+                        height: 32 / 27,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Nearest friends with route shortcuts',
+                      style: GoogleFonts.inter(
+                        color: const Color(0xC74E5A45),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w400,
+                        height: 15 / 11.5,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              const _NearbyPill(),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            height: 146,
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.white.withValues(alpha: 0.58)),
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: 28,
+                  color: AppColors.pine.withValues(alpha: 0.13),
+                  offset: const Offset(0, 14),
+                  spreadRadius: -10,
+                ),
+              ],
+              color: const Color(0xADF8F5F1),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              children: [
+                Positioned(
+                  bottom: -15,
+                  left: -19,
+                  right: -16,
+                  child: Container(
+                    height: 70,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30),
+                      color: const Color(0x6BE7E9D8),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(11, 17, 11, 0),
+                  child: Row(
+                    children: [
+                      for (var index = 0; index < _routes.length; index++) ...[
+                        Expanded(
+                            child: _CloseFriendCard(friend: _routes[index])),
+                        if (index != _routes.length - 1)
+                          const SizedBox(width: 17),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CloseFriend {
+  const _CloseFriend({
+    required this.avatar,
+    required this.distance,
+    required this.name,
+  });
+
+  final String avatar;
+  final String distance;
+  final String name;
+}
+
+class _NearbyPill extends StatelessWidget {
+  const _NearbyPill();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 28,
+      width: 82,
+      margin: const EdgeInsets.only(top: 10),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white.withValues(alpha: 0.65)),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 28,
+            color: AppColors.pine.withValues(alpha: 0.07),
+            offset: const Offset(0, 14),
+            spreadRadius: -10,
+          ),
+        ],
+        color: Colors.white.withValues(alpha: 0.50),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        '2 nearby',
+        style: GoogleFonts.inter(
+          color: AppColors.pine,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          height: 11 / 10,
+          letterSpacing: 0,
+        ),
+      ),
+    );
+  }
+}
+
+class _CloseFriendCard extends StatelessWidget {
+  const _CloseFriendCard({required this.friend});
+
+  final _CloseFriend friend;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 80,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white.withValues(alpha: 0.66)),
+        borderRadius: BorderRadius.circular(14),
+        color: Colors.white.withValues(alpha: 0.44),
+      ),
+      padding: const EdgeInsets.fromLTRB(7, 11, 8, 8),
+      child: Row(
+        children: [
+          _CloseAvatar(asset: friend.avatar),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  friend.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: AppColors.pine,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    height: 14 / 11.5,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  friend.distance,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: AppColors.textSoft,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w400,
+                    height: 12 / 9.5,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const Spacer(),
+                SizedBox(
+                  height: 20,
+                  width: 74,
+                  child: FilledButton(
+                    onPressed: () {},
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.pine,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: Text(
+                      'Route',
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w700,
+                        height: 11 / 9.5,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CloseAvatar extends StatelessWidget {
+  const _CloseAvatar({required this.asset});
+
+  final String asset;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 46,
+      width: 46,
+      child: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.white, width: 2),
+              shape: BoxShape.circle,
+            ),
+            padding: const EdgeInsets.all(4),
+            child: ClipOval(
+              child: Image.asset(asset, fit: BoxFit.cover),
+            ),
+          ),
+          Positioned(
+            bottom: 3,
+            right: 3,
+            child: Container(
+              height: 9,
+              width: 9,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white, width: 1.2),
+                color: const Color(0xFF4CBD51),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
