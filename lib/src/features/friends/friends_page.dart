@@ -79,7 +79,12 @@ class FriendsPage extends StatelessWidget {
               children: [
                 _FriendsHeader(),
                 _FriendsNearbySection(),
+                AppBottomNav(
+                  currentIndex: 3,
+                  onItemSelected: _ignoreNavTap,
+                ),
                 _CloseNowSection(),
+                _FriendsFooter(),
               ],
             ),
           ),
@@ -87,6 +92,8 @@ class FriendsPage extends StatelessWidget {
       ),
     );
   }
+
+  static void _ignoreNavTap(int index) {}
 }
 
 class _Friend {
@@ -514,7 +521,7 @@ class _CloseNowSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 120, 20, 0),
+      padding: const EdgeInsets.fromLTRB(20, 67, 20, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -771,6 +778,297 @@ class _CloseAvatar extends StatelessWidget {
                 color: const Color(0xFF4CBD51),
                 shape: BoxShape.circle,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FriendsFooter extends StatelessWidget {
+  const _FriendsFooter();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 306,
+      margin: const EdgeInsets.only(top: 48),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF2D6D6),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            left: -43,
+            top: 36,
+            child: Transform.rotate(
+              angle: 0.14,
+              child: Container(
+                height: 38,
+                width: 220,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(19),
+                  color: Colors.white.withValues(alpha: 0.22),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: -56,
+            top: -10,
+            child: Transform.rotate(
+              angle: -0.17,
+              child: Container(
+                height: 40,
+                width: 240,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color: const Color(0x29B2C4AD),
+                ),
+              ),
+            ),
+          ),
+          const Positioned(
+            left: 20,
+            right: 20,
+            top: 26,
+            child: _FooterCard(),
+          ),
+          Positioned(
+            left: 26,
+            bottom: 21,
+            child: Text(
+              '© 2026 Fluentish. All rights reserved.',
+              style: GoogleFonts.inter(
+                color: const Color(0x944E5A45),
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                height: 13 / 10,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FooterCard extends StatelessWidget {
+  const _FooterCard();
+
+  static const _socials = [
+    _SocialLink(label: 'fb', icon: 'f', color: Color(0xFF2F6FDA)),
+    _SocialLink(label: 'insta', icon: '◎', color: Color(0xFFE44D7A)),
+    _SocialLink(label: 'tiktok', icon: 't', color: Color(0xFF10151A)),
+    _SocialLink(label: 'mail', icon: '✉', color: AppColors.pine),
+    _SocialLink(label: 'web', icon: '⊕', color: Color(0xFF96A35B)),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 232,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white.withValues(alpha: 0.72)),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 30,
+            color: const Color(0xFF1F291A).withValues(alpha: 0.18),
+            offset: const Offset(0, 14),
+            spreadRadius: -12,
+          ),
+        ],
+        color: Colors.white.withValues(alpha: 0.52),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            left: 141,
+            top: 11,
+            child: Container(
+              height: 5,
+              width: 70,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(3),
+                color: const Color(0x2E142421),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 19,
+            top: 31,
+            child: Container(
+              height: 39,
+              width: 39,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white.withValues(alpha: 0.78)),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    blurRadius: 12,
+                    color: const Color(0xFF1F291A).withValues(alpha: 0.24),
+                    offset: const Offset(0, 6),
+                    spreadRadius: -5,
+                  ),
+                ],
+                color: const Color(0xFFF2D6D6),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Image.asset(AppAssets.fluentishLogo, fit: BoxFit.cover),
+            ),
+          ),
+          Positioned(
+            left: 77,
+            right: 24,
+            top: 30,
+            child: Text(
+              'Connect with Fluentish',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                color: const Color(0xFF121C1A),
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                height: 20 / 18,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+          Positioned(
+            left: 77,
+            right: 24,
+            top: 57,
+            child: Text(
+              'Follow updates, community notes, and\nnearby language moments.',
+              style: GoogleFonts.inter(
+                color: const Color(0xB82B3833),
+                fontSize: 11,
+                fontWeight: FontWeight.w400,
+                height: 14 / 11,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+          Positioned(
+            left: 27,
+            right: 27,
+            top: 103,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                for (final social in _socials) _SocialButton(social: social),
+              ],
+            ),
+          ),
+          Positioned(
+            left: 27,
+            right: 29,
+            top: 171,
+            child: Container(
+              height: 32,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white.withValues(alpha: 0.58)),
+                borderRadius: BorderRadius.circular(16),
+                color: Colors.white.withValues(alpha: 0.46),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'hello@fluentish.app',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: const Color(0xDB17241F),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    'Privacy · Terms',
+                    style: GoogleFonts.inter(
+                      color: const Color(0x944E5A45),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SocialLink {
+  const _SocialLink({
+    required this.color,
+    required this.icon,
+    required this.label,
+  });
+
+  final Color color;
+  final String icon;
+  final String label;
+}
+
+class _SocialButton extends StatelessWidget {
+  const _SocialButton({required this.social});
+
+  final _SocialLink social;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 46,
+      child: Column(
+        children: [
+          Container(
+            height: 38,
+            width: 38,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(13),
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: 10,
+                  color: const Color(0xFF1F291A).withValues(alpha: 0.10),
+                  offset: const Offset(0, 4),
+                  spreadRadius: -7,
+                ),
+              ],
+              color: social.color,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              social.icon,
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 23,
+                fontWeight: FontWeight.w700,
+                height: 1,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            social.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              color: const Color(0x944E5A45),
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0,
             ),
           ),
         ],

@@ -53,4 +53,23 @@ void main() {
     expect(find.text('0.4 km · 8 min walk'), findsOneWidget);
     expect(find.text('Route'), findsNWidgets(3));
   });
+
+  testWidgets('Friends page shows footer and bottom nav', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: const FriendsPage(),
+      ),
+    );
+
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Language'), findsOneWidget);
+    expect(find.text('Soundboard'), findsOneWidget);
+    expect(find.text('Community'), findsOneWidget);
+    expect(find.text('Profile'), findsOneWidget);
+    expect(find.text('Connect with Fluentish'), findsOneWidget);
+    expect(find.text('hello@fluentish.app'), findsOneWidget);
+    expect(find.text('Privacy · Terms'), findsOneWidget);
+    expect(find.text('© 2026 Fluentish. All rights reserved.'), findsOneWidget);
+  });
 }
