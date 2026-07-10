@@ -7,6 +7,7 @@ environment:
   sdk: ">=3.4.0 <4.0.0"
 
 dependencies:
+  firebase_core: ^4.11.0
   flutter:
     sdk: flutter
   google_fonts: ^8.1.0
@@ -20,4 +21,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/logo.gif
+    - assets/images/fluentish_logo.png
+    - assets/images/friends/
     - assets/google_fonts/

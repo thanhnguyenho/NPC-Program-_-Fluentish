@@ -3,7 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:fluentish/src/features/welcome/welcome_page.dart';
 import 'package:fluentish/src/shared/theme/app_theme.dart';
 
-void main() {
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(const MyApp());
 }
 
