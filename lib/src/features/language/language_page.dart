@@ -636,27 +636,7 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
               ),
             ),
 
-            // 5. Bottom Navigation Bar (Matching Figma exactly)
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: const BoxDecoration(
-                color: Color(0xFF3E4E31),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem(Icons.home_outlined, 'Home', false),
-                  _buildNavItem(Icons.translate, 'Language', true),
-                  _buildNavItem(Icons.volume_up_outlined, 'Soundboard', false),
-                  _buildNavItem(Icons.people_outline, 'Community', false),
-                  _buildNavItem(Icons.person_outline, 'Profile', false),
-                ],
-              ),
-            ),
+
           ],
         ),
       ),
@@ -707,27 +687,7 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, bool isSelected) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          color: isSelected ? Colors.white : Colors.white60,
-          size: 24,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.white60,
-            fontSize: 11,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ],
-    );
-  }
+
 }
 
 
