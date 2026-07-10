@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'src/shared/theme/app_theme.dart';
-import 'src/features/home/home_page.dart';
+
+import 'package:fluentish/src/features/welcome/welcome_page.dart';
+import 'package:fluentish/src/shared/theme/app_theme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,7 +16,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Fluentish',
       theme: AppTheme.light,
-      home: const HomePage(),
+      home: const WelcomePage(),
     );
   }
 }

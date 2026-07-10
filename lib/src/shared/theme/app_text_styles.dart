@@ -26,6 +26,14 @@ class AppTextStyles {
     letterSpacing: 0,
   );
 
+  /// 👇 Thêm style này
+  static final label = GoogleFonts.inter(
+    color: AppColors.blush,
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0,
+  );
+
   static final body = GoogleFonts.inter(
     color: AppColors.textSoft,
     fontSize: 14,
