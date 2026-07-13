@@ -7,6 +7,7 @@ environment:
   sdk: ">=3.4.0 <4.0.0"
 
 dependencies:
+  audioplayers: ^6.7.1
   firebase_core: ^4.11.0
   flutter:
     sdk: flutter
@@ -23,3 +24,5 @@ flutter:
     - assets/images/fluentish_logo.png
     - assets/images/friends/
     - assets/google_fonts/
+    - assets/images/
+    - assets/audio/
