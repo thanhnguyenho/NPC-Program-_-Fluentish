@@ -23,5 +23,9 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/fluentish_logo.png
+    - assets/images/friend_anh_quan.png
+    - assets/images/friend_keem.png
+    - assets/images/friend_tan_phat.png
     - assets/images/friend_vinh_tien.png
+    - assets/images/friend_vinh_tien_pin.png
     - assets/google_fonts/

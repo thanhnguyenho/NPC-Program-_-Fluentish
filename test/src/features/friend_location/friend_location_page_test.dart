@@ -58,20 +58,30 @@ void main() {
     expect(find.text('Message Keem...'), findsOneWidget);
   });
 
-  testWidgets('Friend Location page uses the Figma friend avatar asset', (
+  testWidgets('Friend Location page uses Figma friend avatar assets', (
     tester,
   ) async {
     await pumpFriendLocation(tester);
 
-    final avatars = tester.widgetList<Image>(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is Image &&
-            widget.image is AssetImage &&
-            (widget.image as AssetImage).assetName == AppAssets.friendVinhTien,
-      ),
-    );
+    const expectedAssets = [
+      AppAssets.friendVinhTien,
+      AppAssets.friendVinhTienPin,
+      AppAssets.friendTanPhat,
+      AppAssets.friendKeem,
+      AppAssets.friendAnhQuan,
+    ];
 
-    expect(avatars, isNotEmpty);
+    for (final asset in expectedAssets) {
+      final avatars = tester.widgetList<Image>(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Image &&
+              widget.image is AssetImage &&
+              (widget.image as AssetImage).assetName == asset,
+        ),
+      );
+
+      expect(avatars, isNotEmpty, reason: 'Missing $asset');
+    }
   });
 }

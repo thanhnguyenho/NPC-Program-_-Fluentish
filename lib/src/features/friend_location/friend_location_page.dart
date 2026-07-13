@@ -25,30 +25,37 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
       id: 'vinh-tien',
       name: 'Vĩnh Tiến',
       note: '"Library later. I saved the route."',
+      pinAvatarAsset: AppAssets.friendVinhTienPin,
       position: LatLng(10.7797, 106.6998),
       previewOffset: Offset(0.25, 0.68),
     ),
     _LocationFriend(
+      avatarAsset: AppAssets.friendTanPhat,
       color: Color(0xFF6C8F57),
       id: 'tan-phat',
       name: 'Tấn Phát',
       note: '"On campus now. Meet by the gate."',
+      pinAvatarAsset: AppAssets.friendTanPhat,
       position: LatLng(10.7733, 106.7033),
       previewOffset: Offset(0.18, 0.54),
     ),
     _LocationFriend(
+      avatarAsset: AppAssets.friendKeem,
       color: Color(0xFF3E4E31),
       id: 'keem',
       name: 'Keem',
       note: '"New vocab drop. Come practice."',
+      pinAvatarAsset: AppAssets.friendKeem,
       position: LatLng(10.7812, 106.7047),
       previewOffset: Offset(0.76, 0.34),
     ),
     _LocationFriend(
+      avatarAsset: AppAssets.friendAnhQuan,
       color: Color(0xFF8A9554),
       id: 'anhquan',
       name: 'AnhQuan',
       note: '"Free to chat after class."',
+      pinAvatarAsset: AppAssets.friendAnhQuan,
       position: LatLng(10.7748, 106.6967),
       previewOffset: Offset(0.58, 0.76),
     ),
@@ -226,6 +233,7 @@ class _LocationFriend {
     required this.id,
     required this.name,
     required this.note,
+    this.pinAvatarAsset,
     required this.position,
     required this.previewOffset,
   });
@@ -235,6 +243,7 @@ class _LocationFriend {
   final String id;
   final String name;
   final String note;
+  final String? pinAvatarAsset;
   final LatLng position;
   final Offset previewOffset;
 
@@ -675,6 +684,7 @@ class _FriendMapPin extends StatelessWidget {
               ),
               clipBehavior: Clip.antiAlias,
               child: _FriendAvatarContent(
+                asset: friend.pinAvatarAsset ?? friend.avatarAsset,
                 friend: friend,
                 fontSize: isSelected ? 18 : 15,
               ),
@@ -917,27 +927,33 @@ class _FriendLargeAvatar extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       clipBehavior: Clip.antiAlias,
-      child: _FriendAvatarContent(friend: friend, fontSize: 24),
+      child: _FriendAvatarContent(
+        asset: friend.avatarAsset,
+        friend: friend,
+        fontSize: 24,
+      ),
     );
   }
 }
 
 class _FriendAvatarContent extends StatelessWidget {
   const _FriendAvatarContent({
+    required this.asset,
     required this.friend,
     required this.fontSize,
   });
 
+  final String? asset;
   final _LocationFriend friend;
   final double fontSize;
 
   @override
   Widget build(BuildContext context) {
-    final avatarAsset = friend.avatarAsset;
-    if (avatarAsset != null) {
+    final imageAsset = asset;
+    if (imageAsset != null) {
       return Image.asset(
-        avatarAsset,
-        fit: BoxFit.cover,
+        imageAsset,
+        fit: BoxFit.contain,
         semanticLabel: '${friend.name} avatar',
       );
     }
