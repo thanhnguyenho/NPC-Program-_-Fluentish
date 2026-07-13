@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluentish/src/shared/widgets/app_bottom_nav.dart';
 import 'package:fluentish/src/shared/widgets/app_card.dart';
-// import 'package:fluentish/src/features/language/language_page.dart';
+import 'package:fluentish/src/features/language/language_page.dart';
 // import 'package:fluentish/src/features/soundboard/soundboard_page.dart';
 // import 'package:fluentish/src/features/community/community_page.dart';
 // import 'package:fluentish/src/features/profile/profile_page.dart';
@@ -21,7 +21,7 @@ class _HomePageState extends State<HomePage> {
 
   final _pages = const [
     HomeScreen(),
-    //LanguagePage(),
+    LanguagePage(),
     //SoundboardPage(),
     //CommunityPage(),
     //ProfilePage(),
