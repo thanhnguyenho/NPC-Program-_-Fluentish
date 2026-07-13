@@ -74,6 +74,7 @@ class _SoundboardPageState extends State<SoundboardPage> {
                       english: word.english,
                       vietnamese: word.vietnamese,
                       category: word.category,
+                      audioPath: word.audioPath,
                       favourite: word.favourite,
                     );
                   },
