@@ -32,9 +32,9 @@ class _SoundboardPageState extends State<SoundboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFEEDADA),
-      body: SafeArea(
+    return ColoredBox(
+      color: const Color(0xFFEEDADA),
+      child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
