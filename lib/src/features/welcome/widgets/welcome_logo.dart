@@ -9,7 +9,7 @@ class WelcomeLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Image.asset(
-        AppAssets.fluentishLogo,
+        AppAssets.fluentishLogoGif,
         height: 320,
         fit: BoxFit.contain,
       ),

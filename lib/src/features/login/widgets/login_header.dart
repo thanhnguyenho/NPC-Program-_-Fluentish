@@ -20,14 +20,11 @@ class LoginHeader extends StatelessWidget {
             ),
           ),
         ),
-
         Image.asset(
           AppAssets.fluentishLogo,
           height: 180,
         ),
-
         const SizedBox(height: AppSpacing.lg),
-
         Text(
           'WELCOME BACK TO FLUENTISH',
           textAlign: TextAlign.center,

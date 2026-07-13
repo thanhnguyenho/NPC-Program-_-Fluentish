@@ -22,7 +22,6 @@ class WelcomePage extends StatelessWidget {
               const Expanded(
                 child: WelcomeLogo(),
               ),
-
               AppButton(
                 label: 'LOGIN',
                 onPressed: () {
@@ -33,9 +32,7 @@ class WelcomePage extends StatelessWidget {
                   );
                 },
               ),
-
               const SizedBox(height: AppSpacing.md),
-
               AppButton.outlined(
                 label: 'CREATE ACCOUNT',
                 onPressed: () {
@@ -46,7 +43,6 @@ class WelcomePage extends StatelessWidget {
                   );
                 },
               ),
-
               const SizedBox(height: AppSpacing.xl),
             ],
           ),

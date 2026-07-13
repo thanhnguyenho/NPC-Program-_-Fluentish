@@ -58,13 +58,11 @@ class AppButton extends StatelessWidget {
               foregroundColor: foregroundColor ?? AppColors.pineMuted,
               textStyle: AppTextStyles.button,
               shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(AppSpacing.buttonRadius),
+                borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
               ),
             ),
             child: child,
           ),
-
         AppButtonVariant.outlined => OutlinedButton(
             onPressed: onPressed,
             style: OutlinedButton.styleFrom(
@@ -74,8 +72,7 @@ class AppButton extends StatelessWidget {
               ),
               textStyle: AppTextStyles.button,
               shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(AppSpacing.buttonRadius),
+                borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
               ),
             ),
             child: child,

@@ -1,7 +1,7 @@
 class AppAssets {
   const AppAssets._();
 
-  static const fluentishLogo = 'assets/images/logo.gif';
+  static const fluentishLogoGif = 'assets/images/logo.gif';
   static const fluentishLogo = 'assets/images/fluentish_logo.png';
   static const friendAnhQuan = 'assets/images/friends/anhquan.png';
   static const friendChloe = 'assets/images/friends/chloe.png';

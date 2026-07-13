@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:fluentish/src/features/forgot_password/forgot_password_page.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
 class LoginForm extends StatefulWidget {
@@ -27,7 +28,6 @@ class _LoginFormState extends State<LoginForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-
         const AppTextLabel(text: 'Username'),
 
         const SizedBox(height: AppSpacing.xs),
@@ -52,6 +52,7 @@ class _LoginFormState extends State<LoginForm> {
               obscurePassword
                   ? Icons.visibility_off
                   : Icons.visibility,
+              color: AppColors.pine,
             ),
             onPressed: () {
               setState(() {
@@ -64,11 +65,20 @@ class _LoginFormState extends State<LoginForm> {
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ForgotPasswordPage(),
+                ),
+              );
+            },
             child: Text(
-              'Forgot password?',
+              'Forgot Password?',
               style: AppTextStyles.body.copyWith(
                 color: AppColors.blush,
+                fontWeight: FontWeight.bold,
+                decoration: TextDecoration.underline,
               ),
             ),
           ),
@@ -78,7 +88,9 @@ class _LoginFormState extends State<LoginForm> {
 
         AppButton(
           label: 'LOGIN',
-          onPressed: () {},
+          onPressed: () {
+            // TODO: Navigate to Home Page after authentication
+          },
         ),
       ],
     );

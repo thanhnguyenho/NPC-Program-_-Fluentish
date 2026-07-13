@@ -30,9 +30,7 @@ class LoginGoogleButton extends StatelessWidget {
             ),
           ],
         ),
-
         const SizedBox(height: AppSpacing.lg),
-
         OutlinedButton.icon(
           onPressed: () {},
           icon: const Icon(Icons.g_mobiledata),
