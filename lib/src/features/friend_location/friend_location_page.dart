@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,10 +20,11 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
   static const _districtOne = LatLng(10.7769, 106.7009);
   static const _friends = [
     _LocationFriend(
+      avatarAsset: AppAssets.friendVinhTien,
       color: Color(0xFF93CF75),
       id: 'vinh-tien',
       name: 'Vĩnh Tiến',
-      note: 'Library later.',
+      note: '"Library later. I saved the route."',
       position: LatLng(10.7797, 106.6998),
       previewOffset: Offset(0.25, 0.68),
     ),
@@ -29,7 +32,7 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
       color: Color(0xFF6C8F57),
       id: 'tan-phat',
       name: 'Tấn Phát',
-      note: 'On campus now.',
+      note: '"On campus now. Meet by the gate."',
       position: LatLng(10.7733, 106.7033),
       previewOffset: Offset(0.18, 0.54),
     ),
@@ -37,7 +40,7 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
       color: Color(0xFF3E4E31),
       id: 'keem',
       name: 'Keem',
-      note: 'New vocab drop.',
+      note: '"New vocab drop. Come practice."',
       position: LatLng(10.7812, 106.7047),
       previewOffset: Offset(0.76, 0.34),
     ),
@@ -45,7 +48,7 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
       color: Color(0xFF8A9554),
       id: 'anhquan',
       name: 'AnhQuan',
-      note: 'Free to chat.',
+      note: '"Free to chat after class."',
       position: LatLng(10.7748, 106.6967),
       previewOffset: Offset(0.58, 0.76),
     ),
@@ -55,6 +58,7 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
   _LocationFriend? _selectedFriend = _friends.first;
   bool _myLocationEnabled = false;
   String? _locationMessage;
+  String _selectedEta = '5 min';
 
   static void _ignoreNavTap(int index) {}
 
@@ -119,6 +123,10 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
     );
   }
 
+  void _dismissFriend() {
+    setState(() => _selectedFriend = null);
+  }
+
   Future<void> _openSelectedRoute() async {
     final friend = _selectedFriend;
     if (friend == null) {
@@ -131,6 +139,21 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
         const SnackBar(content: Text('Could not open Google Maps.')),
       );
     }
+  }
+
+  void _selectEta(String eta) {
+    setState(() => _selectedEta = eta);
+  }
+
+  void _showAction(String action) {
+    final friend = _selectedFriend;
+    if (friend == null) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$action ${friend.name}')),
+    );
   }
 
   @override
@@ -176,9 +199,13 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
                       markers: _markers,
                       myLocationEnabled: _myLocationEnabled,
                       onCurrentLocationTap: _focusCurrentLocation,
+                      onEtaSelected: _selectEta,
+                      onFriendDismissed: _dismissFriend,
                       onFriendSelected: _selectFriend,
                       onMapCreated: (controller) => _mapController = controller,
                       onRouteTap: _openSelectedRoute,
+                      onQuickActionTap: _showAction,
+                      selectedEta: _selectedEta,
                       selectedFriend: selectedFriend,
                     ),
                   ),
@@ -194,6 +221,7 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
 
 class _LocationFriend {
   const _LocationFriend({
+    this.avatarAsset,
     required this.color,
     required this.id,
     required this.name,
@@ -202,6 +230,7 @@ class _LocationFriend {
     required this.previewOffset,
   });
 
+  final String? avatarAsset;
   final Color color;
   final String id;
   final String name;
@@ -299,9 +328,13 @@ class _MapShell extends StatelessWidget {
     required this.markers,
     required this.myLocationEnabled,
     required this.onCurrentLocationTap,
+    required this.onEtaSelected,
+    required this.onFriendDismissed,
     required this.onFriendSelected,
     required this.onMapCreated,
+    required this.onQuickActionTap,
     required this.onRouteTap,
+    required this.selectedEta,
     required this.selectedFriend,
   });
 
@@ -311,9 +344,13 @@ class _MapShell extends StatelessWidget {
   final Set<Marker> markers;
   final bool myLocationEnabled;
   final VoidCallback onCurrentLocationTap;
+  final ValueChanged<String> onEtaSelected;
+  final VoidCallback onFriendDismissed;
   final ValueChanged<_LocationFriend> onFriendSelected;
   final ValueChanged<GoogleMapController> onMapCreated;
+  final ValueChanged<String> onQuickActionTap;
   final VoidCallback onRouteTap;
+  final String selectedEta;
   final _LocationFriend? selectedFriend;
 
   @override
@@ -334,60 +371,82 @@ class _MapShell extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(28),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: hasRealMap
-                  ? _GoogleMapSurface(
-                      markers: markers,
-                      myLocationEnabled: myLocationEnabled,
-                      onMapCreated: onMapCreated,
-                    )
-                  : _MapPreview(
-                      friends: friends,
-                      onFriendSelected: onFriendSelected,
-                      selectedFriend: selectedFriend,
-                    ),
-            ),
-            Positioned(
-              left: AppSpacing.lg,
-              top: AppSpacing.lg,
-              child: _MapStatusPill(
-                label: hasRealMap ? 'Google Maps' : 'Map preview',
-              ),
-            ),
-            Positioned(
-              right: AppSpacing.lg,
-              top: AppSpacing.lg,
-              child: _MapActionButton(
-                icon: Icons.my_location_outlined,
-                label: 'Current location',
-                onTap: onCurrentLocationTap,
-              ),
-            ),
-            Positioned(
-              left: AppSpacing.lg,
-              top: 74,
-              child: _LocationChip(label: '${friends.length} nearby'),
-            ),
-            if (locationMessage != null)
-              Positioned(
-                left: AppSpacing.lg,
-                right: AppSpacing.lg,
-                top: 118,
-                child: _LocationMessage(message: locationMessage!),
-              ),
-            if (selectedFriend != null)
-              Positioned(
-                left: AppSpacing.md,
-                right: AppSpacing.md,
-                bottom: AppSpacing.md,
-                child: _SelectedFriendCard(
-                  friend: selectedFriend!,
-                  onRouteTap: onRouteTap,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final maxBubbleHeight = constraints.maxHeight > AppSpacing.xl
+                ? constraints.maxHeight - AppSpacing.xl
+                : constraints.maxHeight;
+
+            return Stack(
+              children: [
+                Positioned.fill(
+                  child: hasRealMap
+                      ? _GoogleMapSurface(
+                          markers: markers,
+                          myLocationEnabled: myLocationEnabled,
+                          onMapCreated: onMapCreated,
+                        )
+                      : _MapPreview(
+                          friends: friends,
+                          onFriendSelected: onFriendSelected,
+                          selectedFriend: selectedFriend,
+                        ),
                 ),
-              ),
-          ],
+                Positioned(
+                  left: AppSpacing.lg,
+                  top: AppSpacing.lg,
+                  child: _MapStatusPill(
+                    label: hasRealMap ? 'Google Maps' : 'Map preview',
+                  ),
+                ),
+                Positioned(
+                  right: AppSpacing.lg,
+                  top: AppSpacing.lg,
+                  child: _MapActionButton(
+                    icon: Icons.my_location_outlined,
+                    label: 'Current location',
+                    onTap: onCurrentLocationTap,
+                  ),
+                ),
+                Positioned(
+                  left: AppSpacing.lg,
+                  top: 74,
+                  child: _LocationChip(label: '${friends.length} nearby'),
+                ),
+                if (locationMessage != null)
+                  Positioned(
+                    left: AppSpacing.lg,
+                    right: AppSpacing.lg,
+                    top: 118,
+                    child: _LocationMessage(message: locationMessage!),
+                  ),
+                if (selectedFriend != null)
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTap: onFriendDismissed,
+                    ),
+                  ),
+                if (selectedFriend != null)
+                  Positioned(
+                    bottom: AppSpacing.lg,
+                    left: AppSpacing.lg,
+                    right: AppSpacing.lg,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxHeight: maxBubbleHeight),
+                      child: _FriendActionBubble(
+                        friend: selectedFriend!,
+                        onDismissed: onFriendDismissed,
+                        onEtaSelected: onEtaSelected,
+                        onQuickActionTap: onQuickActionTap,
+                        onRouteTap: onRouteTap,
+                        selectedEta: selectedEta,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -614,16 +673,10 @@ class _FriendMapPin extends StatelessWidget {
                 color: friend.color,
                 shape: BoxShape.circle,
               ),
-              child: Center(
-                child: Text(
-                  friend.name.characters.first,
-                  style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: isSelected ? 18 : 15,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0,
-                  ),
-                ),
+              clipBehavior: Clip.antiAlias,
+              child: _FriendAvatarContent(
+                friend: friend,
+                fontSize: isSelected ? 18 : 15,
               ),
             ),
           ],
@@ -688,108 +741,389 @@ class _MapGridPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class _SelectedFriendCard extends StatelessWidget {
-  const _SelectedFriendCard({
+class _FriendActionBubble extends StatelessWidget {
+  const _FriendActionBubble({
     required this.friend,
+    required this.onDismissed,
+    required this.onEtaSelected,
+    required this.onQuickActionTap,
     required this.onRouteTap,
+    required this.selectedEta,
   });
 
   final _LocationFriend friend;
+  final VoidCallback onDismissed;
+  final ValueChanged<String> onEtaSelected;
+  final ValueChanged<String> onQuickActionTap;
+  final VoidCallback onRouteTap;
+  final String selectedEta;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 17, sigmaY: 17),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.68),
+                  ),
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      blurRadius: 26,
+                      color: AppColors.pine.withValues(alpha: 0.18),
+                      offset: const Offset(0, 14),
+                    ),
+                  ],
+                  color: Colors.white.withValues(alpha: 0.82),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _FriendLargeAvatar(friend: friend),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        friend.name,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          color: AppColors.pine,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          height: 22 / 18,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xxs),
+                      Text(
+                        friend.note,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          color: AppColors.textSoft,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          height: 16 / 12,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      _MessageField(friend: friend),
+                      const SizedBox(height: AppSpacing.md),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          "Tell ${friend.name}: I'm coming",
+                          style: GoogleFonts.inter(
+                            color: AppColors.pine,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            height: 16 / 13,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xxs),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Send a quick heads-up before you meet.',
+                          style: GoogleFonts.inter(
+                            color: AppColors.textSoft.withValues(alpha: 0.86),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w400,
+                            height: 12 / 10,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _EtaRow(
+                        onSelected: onEtaSelected,
+                        selectedEta: selectedEta,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      _VisitButton(
+                        onPressed: () => onQuickActionTap('Visit note sent to'),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      _QuickActionRow(
+                        onQuickActionTap: onQuickActionTap,
+                        onRouteTap: onRouteTap,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: AppSpacing.md,
+            top: AppSpacing.md,
+            child: Tooltip(
+              message: 'Close',
+              child: SizedBox.square(
+                dimension: 32,
+                child: IconButton.filledTonal(
+                  onPressed: onDismissed,
+                  icon: const Icon(Icons.close, size: 16),
+                  padding: EdgeInsets.zero,
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white.withValues(alpha: 0.72),
+                    foregroundColor: AppColors.pine,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FriendLargeAvatar extends StatelessWidget {
+  const _FriendLargeAvatar({required this.friend});
+
+  final _LocationFriend friend;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 70,
+      width: 70,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white, width: 4),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 16,
+            color: AppColors.pine.withValues(alpha: 0.16),
+            offset: const Offset(0, 8),
+          ),
+        ],
+        color: friend.color,
+        shape: BoxShape.circle,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: _FriendAvatarContent(friend: friend, fontSize: 24),
+    );
+  }
+}
+
+class _FriendAvatarContent extends StatelessWidget {
+  const _FriendAvatarContent({
+    required this.friend,
+    required this.fontSize,
+  });
+
+  final _LocationFriend friend;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final avatarAsset = friend.avatarAsset;
+    if (avatarAsset != null) {
+      return Image.asset(
+        avatarAsset,
+        fit: BoxFit.cover,
+        semanticLabel: '${friend.name} avatar',
+      );
+    }
+
+    return Center(
+      child: Text(
+        friend.name.characters.first,
+        style: GoogleFonts.inter(
+          color: Colors.white,
+          fontSize: fontSize,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0,
+        ),
+      ),
+    );
+  }
+}
+
+class _MessageField extends StatelessWidget {
+  const _MessageField({required this.friend});
+
+  final _LocationFriend friend;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 42,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white.withValues(alpha: 0.32)),
+        borderRadius: BorderRadius.circular(15),
+        color: Colors.white.withValues(alpha: 0.78),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      alignment: Alignment.centerLeft,
+      child: Text(
+        'Message ${friend.name}...',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: GoogleFonts.inter(
+          color: const Color(0xFF7A7E73),
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          height: 15 / 12,
+          letterSpacing: 0,
+        ),
+      ),
+    );
+  }
+}
+
+class _EtaRow extends StatelessWidget {
+  const _EtaRow({
+    required this.onSelected,
+    required this.selectedEta,
+  });
+
+  final ValueChanged<String> onSelected;
+  final String selectedEta;
+
+  static const _etas = ['5 min', '10 min', 'after class'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (final eta in _etas) ...[
+          Expanded(
+            flex: eta == 'after class' ? 2 : 1,
+            child: _ActionChipButton(
+              isSelected: eta == selectedEta,
+              label: eta,
+              onPressed: () => onSelected(eta),
+            ),
+          ),
+          if (eta != _etas.last) const SizedBox(width: AppSpacing.sm),
+        ],
+      ],
+    );
+  }
+}
+
+class _VisitButton extends StatelessWidget {
+  const _VisitButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 30,
+      width: 176,
+      child: _ActionChipButton(
+        isSelected: true,
+        label: 'Send visit note',
+        onPressed: onPressed,
+      ),
+    );
+  }
+}
+
+class _QuickActionRow extends StatelessWidget {
+  const _QuickActionRow({
+    required this.onQuickActionTap,
+    required this.onRouteTap,
+  });
+
+  final ValueChanged<String> onQuickActionTap;
   final VoidCallback onRouteTap;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.cardBorder),
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 24,
-            color: AppColors.pine.withValues(alpha: 0.14),
-            offset: const Offset(0, 14),
-            spreadRadius: -8,
+    return Row(
+      children: [
+        Expanded(
+          child: _ActionChipButton(
+            isSelected: true,
+            label: 'Chat',
+            onPressed: () => onQuickActionTap('Chat opened for'),
           ),
-        ],
-        color: Colors.white.withValues(alpha: 0.82),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(
-          children: [
-            Container(
-              height: 48,
-              width: 48,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.white, width: 4),
-                color: friend.color,
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                friend.name.characters.first,
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0,
-                ),
-              ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: _ActionChipButton(
+            label: 'React',
+            onPressed: () => onQuickActionTap('Reacted to'),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: _ActionChipButton(
+            label: 'Poke',
+            onPressed: () => onQuickActionTap('Poked'),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        SizedBox(
+          width: 46,
+          child: _ActionChipButton(
+            label: 'Route',
+            onPressed: onRouteTap,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionChipButton extends StatelessWidget {
+  const _ActionChipButton({
+    required this.label,
+    required this.onPressed,
+    this.isSelected = false,
+  });
+
+  final bool isSelected;
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 28,
+      child: FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor:
+              isSelected ? AppColors.pine : const Color(0xFF868F54),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+            side: BorderSide(color: Colors.white.withValues(alpha: 0.32)),
+          ),
+        ),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            maxLines: 1,
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              height: 12 / 10,
+              letterSpacing: 0,
             ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    friend.name,
-                    style: GoogleFonts.inter(
-                      color: AppColors.pine,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xxs),
-                  Text(
-                    friend.note,
-                    style: GoogleFonts.inter(
-                      color: AppColors.textSoft,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            SizedBox(
-              height: 34,
-              child: FilledButton(
-                onPressed: onRouteTap,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.pine,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(17),
-                  ),
-                ),
-                child: Text(
-                  'Route',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0,
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
