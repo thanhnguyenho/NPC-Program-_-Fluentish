@@ -37,7 +37,7 @@ class _LanguageToggleState extends State<LanguageToggle> {
             child: Container(
               width: 38,
               height: 38,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
               ),
