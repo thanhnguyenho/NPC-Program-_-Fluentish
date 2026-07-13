@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:fluentish/src/shared/theme/app_text_styles.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class CategoryFilter extends StatelessWidget {
-  const CategoryFilter({super.key});
+  final String selectedCategory;
+  final Function(String) onCategorySelected;
+
+  const CategoryFilter({
+    super.key,
+    required this.selectedCategory,
+    required this.onCategorySelected,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -29,36 +35,42 @@ class CategoryFilter extends StatelessWidget {
         itemBuilder: (context, index) {
           final category = categories[index];
 
-          final bool selected = index == 0;
+          final bool selected =
+          category['label'] == selectedCategory;
 
-          return Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 10,
-            ),
-            decoration: BoxDecoration(
-              color:
-                  selected ? const Color(0xFF4E5A45) : const Color(0xFF868F54),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  category['icon'] as IconData,
-                  color: Colors.white,
-                  size: 20,
-                ),
-
-                const SizedBox(width: 8),
-                Text(
-                  category['label'] as String,
-                  style: GoogleFonts.itim(
+          return GestureDetector(
+            onTap: () {
+              onCategorySelected(category['label'] as String);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 10,
+              ),
+              decoration: BoxDecoration(
+                color: selected
+                  ? const Color(0xFF4E5A45)
+                  : const Color(0xFF868F54),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    category['icon'] as IconData,
                     color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    size: 18,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Text(
+                    category['label'] as String,
+                    style: GoogleFonts.itim(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },

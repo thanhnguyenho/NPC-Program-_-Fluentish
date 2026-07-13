@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 class WordCard extends StatelessWidget {
   final String english;
   final String vietnamese;
+  final String category;
   final bool favourite;
 
   const WordCard({
     super.key,
     required this.english,
     required this.vietnamese,
+    required this.category,
     this.favourite = false,
   });
 
