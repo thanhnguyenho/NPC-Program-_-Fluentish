@@ -6,7 +6,7 @@
 
 **An all-in-one Flutter language-learning community app.**
 
-<img src="https://readme-typing-svg.demolab.com?font=Inter&weight=800&size=24&duration=2800&pause=800&color=F7B7C8&center=true&vCenter=true&width=760&lines=Practice+everyday+phrases;Learn+with+friends+and+community+guides;Build+confidence+through+social+language+learning" alt="Fluentish typing intro" />
+<img src="[https://readme-typing-svg.demolab.com?font=Inter&weight=800&size=24&duration=2800&pause=800&color=F7B7C8&center=true&vCenter=true&width=760&lines=Practice+everyday+phrases;Learn+with+friends+and+community+guides;Build+confidence+through+social+language+learning](https://readme-typing-svg.herokuapp.com/demo/?font=Inter&weight=800&size=24&duration=2800&pause=800&color=F7B7C8&center=true&vCenter=true&width=600&lines=Navigate+Vietnam+with+confidence;Find+your+Friends+and+view+Community+Guides;Quickly+translate+everyday+phrases)" alt="Fluentish typing intro" />
 
 <p>
   <img src="https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter" />
