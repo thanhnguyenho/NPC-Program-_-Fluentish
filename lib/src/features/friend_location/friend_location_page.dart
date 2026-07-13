@@ -1,15 +1,148 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../shared/shared.dart';
+import 'google_maps_api_status.dart';
+import 'maps_launcher.dart';
 
-class FriendLocationPage extends StatelessWidget {
+class FriendLocationPage extends StatefulWidget {
   const FriendLocationPage({super.key});
+
+  @override
+  State<FriendLocationPage> createState() => _FriendLocationPageState();
+}
+
+class _FriendLocationPageState extends State<FriendLocationPage> {
+  static const _districtOne = LatLng(10.7769, 106.7009);
+  static const _friends = [
+    _LocationFriend(
+      color: Color(0xFF93CF75),
+      id: 'vinh-tien',
+      name: 'Vĩnh Tiến',
+      note: 'Library later.',
+      position: LatLng(10.7797, 106.6998),
+      previewOffset: Offset(0.25, 0.68),
+    ),
+    _LocationFriend(
+      color: Color(0xFF6C8F57),
+      id: 'tan-phat',
+      name: 'Tấn Phát',
+      note: 'On campus now.',
+      position: LatLng(10.7733, 106.7033),
+      previewOffset: Offset(0.18, 0.54),
+    ),
+    _LocationFriend(
+      color: Color(0xFF3E4E31),
+      id: 'keem',
+      name: 'Keem',
+      note: 'New vocab drop.',
+      position: LatLng(10.7812, 106.7047),
+      previewOffset: Offset(0.76, 0.34),
+    ),
+    _LocationFriend(
+      color: Color(0xFF8A9554),
+      id: 'anhquan',
+      name: 'AnhQuan',
+      note: 'Free to chat.',
+      position: LatLng(10.7748, 106.6967),
+      previewOffset: Offset(0.58, 0.76),
+    ),
+  ];
+
+  GoogleMapController? _mapController;
+  _LocationFriend? _selectedFriend = _friends.first;
+  bool _myLocationEnabled = false;
+  String? _locationMessage;
 
   static void _ignoreNavTap(int index) {}
 
+  Set<Marker> get _markers {
+    return {
+      for (final friend in _friends)
+        Marker(
+          markerId: MarkerId(friend.id),
+          position: friend.position,
+          icon: BitmapDescriptor.defaultMarkerWithHue(friend.markerHue),
+          infoWindow: InfoWindow(title: friend.name, snippet: friend.note),
+          onTap: () => setState(() => _selectedFriend = friend),
+        ),
+    };
+  }
+
+  Future<void> _focusCurrentLocation() async {
+    setState(() => _locationMessage = 'Checking location...');
+
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      setState(() => _locationMessage = 'Turn on location services first.');
+      return;
+    }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.denied) {
+      setState(() => _locationMessage = 'Location permission denied.');
+      return;
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      setState(() => _locationMessage = 'Enable location in Settings.');
+      return;
+    }
+
+    final position = await Geolocator.getCurrentPosition();
+    final target = LatLng(position.latitude, position.longitude);
+
+    setState(() {
+      _myLocationEnabled = true;
+      _locationMessage = 'Using your current location.';
+    });
+
+    await _mapController?.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(target: target, zoom: 15),
+      ),
+    );
+  }
+
+  void _selectFriend(_LocationFriend friend) {
+    setState(() => _selectedFriend = friend);
+    _mapController?.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(target: friend.position, zoom: 15.5),
+      ),
+    );
+  }
+
+  Future<void> _openSelectedRoute() async {
+    final friend = _selectedFriend;
+    if (friend == null) {
+      return;
+    }
+
+    final didLaunch = await launchGoogleMapsDirections(friend.position);
+    if (!didLaunch && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open Google Maps.')),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _mapController?.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final selectedFriend = _selectedFriend;
+
     return Scaffold(
       backgroundColor: AppColors.blush,
       bottomNavigationBar: const AppBottomNav(
@@ -23,8 +156,8 @@ class FriendLocationPage extends StatelessWidget {
             constraints: const BoxConstraints(
               maxWidth: AppSpacing.figmaFrameWidth,
             ),
-            child: const Padding(
-              padding: EdgeInsets.fromLTRB(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
                 AppSpacing.lg,
                 AppSpacing.xl,
                 AppSpacing.lg,
@@ -33,9 +166,22 @@ class FriendLocationPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _FriendLocationHeader(),
-                  SizedBox(height: AppSpacing.lg),
-                  Expanded(child: _MapPreview()),
+                  const _FriendLocationHeader(),
+                  const SizedBox(height: AppSpacing.lg),
+                  Expanded(
+                    child: _MapShell(
+                      friends: _friends,
+                      hasRealMap: hasGoogleMapsApiKey,
+                      locationMessage: _locationMessage,
+                      markers: _markers,
+                      myLocationEnabled: _myLocationEnabled,
+                      onCurrentLocationTap: _focusCurrentLocation,
+                      onFriendSelected: _selectFriend,
+                      onMapCreated: (controller) => _mapController = controller,
+                      onRouteTap: _openSelectedRoute,
+                      selectedFriend: selectedFriend,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -43,6 +189,34 @@ class FriendLocationPage extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _LocationFriend {
+  const _LocationFriend({
+    required this.color,
+    required this.id,
+    required this.name,
+    required this.note,
+    required this.position,
+    required this.previewOffset,
+  });
+
+  final Color color;
+  final String id;
+  final String name;
+  final String note;
+  final LatLng position;
+  final Offset previewOffset;
+
+  double get markerHue {
+    if (color == AppColors.pine) {
+      return BitmapDescriptor.hueGreen;
+    }
+    if (color == const Color(0xFF93CF75)) {
+      return BitmapDescriptor.hueYellow;
+    }
+    return BitmapDescriptor.hueCyan;
   }
 }
 
@@ -82,32 +256,65 @@ class _FriendLocationHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AppSpacing.md),
-        Container(
-          height: 36,
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          decoration: BoxDecoration(
-            border: Border.all(color: AppColors.cardBorder),
-            borderRadius: BorderRadius.circular(AppSpacing.pillRadius),
-            color: Colors.white.withValues(alpha: 0.42),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            'District 1',
-            style: GoogleFonts.inter(
-              color: AppColors.pine,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0,
-            ),
-          ),
-        ),
+        const _LocationChip(label: 'District 1'),
       ],
     );
   }
 }
 
-class _MapPreview extends StatelessWidget {
-  const _MapPreview();
+class _LocationChip extends StatelessWidget {
+  const _LocationChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 36,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.cardBorder),
+        borderRadius: BorderRadius.circular(AppSpacing.pillRadius),
+        color: Colors.white.withValues(alpha: 0.42),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          color: AppColors.pine,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0,
+        ),
+      ),
+    );
+  }
+}
+
+class _MapShell extends StatelessWidget {
+  const _MapShell({
+    required this.friends,
+    required this.hasRealMap,
+    required this.locationMessage,
+    required this.markers,
+    required this.myLocationEnabled,
+    required this.onCurrentLocationTap,
+    required this.onFriendSelected,
+    required this.onMapCreated,
+    required this.onRouteTap,
+    required this.selectedFriend,
+  });
+
+  final List<_LocationFriend> friends;
+  final bool hasRealMap;
+  final String? locationMessage;
+  final Set<Marker> markers;
+  final bool myLocationEnabled;
+  final VoidCallback onCurrentLocationTap;
+  final ValueChanged<_LocationFriend> onFriendSelected;
+  final ValueChanged<GoogleMapController> onMapCreated;
+  final VoidCallback onRouteTap;
+  final _LocationFriend? selectedFriend;
 
   @override
   Widget build(BuildContext context) {
@@ -129,18 +336,24 @@ class _MapPreview extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         child: Stack(
           children: [
-            const _MapGrid(),
+            Positioned.fill(
+              child: hasRealMap
+                  ? _GoogleMapSurface(
+                      markers: markers,
+                      myLocationEnabled: myLocationEnabled,
+                      onMapCreated: onMapCreated,
+                    )
+                  : _MapPreview(
+                      friends: friends,
+                      onFriendSelected: onFriendSelected,
+                      selectedFriend: selectedFriend,
+                    ),
+            ),
             Positioned(
               left: AppSpacing.lg,
               top: AppSpacing.lg,
-              child: Text(
-                'Map preview',
-                style: GoogleFonts.inter(
-                  color: AppColors.pine,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0,
-                ),
+              child: _MapStatusPill(
+                label: hasRealMap ? 'Google Maps' : 'Map preview',
               ),
             ),
             Positioned(
@@ -149,25 +362,158 @@ class _MapPreview extends StatelessWidget {
               child: _MapActionButton(
                 icon: Icons.my_location_outlined,
                 label: 'Current location',
-                onTap: () {},
+                onTap: onCurrentLocationTap,
               ),
             ),
-            const Positioned(
-              left: 74,
-              top: 168,
-              child: _MapPinDot(),
+            Positioned(
+              left: AppSpacing.lg,
+              top: 74,
+              child: _LocationChip(label: '${friends.length} nearby'),
             ),
-            const Positioned(
-              right: 88,
-              top: 252,
-              child: _MapPinDot(isPrimary: true),
-            ),
-            const Positioned(
-              left: 160,
-              bottom: 160,
-              child: _MapPinDot(),
-            ),
+            if (locationMessage != null)
+              Positioned(
+                left: AppSpacing.lg,
+                right: AppSpacing.lg,
+                top: 118,
+                child: _LocationMessage(message: locationMessage!),
+              ),
+            if (selectedFriend != null)
+              Positioned(
+                left: AppSpacing.md,
+                right: AppSpacing.md,
+                bottom: AppSpacing.md,
+                child: _SelectedFriendCard(
+                  friend: selectedFriend!,
+                  onRouteTap: onRouteTap,
+                ),
+              ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GoogleMapSurface extends StatelessWidget {
+  const _GoogleMapSurface({
+    required this.markers,
+    required this.myLocationEnabled,
+    required this.onMapCreated,
+  });
+
+  final Set<Marker> markers;
+  final bool myLocationEnabled;
+  final ValueChanged<GoogleMapController> onMapCreated;
+
+  @override
+  Widget build(BuildContext context) {
+    return GoogleMap(
+      compassEnabled: false,
+      initialCameraPosition: const CameraPosition(
+        target: _FriendLocationPageState._districtOne,
+        zoom: 14.4,
+      ),
+      mapToolbarEnabled: false,
+      markers: markers,
+      myLocationButtonEnabled: false,
+      myLocationEnabled: myLocationEnabled,
+      onMapCreated: onMapCreated,
+      zoomControlsEnabled: false,
+    );
+  }
+}
+
+class _MapPreview extends StatelessWidget {
+  const _MapPreview({
+    required this.friends,
+    required this.onFriendSelected,
+    required this.selectedFriend,
+  });
+
+  final List<_LocationFriend> friends;
+  final ValueChanged<_LocationFriend> onFriendSelected;
+  final _LocationFriend? selectedFriend;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        const _MapGrid(),
+        for (final friend in friends)
+          Align(
+            alignment: Alignment(
+              friend.previewOffset.dx * 2 - 1,
+              friend.previewOffset.dy * 2 - 1,
+            ),
+            child: _FriendMapPin(
+              friend: friend,
+              isSelected: friend == selectedFriend,
+              onTap: () => onFriendSelected(friend),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _MapStatusPill extends StatelessWidget {
+  const _MapStatusPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.cardBorder),
+        borderRadius: BorderRadius.circular(AppSpacing.pillRadius),
+        color: Colors.white.withValues(alpha: 0.68),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.xs,
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            color: AppColors.pine,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LocationMessage extends StatelessWidget {
+  const _LocationMessage({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.cardBorder),
+        borderRadius: BorderRadius.circular(14),
+        color: Colors.white.withValues(alpha: 0.74),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        child: Text(
+          message,
+          style: GoogleFonts.inter(
+            color: AppColors.pine,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0,
+          ),
         ),
       ),
     );
@@ -201,6 +547,86 @@ class _MapActionButton extends StatelessWidget {
             shape: const CircleBorder(),
           ),
           child: Icon(icon, size: 22),
+        ),
+      ),
+    );
+  }
+}
+
+class _FriendMapPin extends StatelessWidget {
+  const _FriendMapPin({
+    required this.friend,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final _LocationFriend friend;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '${friend.name} location pin',
+      selected: isSelected,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.cardBorder),
+                borderRadius: BorderRadius.circular(13),
+                color: Colors.white.withValues(alpha: 0.72),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xxs,
+                ),
+                child: Text(
+                  friend.name,
+                  style: GoogleFonts.inter(
+                    color: AppColors.pine,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xxs),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              height: isSelected ? 52 : 42,
+              width: isSelected ? 52 : 42,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white, width: 4),
+                boxShadow: [
+                  BoxShadow(
+                    blurRadius: isSelected ? 22 : 12,
+                    color: friend.color.withValues(alpha: 0.35),
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+                color: friend.color,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  friend.name.characters.first,
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: isSelected ? 18 : 15,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -262,29 +688,109 @@ class _MapGridPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class _MapPinDot extends StatelessWidget {
-  const _MapPinDot({this.isPrimary = false});
+class _SelectedFriendCard extends StatelessWidget {
+  const _SelectedFriendCard({
+    required this.friend,
+    required this.onRouteTap,
+  });
 
-  final bool isPrimary;
+  final _LocationFriend friend;
+  final VoidCallback onRouteTap;
 
   @override
   Widget build(BuildContext context) {
-    final size = isPrimary ? 34.0 : 26.0;
-
-    return Container(
-      height: size,
-      width: size,
+    return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.white, width: 3),
+        border: Border.all(color: AppColors.cardBorder),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            blurRadius: 12,
-            color: AppColors.pine.withValues(alpha: 0.25),
-            offset: const Offset(0, 6),
+            blurRadius: 24,
+            color: AppColors.pine.withValues(alpha: 0.14),
+            offset: const Offset(0, 14),
+            spreadRadius: -8,
           ),
         ],
-        color: isPrimary ? AppColors.pine : const Color(0xFF93CF75),
-        shape: BoxShape.circle,
+        color: Colors.white.withValues(alpha: 0.82),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          children: [
+            Container(
+              height: 48,
+              width: 48,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white, width: 4),
+                color: friend.color,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                friend.name.characters.first,
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0,
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    friend.name,
+                    style: GoogleFonts.inter(
+                      color: AppColors.pine,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    friend.note,
+                    style: GoogleFonts.inter(
+                      color: AppColors.textSoft,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            SizedBox(
+              height: 34,
+              child: FilledButton(
+                onPressed: onRouteTap,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.pine,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(17),
+                  ),
+                ),
+                child: Text(
+                  'Route',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
