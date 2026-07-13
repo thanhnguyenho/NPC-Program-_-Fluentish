@@ -1,3 +1,5 @@
+// ignore: unused_import
+import 'package:fluentish/debug_menu.dart';
 import 'package:flutter/material.dart';
 
 import 'package:fluentish/src/features/welcome/welcome_page.dart';
@@ -6,8 +8,6 @@ import 'src/features/navigation/main_scaffold.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-
-import 'package:fluentish/debug_menu.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
