@@ -26,8 +26,14 @@ void main() {
     expect(find.text('OpenStreetMap'), findsOneWidget);
     expect(find.text('OpenStreetMap contributors'), findsOneWidget);
     expect(find.text('District 1'), findsOneWidget);
-    expect(find.text('4 nearby'), findsOneWidget);
+    expect(find.text('8 nearby'), findsOneWidget);
+    expect(find.text('Thanh Nguyen (Chloe)'), findsOneWidget);
+    expect(find.text('OMW in 8 min.'), findsOneWidget);
+    expect(find.text('Chris Crowne'), findsOneWidget);
+    expect(find.text('mary ⟡ ﾟ.'), findsOneWidget);
+    expect(find.text('Đồng Minh'), findsOneWidget);
     expect(find.text('Vĩnh Tiến'), findsWidgets);
+    expect(find.text('Library later.'), findsOneWidget);
     expect(find.text('"Library later. I saved the route."'), findsOneWidget);
     expect(find.bySemanticsLabel('Vĩnh Tiến avatar'), findsWidgets);
     expect(find.text('Message Vĩnh Tiến...'), findsOneWidget);
@@ -40,7 +46,11 @@ void main() {
     expect(find.text('React'), findsOneWidget);
     expect(find.text('Poke'), findsOneWidget);
     expect(find.text('Tấn Phát'), findsOneWidget);
+    expect(find.text('On campus now.'), findsOneWidget);
     expect(find.text('Keem'), findsOneWidget);
+    expect(find.text('New vocab drop.'), findsOneWidget);
+    expect(find.text('AnhQuan'), findsOneWidget);
+    expect(find.text('Free to chat.'), findsOneWidget);
     expect(find.byIcon(Icons.my_location_outlined), findsOneWidget);
     expect(find.text('Route'), findsOneWidget);
     expect(find.text('Community'), findsOneWidget);
@@ -59,6 +69,21 @@ void main() {
     expect(find.text('Message Keem...'), findsOneWidget);
   });
 
+  testWidgets('Friend Location page opens notes for every Figma friend', (
+    tester,
+  ) async {
+    await pumpFriendLocation(tester);
+
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('mary ⟡ ﾟ.').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('"Saved you a seat."'), findsOneWidget);
+    expect(find.text('Message mary ⟡ ﾟ....'), findsOneWidget);
+  });
+
   testWidgets('Friend Location page uses Figma friend avatar assets', (
     tester,
   ) async {
@@ -70,6 +95,10 @@ void main() {
       AppAssets.friendTanPhat,
       AppAssets.friendKeem,
       AppAssets.friendAnhQuan,
+      AppAssets.friendChloe,
+      AppAssets.friendChris,
+      AppAssets.friendMary,
+      AppAssets.friendDongMinh,
     ];
 
     for (final asset in expectedAssets) {

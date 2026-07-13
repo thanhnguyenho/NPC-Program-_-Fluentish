@@ -26,7 +26,11 @@ flutter:
   assets:
     - assets/images/fluentish_logo.png
     - assets/images/friend_anh_quan.png
+    - assets/images/friend_chloe.png
+    - assets/images/friend_chris.png
+    - assets/images/friend_dong_minh.png
     - assets/images/friend_keem.png
+    - assets/images/friend_mary.png
     - assets/images/friend_tan_phat.png
     - assets/images/friend_vinh_tien.png
     - assets/images/friend_vinh_tien_pin.png

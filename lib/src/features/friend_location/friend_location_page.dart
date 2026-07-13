@@ -21,52 +21,109 @@ class FriendLocationPage extends StatefulWidget {
 class _FriendLocationPageState extends State<FriendLocationPage> {
   static const _districtOne = LatLng(10.7769, 106.7009);
   static const _districtOneOsm = ll.LatLng(10.7769, 106.7009);
+  static const _mePosition = ll.LatLng(10.7772, 106.6997);
   static const _friends = [
+    _LocationFriend(
+      avatarAsset: AppAssets.friendChloe,
+      color: Color(0xFF93CF75),
+      hasPulse: true,
+      id: 'chloe',
+      mapNote: 'Coffee after class?',
+      name: 'Thanh Nguyen (Chloe)',
+      note: '"Coffee after class?"',
+      pinAvatarAsset: AppAssets.friendChloe,
+      position: LatLng(10.7798, 106.6955),
+      previewOffset: Offset(0.18, 0.34),
+      showMapNote: false,
+    ),
+    _LocationFriend(
+      avatarAsset: AppAssets.friendChris,
+      color: Color(0xFF3E4E31),
+      hasVibeBadge: true,
+      id: 'chris',
+      mapNote: 'OMW in 8 min.',
+      name: 'Chris Crowne',
+      note: '"OMW in 8 min."',
+      pinAvatarAsset: AppAssets.friendChris,
+      position: LatLng(10.7841, 106.7009),
+      previewOffset: Offset(0.72, 0.22),
+    ),
+    _LocationFriend(
+      avatarAsset: AppAssets.friendMary,
+      color: Color(0xFFB8A2D8),
+      hasPulse: true,
+      id: 'mary',
+      mapNote: 'Saved you a seat.',
+      name: 'mary ⟡ ﾟ.',
+      note: '"Saved you a seat."',
+      pinAvatarAsset: AppAssets.friendMary,
+      position: LatLng(10.7819, 106.7065),
+      previewOffset: Offset(0.76, 0.42),
+      showMapNote: false,
+    ),
+    _LocationFriend(
+      avatarAsset: AppAssets.friendDongMinh,
+      color: Color(0xFF6C8F57),
+      hasPulse: true,
+      id: 'dong-minh',
+      mapNote: 'Study room later.',
+      name: 'Đồng Minh',
+      note: '"Study room later."',
+      pinAvatarAsset: AppAssets.friendDongMinh,
+      position: LatLng(10.7682, 106.7022),
+      previewOffset: Offset(0.34, 0.76),
+      showMapNote: false,
+    ),
     _LocationFriend(
       avatarAsset: AppAssets.friendVinhTien,
       color: Color(0xFF93CF75),
+      hasPulse: true,
       id: 'vinh-tien',
+      mapNote: 'Library later.',
       name: 'Vĩnh Tiến',
       note: '"Library later. I saved the route."',
       pinAvatarAsset: AppAssets.friendVinhTienPin,
-      position: LatLng(10.7797, 106.6998),
+      position: LatLng(10.776, 106.6974),
       previewOffset: Offset(0.25, 0.68),
     ),
     _LocationFriend(
       avatarAsset: AppAssets.friendTanPhat,
       color: Color(0xFF6C8F57),
       id: 'tan-phat',
+      mapNote: 'On campus now.',
       name: 'Tấn Phát',
       note: '"On campus now. Meet by the gate."',
       pinAvatarAsset: AppAssets.friendTanPhat,
-      position: LatLng(10.7733, 106.7033),
+      position: LatLng(10.7714, 106.7045),
       previewOffset: Offset(0.18, 0.54),
     ),
     _LocationFriend(
       avatarAsset: AppAssets.friendKeem,
       color: Color(0xFF3E4E31),
       id: 'keem',
+      mapNote: 'New vocab drop.',
       name: 'Keem',
       note: '"New vocab drop. Come practice."',
       pinAvatarAsset: AppAssets.friendKeem,
-      position: LatLng(10.7812, 106.7047),
+      position: LatLng(10.776, 106.7068),
       previewOffset: Offset(0.76, 0.34),
     ),
     _LocationFriend(
       avatarAsset: AppAssets.friendAnhQuan,
       color: Color(0xFF8A9554),
       id: 'anhquan',
+      mapNote: 'Free to chat.',
       name: 'AnhQuan',
       note: '"Free to chat after class."',
       pinAvatarAsset: AppAssets.friendAnhQuan,
-      position: LatLng(10.7748, 106.6967),
+      position: LatLng(10.771, 106.6955),
       previewOffset: Offset(0.58, 0.76),
     ),
   ];
 
   GoogleMapController? _mapController;
   final _osmMapController = fm.MapController();
-  _LocationFriend? _selectedFriend = _friends.first;
+  _LocationFriend? _selectedFriend = _friends[4];
   bool _myLocationEnabled = false;
   String? _locationMessage;
   String _selectedEta = '5 min';
@@ -206,7 +263,7 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
                 AppSpacing.lg,
                 AppSpacing.xl,
                 AppSpacing.lg,
-                AppSpacing.bottomNavHeight + AppSpacing.lg,
+                AppSpacing.lg,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -246,22 +303,30 @@ class _LocationFriend {
   const _LocationFriend({
     this.avatarAsset,
     required this.color,
+    this.hasPulse = false,
+    this.hasVibeBadge = false,
     required this.id,
+    required this.mapNote,
     required this.name,
     required this.note,
     this.pinAvatarAsset,
     required this.position,
     required this.previewOffset,
+    this.showMapNote = true,
   });
 
   final String? avatarAsset;
   final Color color;
+  final bool hasPulse;
+  final bool hasVibeBadge;
   final String id;
+  final String mapNote;
   final String name;
   final String note;
   final String? pinAvatarAsset;
   final LatLng position;
   final Offset previewOffset;
+  final bool showMapNote;
 
   ll.LatLng get osmPosition => ll.LatLng(position.latitude, position.longitude);
 
@@ -533,6 +598,11 @@ class _OpenStreetMapSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final featuredFriend = friends.firstWhere(
+      (friend) => friend.hasVibeBadge,
+      orElse: () => friends.first,
+    );
+
     return fm.FlutterMap(
       mapController: controller,
       options: const fm.MapOptions(
@@ -546,13 +616,31 @@ class _OpenStreetMapSurface extends StatelessWidget {
           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
           userAgentPackageName: 'com.fluentish.app',
         ),
+        fm.PolylineLayer(
+          polylines: [
+            fm.Polyline(
+              color: AppColors.pine.withValues(alpha: 0.34),
+              points: [
+                _FriendLocationPageState._mePosition,
+                featuredFriend.osmPosition,
+              ],
+              strokeWidth: 3,
+            ),
+          ],
+        ),
         fm.MarkerLayer(
           markers: [
+            const fm.Marker(
+              point: _FriendLocationPageState._mePosition,
+              height: 76,
+              width: 76,
+              child: _MeMapMarker(),
+            ),
             for (final friend in friends)
               fm.Marker(
                 point: friend.osmPosition,
-                height: 96,
-                width: 104,
+                height: 150,
+                width: 122,
                 child: _FriendMapPin(
                   friend: friend,
                   isSelected: friend == selectedFriend,
@@ -717,55 +805,256 @@ class _FriendMapPin extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.cardBorder),
-                borderRadius: BorderRadius.circular(13),
-                color: Colors.white.withValues(alpha: 0.72),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.xxs,
-                ),
-                child: Text(
-                  friend.name,
-                  style: GoogleFonts.inter(
-                    color: AppColors.pine,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0,
-                  ),
-                ),
-              ),
-            ),
+            if (friend.showMapNote) ...[
+              _MapNoteBubble(label: friend.mapNote),
+              const SizedBox(height: AppSpacing.xxs),
+            ],
+            _FriendPinAvatar(friend: friend, isSelected: isSelected),
             const SizedBox(height: AppSpacing.xxs),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              height: isSelected ? 52 : 42,
-              width: isSelected ? 52 : 42,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.white, width: 4),
-                boxShadow: [
-                  BoxShadow(
-                    blurRadius: isSelected ? 22 : 12,
-                    color: friend.color.withValues(alpha: 0.35),
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-                color: friend.color,
-                shape: BoxShape.circle,
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: _FriendAvatarContent(
-                asset: friend.pinAvatarAsset ?? friend.avatarAsset,
-                friend: friend,
-                fontSize: isSelected ? 18 : 15,
-              ),
-            ),
+            _MapNameLabel(label: friend.name),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _MapNoteBubble extends StatelessWidget {
+  const _MapNoteBubble({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.bottomCenter,
+      clipBehavior: Clip.none,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 5,
+                color: Colors.black.withValues(alpha: 0.22),
+                offset: const Offset(0, 4),
+              ),
+            ],
+            color: const Color(0xFF292929).withValues(alpha: 0.92),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xs,
+            ),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                color: const Color(0xFFFAFAF5),
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                height: 13 / 11,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: -5,
+          child: Transform.rotate(
+            angle: 0.785398,
+            child: Container(
+              height: 10,
+              width: 10,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(2),
+                color: const Color(0xFF292929).withValues(alpha: 0.92),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MapNameLabel extends StatelessWidget {
+  const _MapNameLabel({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.cardBorder),
+        borderRadius: BorderRadius.circular(13),
+        color: Colors.white.withValues(alpha: 0.72),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xxs,
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.inter(
+            color: AppColors.pine,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FriendPinAvatar extends StatelessWidget {
+  const _FriendPinAvatar({
+    required this.friend,
+    required this.isSelected,
+  });
+
+  final _LocationFriend friend;
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final avatarSize = isSelected ? 54.0 : 42.0;
+    final auraSize = isSelected || friend.hasPulse ? 72.0 : 50.0;
+    final focusSize = isSelected || friend.hasPulse ? 58.0 : 50.0;
+
+    return SizedBox.square(
+      dimension: auraSize,
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color:
+                  friend.color.withValues(alpha: friend.hasPulse ? 0.24 : 0.16),
+              shape: BoxShape.circle,
+            ),
+            child: SizedBox.square(dimension: auraSize),
+          ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.58),
+                width: 2,
+              ),
+              color: friend.color.withValues(alpha: 0.16),
+              shape: BoxShape.circle,
+            ),
+            child: SizedBox.square(dimension: focusSize),
+          ),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            height: avatarSize,
+            width: avatarSize,
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.white, width: 4),
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: isSelected ? 22 : 12,
+                  color: friend.color.withValues(alpha: 0.35),
+                  offset: const Offset(0, 8),
+                ),
+              ],
+              color: friend.color,
+              shape: BoxShape.circle,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: _FriendAvatarContent(
+              asset: friend.pinAvatarAsset ?? friend.avatarAsset,
+              friend: friend,
+              fontSize: isSelected ? 18 : 15,
+            ),
+          ),
+          Positioned(
+            bottom: auraSize * 0.14,
+            right: auraSize * 0.14,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white, width: 2),
+                color: const Color(0xFF93CF75),
+                shape: BoxShape.circle,
+              ),
+              child: const SizedBox.square(dimension: 10),
+            ),
+          ),
+          if (friend.hasVibeBadge)
+            Positioned(
+              right: auraSize * 0.02,
+              top: auraSize * 0.02,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.white, width: 2),
+                  color: AppColors.pine,
+                  shape: BoxShape.circle,
+                ),
+                child: const SizedBox.square(
+                  dimension: 22,
+                  child: Icon(
+                    Icons.near_me,
+                    color: Colors.white,
+                    size: 13,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MeMapMarker extends StatelessWidget {
+  const _MeMapMarker();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: const Color(0xFFD7E3F7).withValues(alpha: 0.26),
+            shape: BoxShape.circle,
+          ),
+          child: const SizedBox.square(dimension: 70),
+        ),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: const Color(0xFFD7E3F7).withValues(alpha: 0.40),
+            shape: BoxShape.circle,
+          ),
+          child: const SizedBox.square(dimension: 60),
+        ),
+        Container(
+          height: 46,
+          width: 46,
+          decoration: BoxDecoration(
+            border: Border.all(
+                color: Colors.white.withValues(alpha: 0.96), width: 3),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 16,
+                color: AppColors.pine.withValues(alpha: 0.24),
+                offset: const Offset(0, 8),
+              ),
+            ],
+            color: const Color(0xFFD7E3F7),
+            shape: BoxShape.circle,
+          ),
+        ),
+      ],
     );
   }
 }
