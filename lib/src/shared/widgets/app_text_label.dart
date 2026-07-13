@@ -16,9 +16,10 @@ class AppTextLabel extends StatelessWidget {
     return Text(
       text,
       style: AppTextStyles.body.copyWith(
+        fontFamily: 'Itim',
         color: AppColors.pine,
         fontWeight: FontWeight.w600,
-        fontSize: 18,
+        fontSize: 16,
       ),
     );
   }

@@ -1,4 +1,7 @@
+// ignore_for_file: prefer_const_constructors
+
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'package:fluentish/src/features/login/login_page.dart';
 import 'package:fluentish/src/shared/shared.dart';
@@ -65,7 +68,15 @@ class _RegistrationPageState extends State<RegistrationPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppTextLabel(text: label),
+        Text(
+          label,
+          style: GoogleFonts.itim(
+            color: AppColors.pine,
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            letterSpacing: 0.3,
+          ),
+        ),
         const SizedBox(height: AppSpacing.xs),
         AppTextField(
           controller: controller,
@@ -77,7 +88,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
     );
   }
 
-  @override
+    @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.blush,
@@ -106,7 +117,9 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   fontSize: 36,
                 ),
               ),
+
               const SizedBox(height: AppSpacing.xl),
+
               Row(
                 children: [
                   Expanded(
@@ -126,60 +139,78 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   ),
                 ],
               ),
+
               const SizedBox(height: AppSpacing.md),
+
               buildField(
                 label: 'PREFERRED NAME:',
                 controller: preferredNameController,
                 hint: 'e.g Chloe',
               ),
+
               const SizedBox(height: AppSpacing.md),
+
               buildField(
                 label: 'USERNAME:',
                 controller: usernameController,
                 hint: 'e.g Chloe123',
               ),
+
               const SizedBox(height: AppSpacing.md),
+
               buildField(
                 label: 'DATE OF BIRTH:',
                 controller: dobController,
                 hint: 'DD/MM/YYYY',
               ),
+
               const SizedBox(height: AppSpacing.md),
+
               buildField(
                 label: 'PHONE NUMBER:',
                 controller: phoneController,
                 hint: '0412345678',
                 keyboardType: TextInputType.phone,
               ),
+
               const SizedBox(height: AppSpacing.md),
+
               buildField(
                 label: 'EMAIL:',
                 controller: emailController,
                 hint: 'example@gmail.com',
                 keyboardType: TextInputType.emailAddress,
               ),
+
               const SizedBox(height: AppSpacing.md),
+
               buildField(
                 label: 'CONFIRM EMAIL:',
                 controller: confirmEmailController,
                 hint: 'example@gmail.com',
                 keyboardType: TextInputType.emailAddress,
               ),
+
               const SizedBox(height: AppSpacing.md),
+
               buildField(
                 label: 'PASSWORD:',
                 controller: passwordController,
                 hint: 'Minimum 8 characters',
                 obscure: true,
               ),
+
               const SizedBox(height: AppSpacing.md),
+
               buildField(
                 label: 'CONFIRM PASSWORD:',
                 controller: confirmPasswordController,
                 hint: 'Re-enter password',
                 obscure: true,
               ),
+
               const SizedBox(height: AppSpacing.md),
+
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -219,7 +250,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
                               ),
                             ),
                             TextSpan(
-                              text: ', and confirm I am 18 years or older.',
+                              text:
+                                  ', and confirm I am 18 years or older.',
                             ),
                           ],
                         ),
@@ -228,14 +260,18 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   ),
                 ],
               ),
+
               const SizedBox(height: AppSpacing.xl),
+
               AppButton(
                 label: 'CREATE ACCOUNT',
                 backgroundColor: AppColors.pine,
                 foregroundColor: AppColors.blush,
                 onPressed: _goToLogin,
               ),
+
               const SizedBox(height: AppSpacing.lg),
+
               Center(
                 child: GestureDetector(
                   onTap: _goToLogin,
@@ -252,7 +288,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
                           text: 'Log in',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            decoration: TextDecoration.underline,
+                            decoration:
+                                TextDecoration.underline,
                           ),
                         ),
                       ],
@@ -260,6 +297,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   ),
                 ),
               ),
+
               const SizedBox(height: AppSpacing.xl),
             ],
           ),

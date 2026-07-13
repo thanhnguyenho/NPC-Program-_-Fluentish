@@ -6,6 +6,8 @@ import 'package:fluentish/src/shared/theme/app_theme.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
+import 'package:fluentish/debug_menu.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -24,7 +26,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Fluentish',
       theme: AppTheme.light,
-      home: const WelcomePage(),
+      home: const DebugMenu(),
     );
   }
 }

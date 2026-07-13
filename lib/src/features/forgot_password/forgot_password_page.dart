@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:fluentish/src/features/login/login_page.dart';
+import 'package:fluentish/src/features/resend_email/resend_email_page.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
@@ -24,22 +25,26 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   }
 
   void _submit() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Password reset request submitted'),
-      ),
-    );
-
-    Future.delayed(const Duration(seconds: 1), () {
-      if (!mounted) return;
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const LoginPage(),
+    if (emailController.text.trim().isEmpty ||
+        phoneController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Please enter your email and phone number.',
+          ),
         ),
       );
-    });
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ResendEmailPage(
+          username: emailController.text.trim(),
+        ),
+      ),
+    );
   }
 
   Widget buildField({
@@ -85,6 +90,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           child: Column(
             children: [
               const SizedBox(height: 10),
+
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -93,7 +99,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       padding: const EdgeInsets.only(left: 8),
                       child: AppStrokeText(
                         'FORGOT\nPASSWORD',
-                        fontSize: 20,
+                        fontSize: 35,
                       ),
                     ),
                   ),
@@ -104,27 +110,34 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   ),
                 ],
               ),
+
               const SizedBox(height: AppSpacing.xl),
+
               buildField(
                 label: 'EMAIL:',
                 controller: emailController,
                 hint: 'Enter your email',
                 keyboardType: TextInputType.emailAddress,
               ),
+
               const SizedBox(height: AppSpacing.lg),
+
               buildField(
                 label: 'PHONE NUMBER:',
                 controller: phoneController,
                 hint: 'Enter your phone number',
                 keyboardType: TextInputType.phone,
               ),
+
               const SizedBox(height: 40),
+
               AppButton(
                 label: 'SUBMIT',
                 backgroundColor: AppColors.pine,
                 foregroundColor: AppColors.blush,
                 onPressed: _submit,
               ),
+
               const SizedBox(height: AppSpacing.xxl),
             ],
           ),
