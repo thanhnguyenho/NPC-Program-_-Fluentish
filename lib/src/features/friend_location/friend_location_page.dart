@@ -26,6 +26,7 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
     _LocationFriend(
       avatarAsset: AppAssets.friendChloe,
       color: Color(0xFF93CF75),
+      distanceLabel: '0.8 km',
       hasPulse: true,
       id: 'chloe',
       mapNote: 'Coffee after class?',
@@ -39,6 +40,7 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
     _LocationFriend(
       avatarAsset: AppAssets.friendChris,
       color: Color(0xFF3E4E31),
+      distanceLabel: '1.1 km',
       hasVibeBadge: true,
       id: 'chris',
       mapNote: 'OMW in 8 min.',
@@ -51,6 +53,7 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
     _LocationFriend(
       avatarAsset: AppAssets.friendMary,
       color: Color(0xFFB8A2D8),
+      distanceLabel: '1.3 km',
       hasPulse: true,
       id: 'mary',
       mapNote: 'Saved you a seat.',
@@ -64,6 +67,7 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
     _LocationFriend(
       avatarAsset: AppAssets.friendDongMinh,
       color: Color(0xFF6C8F57),
+      distanceLabel: '1.6 km',
       hasPulse: true,
       id: 'dong-minh',
       mapNote: 'Study room later.',
@@ -77,6 +81,7 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
     _LocationFriend(
       avatarAsset: AppAssets.friendVinhTien,
       color: Color(0xFF93CF75),
+      distanceLabel: '0.2 km',
       hasPulse: true,
       id: 'vinh-tien',
       mapNote: 'Library later.',
@@ -89,6 +94,7 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
     _LocationFriend(
       avatarAsset: AppAssets.friendTanPhat,
       color: Color(0xFF6C8F57),
+      distanceLabel: '2.3 km',
       id: 'tan-phat',
       mapNote: 'On campus now.',
       name: 'Tấn Phát',
@@ -100,6 +106,7 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
     _LocationFriend(
       avatarAsset: AppAssets.friendKeem,
       color: Color(0xFF3E4E31),
+      distanceLabel: '1.9 km',
       id: 'keem',
       mapNote: 'New vocab drop.',
       name: 'Keem',
@@ -111,6 +118,7 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
     _LocationFriend(
       avatarAsset: AppAssets.friendAnhQuan,
       color: Color(0xFF8A9554),
+      distanceLabel: '0.4 km',
       id: 'anhquan',
       mapNote: 'Free to chat.',
       name: 'AnhQuan',
@@ -251,47 +259,27 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
         currentIndex: 3,
         onItemSelected: _ignoreNavTap,
       ),
-      body: SafeArea(
-        bottom: false,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: AppSpacing.figmaFrameWidth,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.xl,
-                AppSpacing.lg,
-                AppSpacing.lg,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const _FriendLocationHeader(),
-                  const SizedBox(height: AppSpacing.lg),
-                  Expanded(
-                    child: _MapShell(
-                      friends: _friends,
-                      hasGoogleMap: hasGoogleMapsApiKey,
-                      locationMessage: _locationMessage,
-                      markers: _markers,
-                      myLocationEnabled: _myLocationEnabled,
-                      onCurrentLocationTap: _focusCurrentLocation,
-                      onEtaSelected: _selectEta,
-                      onFriendDismissed: _dismissFriend,
-                      onFriendSelected: _selectFriend,
-                      onMapCreated: (controller) => _mapController = controller,
-                      osmMapController: _osmMapController,
-                      onRouteTap: _openSelectedRoute,
-                      onQuickActionTap: _showAction,
-                      selectedEta: _selectedEta,
-                      selectedFriend: selectedFriend,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: AppSpacing.figmaFrameWidth,
+          ),
+          child: _MapShell(
+            friends: _friends,
+            hasGoogleMap: hasGoogleMapsApiKey,
+            locationMessage: _locationMessage,
+            markers: _markers,
+            myLocationEnabled: _myLocationEnabled,
+            onCurrentLocationTap: _focusCurrentLocation,
+            onEtaSelected: _selectEta,
+            onFriendDismissed: _dismissFriend,
+            onFriendSelected: _selectFriend,
+            onMapCreated: (controller) => _mapController = controller,
+            osmMapController: _osmMapController,
+            onRouteTap: _openSelectedRoute,
+            onQuickActionTap: _showAction,
+            selectedEta: _selectedEta,
+            selectedFriend: selectedFriend,
           ),
         ),
       ),
@@ -303,6 +291,7 @@ class _LocationFriend {
   const _LocationFriend({
     this.avatarAsset,
     required this.color,
+    required this.distanceLabel,
     this.hasPulse = false,
     this.hasVibeBadge = false,
     required this.id,
@@ -317,6 +306,7 @@ class _LocationFriend {
 
   final String? avatarAsset;
   final Color color;
+  final String distanceLabel;
   final bool hasPulse;
   final bool hasVibeBadge;
   final String id;
@@ -338,48 +328,6 @@ class _LocationFriend {
       return BitmapDescriptor.hueYellow;
     }
     return BitmapDescriptor.hueCyan;
-  }
-}
-
-class _FriendLocationHeader extends StatelessWidget {
-  const _FriendLocationHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Friend Location',
-                style: GoogleFonts.gulzar(
-                  color: Colors.black,
-                  fontSize: 32,
-                  fontWeight: FontWeight.w400,
-                  height: 38 / 32,
-                  letterSpacing: 0,
-                ),
-              ),
-              Text(
-                'Nearby friends',
-                style: GoogleFonts.inter(
-                  color: AppColors.textSoft,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  height: 18 / 14,
-                  letterSpacing: 0,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        const _LocationChip(label: 'District 1'),
-      ],
-    );
   }
 }
 
@@ -406,6 +354,91 @@ class _LocationChip extends StatelessWidget {
           fontSize: 12,
           fontWeight: FontWeight.w700,
           letterSpacing: 0,
+        ),
+      ),
+    );
+  }
+}
+
+class _MapTopPanel extends StatelessWidget {
+  const _MapTopPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.white.withValues(alpha: 0.58)),
+            borderRadius: BorderRadius.circular(24),
+            color: AppColors.blush.withValues(alpha: 0.76),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 22,
+                color: AppColors.pine.withValues(alpha: 0.12),
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.md,
+              AppSpacing.sm,
+            ),
+            child: Row(
+              children: [
+                SizedBox.square(
+                  dimension: 36,
+                  child: IconButton(
+                    onPressed: () {},
+                    icon: const Icon(Icons.arrow_back_ios_new, size: 16),
+                    padding: EdgeInsets.zero,
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white.withValues(alpha: 0.52),
+                      foregroundColor: AppColors.pine,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Friend Location',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.gulzar(
+                          color: Colors.black,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w400,
+                          height: 26 / 22,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                      Text(
+                        'Nearby friends',
+                        style: GoogleFonts.inter(
+                          color: AppColors.textSoft,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          height: 14 / 12,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                const _LocationChip(label: 'District 1'),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -449,106 +482,105 @@ class _MapShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.cardBorder),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 28,
-            color: AppColors.pine.withValues(alpha: 0.12),
-            offset: const Offset(0, 16),
-            spreadRadius: -12,
-          ),
-        ],
-        color: const Color(0xFFE6DED2),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final maxBubbleHeight = constraints.maxHeight > AppSpacing.xl
-                ? constraints.maxHeight - AppSpacing.xl
-                : constraints.maxHeight;
+    return ClipRect(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final bubbleTop = constraints.maxHeight >= 690 ? 236.0 : 170.0;
+          final bubbleHeight = constraints.maxHeight >= 690 ? 374.0 : 350.0;
 
-            return Stack(
-              children: [
-                Positioned.fill(
-                  child: hasGoogleMap
-                      ? _GoogleMapSurface(
-                          markers: markers,
-                          myLocationEnabled: myLocationEnabled,
-                          onMapCreated: onMapCreated,
-                        )
-                      : _OpenStreetMapSurface(
-                          controller: osmMapController,
-                          friends: friends,
-                          onFriendSelected: onFriendSelected,
-                          selectedFriend: selectedFriend,
-                        ),
-                ),
-                Positioned(
-                  left: AppSpacing.lg,
-                  top: AppSpacing.lg,
-                  child: _MapStatusPill(
-                    label: hasGoogleMap ? 'Google Maps' : 'OpenStreetMap',
-                  ),
-                ),
-                Positioned(
-                  right: AppSpacing.lg,
-                  top: AppSpacing.lg,
-                  child: _MapActionButton(
-                    icon: Icons.my_location_outlined,
-                    label: 'Current location',
-                    onTap: onCurrentLocationTap,
-                  ),
-                ),
-                Positioned(
-                  left: AppSpacing.lg,
-                  top: 74,
-                  child: _LocationChip(label: '${friends.length} nearby'),
-                ),
-                if (!hasGoogleMap)
-                  const Positioned(
-                    left: AppSpacing.lg,
-                    top: 118,
-                    child: _OsmAttributionBadge(),
-                  ),
-                if (locationMessage != null)
-                  Positioned(
-                    left: AppSpacing.lg,
-                    right: AppSpacing.lg,
-                    top: hasGoogleMap ? 118 : 148,
-                    child: _LocationMessage(message: locationMessage!),
-                  ),
-                if (selectedFriend != null)
-                  Positioned.fill(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.translucent,
-                      onTap: onFriendDismissed,
-                    ),
-                  ),
-                if (selectedFriend != null)
-                  Positioned(
-                    bottom: AppSpacing.lg,
-                    left: AppSpacing.lg,
-                    right: AppSpacing.lg,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(maxHeight: maxBubbleHeight),
-                      child: _FriendActionBubble(
-                        friend: selectedFriend!,
-                        onDismissed: onFriendDismissed,
-                        onEtaSelected: onEtaSelected,
-                        onQuickActionTap: onQuickActionTap,
-                        onRouteTap: onRouteTap,
-                        selectedEta: selectedEta,
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: hasGoogleMap
+                    ? _GoogleMapSurface(
+                        markers: markers,
+                        myLocationEnabled: myLocationEnabled,
+                        onMapCreated: onMapCreated,
+                      )
+                    : _OpenStreetMapSurface(
+                        controller: osmMapController,
+                        friends: friends,
+                        onFriendSelected: onFriendSelected,
+                        selectedFriend: selectedFriend,
                       ),
+              ),
+              const Positioned(
+                left: AppSpacing.lg,
+                right: AppSpacing.lg,
+                top: AppSpacing.xl,
+                child: _MapTopPanel(),
+              ),
+              Positioned(
+                right: AppSpacing.xl,
+                top: 108,
+                child: _MapActionButton(
+                  icon: Icons.my_location_outlined,
+                  label: 'Current location',
+                  onTap: onCurrentLocationTap,
+                ),
+              ),
+              Positioned(
+                left: AppSpacing.lg,
+                top: 114,
+                child: _MapStatusPill(
+                  label: hasGoogleMap ? 'Google Maps' : 'OpenStreetMap',
+                ),
+              ),
+              Positioned(
+                left: AppSpacing.lg,
+                top: 158,
+                child: _LocationChip(label: '${friends.length} nearby'),
+              ),
+              if (!hasGoogleMap)
+                const Positioned(
+                  left: AppSpacing.lg,
+                  top: 202,
+                  child: _OsmAttributionBadge(),
+                ),
+              if (locationMessage != null)
+                Positioned(
+                  left: AppSpacing.lg,
+                  right: AppSpacing.lg,
+                  top: hasGoogleMap ? 158 : 232,
+                  child: _LocationMessage(message: locationMessage!),
+                ),
+              if (selectedFriend != null)
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: onFriendDismissed,
+                  ),
+                ),
+              Positioned(
+                bottom: AppSpacing.md,
+                left: AppSpacing.md,
+                right: AppSpacing.md,
+                child: _FriendQuickStrip(
+                  friends: friends,
+                  onFriendSelected: onFriendSelected,
+                  onRouteTap: onRouteTap,
+                  selectedFriend: selectedFriend,
+                ),
+              ),
+              if (selectedFriend != null)
+                Positioned(
+                  left: 31,
+                  right: 31,
+                  top: bubbleTop,
+                  child: SizedBox(
+                    height: bubbleHeight,
+                    child: _FriendActionBubble(
+                      friend: selectedFriend!,
+                      onDismissed: onFriendDismissed,
+                      onEtaSelected: onEtaSelected,
+                      onQuickActionTap: onQuickActionTap,
+                      selectedEta: selectedEta,
                     ),
                   ),
-              ],
-            );
-          },
-        ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -777,6 +809,216 @@ class _MapActionButton extends StatelessWidget {
             shape: const CircleBorder(),
           ),
           child: Icon(icon, size: 22),
+        ),
+      ),
+    );
+  }
+}
+
+class _FriendQuickStrip extends StatelessWidget {
+  const _FriendQuickStrip({
+    required this.friends,
+    required this.onFriendSelected,
+    required this.onRouteTap,
+    required this.selectedFriend,
+  });
+
+  final List<_LocationFriend> friends;
+  final ValueChanged<_LocationFriend> onFriendSelected;
+  final VoidCallback onRouteTap;
+  final _LocationFriend? selectedFriend;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = selectedFriend;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.white.withValues(alpha: 0.62)),
+            borderRadius: BorderRadius.circular(24),
+            color: AppColors.blush.withValues(alpha: 0.78),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 24,
+                color: AppColors.pine.withValues(alpha: 0.16),
+                offset: const Offset(0, 14),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.md,
+              AppSpacing.md,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Friends nearby',
+                        style: GoogleFonts.gulzar(
+                          color: AppColors.pine,
+                          fontSize: 23,
+                          fontWeight: FontWeight.w400,
+                          height: 28 / 23,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ),
+                    if (selected != null) ...[
+                      Text(
+                        selected.distanceLabel,
+                        style: GoogleFonts.inter(
+                          color: AppColors.textSoft,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          height: 13 / 11,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      SizedBox(
+                        height: 28,
+                        width: 70,
+                        child: _ActionChipButton(
+                          isSelected: true,
+                          label: 'Route',
+                          onPressed: onRouteTap,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                SizedBox(
+                  height: 66,
+                  child: ListView.separated(
+                    clipBehavior: Clip.none,
+                    scrollDirection: Axis.horizontal,
+                    itemBuilder: (context, index) {
+                      final friend = friends[index];
+                      return _FriendStripCard(
+                        friend: friend,
+                        isSelected: friend == selectedFriend,
+                        onTap: () => onFriendSelected(friend),
+                      );
+                    },
+                    itemCount: friends.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(width: AppSpacing.sm),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FriendStripCard extends StatelessWidget {
+  const _FriendStripCard({
+    required this.friend,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final _LocationFriend friend;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'View ${friend.name}',
+      selected: isSelected,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          width: 146,
+          padding: const EdgeInsets.all(AppSpacing.xs),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: isSelected
+                  ? AppColors.pine
+                  : Colors.white.withValues(alpha: 0.64),
+              width: isSelected ? 1.4 : 1,
+            ),
+            borderRadius: BorderRadius.circular(18),
+            color: Colors.white.withValues(alpha: isSelected ? 0.78 : 0.52),
+          ),
+          child: Row(
+            children: [
+              Container(
+                height: 42,
+                width: 42,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.white, width: 3),
+                  boxShadow: [
+                    BoxShadow(
+                      blurRadius: 10,
+                      color: friend.color.withValues(alpha: 0.2),
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                  color: friend.color,
+                  shape: BoxShape.circle,
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: _FriendAvatarContent(
+                  asset: friend.avatarAsset,
+                  friend: friend,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      friend.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: AppColors.pine,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        height: 13 / 11,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${friend.distanceLabel} · ${friend.mapNote}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: AppColors.textSoft,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        height: 11 / 9,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1065,7 +1307,6 @@ class _FriendActionBubble extends StatelessWidget {
     required this.onDismissed,
     required this.onEtaSelected,
     required this.onQuickActionTap,
-    required this.onRouteTap,
     required this.selectedEta,
   });
 
@@ -1073,7 +1314,6 @@ class _FriendActionBubble extends StatelessWidget {
   final VoidCallback onDismissed;
   final ValueChanged<String> onEtaSelected;
   final ValueChanged<String> onQuickActionTap;
-  final VoidCallback onRouteTap;
   final String selectedEta;
 
   @override
@@ -1179,7 +1419,6 @@ class _FriendActionBubble extends StatelessWidget {
                       const SizedBox(height: AppSpacing.md),
                       _QuickActionRow(
                         onQuickActionTap: onQuickActionTap,
-                        onRouteTap: onRouteTap,
                       ),
                     ],
                   ),
@@ -1365,11 +1604,9 @@ class _VisitButton extends StatelessWidget {
 class _QuickActionRow extends StatelessWidget {
   const _QuickActionRow({
     required this.onQuickActionTap,
-    required this.onRouteTap,
   });
 
   final ValueChanged<String> onQuickActionTap;
-  final VoidCallback onRouteTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1394,14 +1631,6 @@ class _QuickActionRow extends StatelessWidget {
           child: _ActionChipButton(
             label: 'Poke',
             onPressed: () => onQuickActionTap('Poked'),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        SizedBox(
-          width: 46,
-          child: _ActionChipButton(
-            label: 'Route',
-            onPressed: onRouteTap,
           ),
         ),
       ],
