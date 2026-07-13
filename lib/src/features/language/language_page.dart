@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../shared/theme/app_colors.dart';
-import '../../shared/theme/app_spacing.dart';
-import '../../shared/theme/app_text_styles.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:io';
