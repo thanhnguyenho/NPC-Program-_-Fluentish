@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:fluentish/src/features/language/translator_engine.dart';
+import 'package:fluentish/src/features/common/smart_search_bar.dart';
 
 class LanguagePage extends StatelessWidget {
   const LanguagePage({super.key});
@@ -516,45 +517,26 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                   children: [
                     const SizedBox(height: 8),
                     // 1. Leader Approved Universal Search Bar ("Search phrases...")
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(25),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(10),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: TextField(
-                        controller: _searchController,
-                        onSubmitted: (val) {
-                          if (val.isNotEmpty) {
-                            setState(() {
-                              _sourceController.text = val;
-                              _onSourceTextChanged(val);
-                            });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('🔍 Searching & translating: "$val"')),
-                            );
-                          }
-                        },
-                        decoration: const InputDecoration(
-                          hintText: 'Search phrases...',
-                          hintStyle: TextStyle(color: Colors.black38, fontSize: 15),
-                          prefixIcon: Icon(Icons.search, color: Colors.black54),
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          errorBorder: InputBorder.none,
-                          disabledBorder: InputBorder.none,
-                          filled: false,
-                          fillColor: Colors.transparent,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                        ),
-                      ),
+                    SmartSearchBar(
+                      controller: _searchController,
+                      hintText: 'Search phrases or vocab...',
+                      onSubmitted: (val) {
+                        if (val.isNotEmpty) {
+                          setState(() {
+                            _sourceController.text = val;
+                            _onSourceTextChanged(val);
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('🔍 Searching & translating: "$val"')),
+                          );
+                        }
+                      },
+                      onSuggestionSelected: (val) {
+                        setState(() {
+                          _sourceController.text = val;
+                          _onSourceTextChanged(val);
+                        });
+                      },
                     ),
 
                     const SizedBox(height: 20),
