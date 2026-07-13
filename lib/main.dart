@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'src/shared/theme/app_theme.dart';
-import 'src/features/home/home_page.dart';
+import 'src/features/navigation/main_scaffold.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -23,7 +23,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Fluentish',
       theme: AppTheme.light,
-      home: const HomePage(),
+      home: const MainScaffold(initialIndex: 1),
     );
   }
 }
