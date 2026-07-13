@@ -127,13 +127,13 @@ class _GuidesScreenState extends State<GuidesScreen> {
             TextField(
               onChanged: (value) => setState(() => _query = value),
               style: AppTextStyles.body.copyWith(fontSize: 16),
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Search guides, places, routes...',
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.search,
                   color: AppColors.pine,
                 ),
-                contentPadding: const EdgeInsets.symmetric(
+                contentPadding: EdgeInsets.symmetric(
                   horizontal: AppSpacing.lg,
                   vertical: AppSpacing.md,
                 ),
