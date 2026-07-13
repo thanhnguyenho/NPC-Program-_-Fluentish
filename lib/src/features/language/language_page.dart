@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
+import 'dart:io';
 import 'package:fluentish/src/features/language/translator_engine.dart';
 
 class LanguagePage extends StatelessWidget {
@@ -156,6 +157,18 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
 
   void _playAudioPronunciation(String text, String lang) {
     if (text.trim().isEmpty) return;
+
+    // Play real audio speech out loud offline without API keys
+    try {
+      if (Platform.isMacOS) {
+        final voice = lang == 'Vietnamese' ? 'Linh' : 'Samantha';
+        Process.run('say', ['-v', voice, text]).then((res) {
+          if (res.exitCode != 0) {
+            Process.run('say', [text]);
+          }
+        });
+      }
+    } catch (_) {}
 
     showModalBottomSheet(
       context: context,

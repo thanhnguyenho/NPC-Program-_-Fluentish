@@ -239,6 +239,24 @@ class TranslatorEngine {
     'bạn có ăn gì chưa': 'Have you eaten anything yet?',
     'bạn đã ăn gì chưa': 'Have you eaten anything yet?',
     'ăn cơm chưa': 'Have you had a meal yet?',
+    'hôm nay chúng ta ăn gì': 'What should we eat today?',
+    'hôm nay ăn gì': 'What should we eat today?',
+    'chúng ta ăn gì hôm nay': 'What should we eat today?',
+    'tối nay ăn gì': 'What should we eat tonight?',
+    'trưa nay ăn gì': 'What should we eat for lunch?',
+    'sáng nay ăn gì': 'What should we eat for breakfast?',
+    'hôm nay ăn món gì': 'What dish should we eat today?',
+    'what should we eat today': 'Hôm nay chúng ta ăn gì?',
+    'what are we eating today': 'Hôm nay chúng ta ăn gì?',
+    'chúng ta đi đâu chơi': 'Where should we go for fun?',
+    'hôm nay làm gì': 'What should we do today?',
+    'bạn muốn ăn gì': 'What do you want to eat?',
+    'tôi muốn ăn phở': 'I want to eat Pho noodle soup',
+    'tôi muốn ăn cơm': 'I want to eat rice',
+    'món này rất ngon': 'This dish is very delicious',
+    'quán ăn ngon ở đâu': 'Where is a good restaurant?',
+    'cho tôi một ly cà phê sữa đá': 'May I have a glass of iced milk coffee?',
+    'cho tôi một ly trà đá': 'May I have a glass of iced tea?',
     'spicy': 'Cay',
     'cay': 'Spicy',
     'not spicy': 'Không cay',
@@ -797,6 +815,15 @@ class TranslatorEngine {
     }
 
     // Dining & Food Patterns
+    if (clean.contains('ăn gì')) {
+      return 'What should we eat today?';
+    }
+    if (clean.contains('đi đâu')) {
+      return 'Where should we go?';
+    }
+    if (clean.contains('làm gì')) {
+      return 'What should we do?';
+    }
     if (clean.contains('ăn') || clean.contains('đói') || clean.contains('thực đơn') || clean.contains('món')) {
       if (clean.contains('chưa') || clean.contains('rồi')) return 'Have you eaten anything yet?';
       return 'I would like to order food / May I see the menu?';
