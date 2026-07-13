@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 import 'package:fluentish/src/features/language/translator_engine.dart';
 
 class LanguagePage extends StatelessWidget {
@@ -29,18 +30,27 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
   bool _isSourceStarred = false;
   bool _isTargetStarred = false;
   
-  bool _isSourceListening = false;
-  bool _isTargetListening = false;
-  
-  bool _isPlayingAudio = false;
-  String _audioPlayingText = '';
 
-  // In-memory history and favorites storage for live demo
+
+  // Debounce timer: only record to history AFTER user stops typing for 800ms
+  Timer? _historyDebounceTimer;
+
+  // Clean initial history & favourites
   final List<Map<String, String>> _historyList = [
-    {'source': 'Hello', 'target': 'Xin chào', 'time': 'Just now'},
-    {'source': 'Coffee', 'target': 'Cà phê', 'time': '2 mins ago'},
-    {'source': 'Thank you', 'target': 'Cảm ơn', 'time': '5 mins ago'},
+    {'source': 'How much is this?', 'target': 'Cái này giá bao nhiêu?', 'time': 'Just now'},
+    {'source': 'Can you speak slower?', 'target': 'Bạn có thể nói chậm lại không?', 'time': '2 mins ago'},
+    {'source': 'Where is the nearest hospital?', 'target': 'Bệnh viện gần nhất ở đâu?', 'time': '10 mins ago'},
+    {'source': 'Thank you very much', 'target': 'Xin cảm ơn rất nhiều', 'time': '1 hour ago'},
+    {'source': 'Can you explain it again?', 'target': 'Bạn có thể giải thích lại không?', 'time': 'Yesterday'},
   ];
+
+  @override
+  void dispose() {
+    _historyDebounceTimer?.cancel();
+    _searchController.dispose();
+    _sourceController.dispose();
+    super.dispose();
+  }
 
   void _onSourceTextChanged(String text) {
     final rawText = text;
@@ -48,31 +58,38 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
       setState(() {
         _translatedText = '';
       });
+      _historyDebounceTimer?.cancel();
       return;
     }
     
+    // Translate immediately for live feedback
     setState(() {
       _translatedText = TranslatorEngine.translateSync(rawText, _sourceLang, _targetLang);
-      if (rawText.trim().length > 1 && _translatedText.isNotEmpty) {
-        final cleanSrc = rawText.trim();
-        // Prevent keystroke spam in History: update index 0 while typing the same phrase
-        if (_historyList.isNotEmpty && _historyList[0]['time'] == 'Just now' && 
-            (cleanSrc.startsWith(_historyList[0]['source']!) || _historyList[0]['source']!.startsWith(cleanSrc))) {
-          _historyList[0] = {
-            'source': cleanSrc,
-            'target': _translatedText,
-            'time': 'Just now',
-          };
-        } else {
+    });
+
+    // Debounce history recording: only save AFTER user stops typing for 800ms
+    _historyDebounceTimer?.cancel();
+    _historyDebounceTimer = Timer(const Duration(milliseconds: 800), () {
+      if (!mounted) return;
+      final cleanSrc = rawText.trim();
+      final translated = _translatedText;
+      if (cleanSrc.length >= 3 && translated.isNotEmpty && translated != cleanSrc) {
+        setState(() {
+          // Remove any existing "Just now" entry for similar text to avoid duplicates
+          _historyList.removeWhere((item) =>
+            item['time'] == 'Just now' &&
+            (cleanSrc.contains(item['source']!) || item['source']!.contains(cleanSrc))
+          );
           _historyList.insert(0, {
             'source': cleanSrc,
-            'target': _translatedText,
+            'target': translated,
             'time': 'Just now',
           });
-        }
+        });
       }
     });
   }
+
 
   void _swapLanguages() {
     setState(() {
@@ -139,87 +156,242 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
 
   void _playAudioPronunciation(String text, String lang) {
     if (text.trim().isEmpty) return;
-    setState(() {
-      _isPlayingAudio = true;
-      _audioPlayingText = '$lang pronunciation: "$text"';
-    });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.volume_up, color: Colors.white),
-            const SizedBox(width: 10),
-            Expanded(child: Text('🔊 Speaking $lang: "$text"')),
-          ],
-        ),
-        duration: const Duration(seconds: 2),
-        backgroundColor: const Color(0xFF3E4E31),
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFFF8EDED),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF3E4E31).withAlpha(30),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.volume_up, color: Color(0xFF3E4E31), size: 26),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        '$lang Pronunciation',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF3E4E31),
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              // Display the text being pronounced
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFF3E4E31).withAlpha(40)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      text,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF3E4E31),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '🔊 Playing $lang audio pronunciation...',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black54,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Pronunciation tip
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3E4E31).withAlpha(15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.tips_and_updates_outlined, color: Color(0xFF3E4E31), size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        lang == 'Vietnamese'
+                            ? 'Tip: Vietnamese is a tonal language. Pay attention to the diacritical marks!'
+                            : 'Tip: Try to match the natural rhythm and stress of the phrase.',
+                        style: const TextStyle(fontSize: 13, color: Color(0xFF3E4E31)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
     );
-
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _isPlayingAudio = false;
-          _audioPlayingText = '';
-        });
-      }
-    });
   }
 
   void _startMicRecording(bool isSource) {
-    setState(() {
-      if (isSource) {
-        _isSourceListening = !_isSourceListening;
-        _isTargetListening = false;
-      } else {
-        _isTargetListening = !_isTargetListening;
-        _isSourceListening = false;
-      }
-    });
+    final lang = isSource ? _sourceLang : _targetLang;
+    final samples = (lang == 'English')
+        ? [
+            'How much is this?',
+            'Can you speak slower?',
+            'Where is the nearest hospital?',
+            'Can you explain it again?',
+            'I would like to buy coffee',
+          ]
+        : [
+            'Cái này giá bao nhiêu?',
+            'Bạn có thể nói chậm lại không?',
+            'Bệnh viện gần nhất ở đâu?',
+            'Bạn có thể giải thích lại không?',
+            'Tôi muốn mua cà phê',
+          ];
 
-    final activeListening = isSource ? _isSourceListening : _isTargetListening;
-
-    if (activeListening) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFFF8EDED),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(22),
+          height: 380,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.mic, color: Colors.redAccent),
-              SizedBox(width: 10),
-              Text('🎙️ Microphone active... Listening to speech...'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent.withAlpha(40),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.mic, color: Colors.redAccent, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Voice Recognition ($lang)',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF3E4E31),
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                '🎙️ Tap any spoken phrase below or speak into microphone:',
+                style: TextStyle(fontSize: 14, color: Colors.black54),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: samples.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final phrase = samples[index];
+                    return InkWell(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        setState(() {
+                          if (isSource) {
+                            _sourceController.text = phrase;
+                            _onSourceTextChanged(phrase);
+                          } else {
+                            _translatedText = phrase;
+                          }
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('✨ Voice recognized: "$phrase"'),
+                            duration: const Duration(seconds: 1),
+                            backgroundColor: const Color(0xFF3E4E31),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFF3E4E31).withAlpha(40)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.graphic_eq, color: Color(0xFF3E4E31), size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                phrase,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ),
+                            const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.black38),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ],
           ),
-          duration: Duration(seconds: 3),
-          backgroundColor: Color(0xFF3E4E31),
-        ),
-      );
-
-      // Simulate voice input recognition after 2.5 seconds
-      Future.delayed(const Duration(milliseconds: 2500), () {
-        if (mounted && (isSource ? _isSourceListening : _isTargetListening)) {
-          setState(() {
-            if (isSource) {
-              _isSourceListening = false;
-              const simulatedVoice = 'how much is this';
-              _sourceController.text = simulatedVoice;
-              _onSourceTextChanged(simulatedVoice);
-            } else {
-              _isTargetListening = false;
-              _translatedText = 'Cái này giá bao nhiêu tiền vậy cô?';
-            }
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✨ Voice recognized successfully!'),
-              duration: Duration(seconds: 1),
-              backgroundColor: Color(0xFF3E4E31),
-            ),
-          );
-        }
-      });
-    }
+        );
+      },
+    );
   }
 
   void _showHistorySheet() {
@@ -323,29 +495,6 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
               ),
             ),
 
-            // Audio Playing feedback banner if active
-            if (_isPlayingAudio)
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: primaryGreen,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.volume_up, color: Colors.amber, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _audioPlayingText,
-                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
 
             Expanded(
               child: SingleChildScrollView(
@@ -384,6 +533,12 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                           hintStyle: TextStyle(color: Colors.black38, fontSize: 15),
                           prefixIcon: Icon(Icons.search, color: Colors.black54),
                           border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          filled: false,
+                          fillColor: Colors.transparent,
                           contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                         ),
                       ),
@@ -423,7 +578,7 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
-                        border: _isSourceListening ? Border.all(color: Colors.redAccent, width: 2) : null,
+                        border: null,
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withAlpha(8),
@@ -446,13 +601,21 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                                     onChanged: _onSourceTextChanged,
                                     maxLines: 4,
                                     style: const TextStyle(fontSize: 18, color: Colors.black87),
-                                    decoration: InputDecoration(
-                                      hintText: _isSourceListening ? '🎙️ Listening... Speak now...' : 'Enter text here',
+                                    decoration: const InputDecoration(
+                                      hintText: 'Enter text here',
                                       hintStyle: TextStyle(
-                                        color: _isSourceListening ? Colors.redAccent : Colors.black26,
+                                        color: Colors.black26,
                                         fontSize: 18,
                                       ),
                                       border: InputBorder.none,
+                                      enabledBorder: InputBorder.none,
+                                      focusedBorder: InputBorder.none,
+                                      errorBorder: InputBorder.none,
+                                      disabledBorder: InputBorder.none,
+                                      filled: false,
+                                      fillColor: Colors.transparent,
+                                      contentPadding: EdgeInsets.zero,
+                                      isDense: true,
                                     ),
                                   ),
                                 ),
@@ -514,10 +677,10 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                               ),
                               const SizedBox(width: 14),
                               _buildActionIcon(
-                                _isSourceListening ? Icons.mic : Icons.mic_none_outlined,
+                                Icons.mic_none_outlined,
                                 'Speech to Text',
                                 () => _startMicRecording(true),
-                                _isSourceListening,
+                                false,
                               ),
                             ],
                           ),
@@ -534,7 +697,7 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
-                        border: _isTargetListening ? Border.all(color: Colors.redAccent, width: 2) : null,
+                        border: null,
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withAlpha(8),
@@ -619,10 +782,10 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                               ),
                               const SizedBox(width: 14),
                               _buildActionIcon(
-                                _isTargetListening ? Icons.mic : Icons.mic_none_outlined,
+                                Icons.mic_none_outlined,
                                 'Voice Input',
                                 () => _startMicRecording(false),
-                                _isTargetListening,
+                                false,
                               ),
                             ],
                           ),

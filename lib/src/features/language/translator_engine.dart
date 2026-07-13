@@ -378,7 +378,7 @@ class TranslatorEngine {
     'bạn có nói tiếng anh không': 'Do you speak English?',
     'i do not understand': 'Tôi không hiểu',
     'i dont understand': 'Tôi không hiểu',
-    'tôi không hiểu': 'I do not understand',
+    'tôi không hiểu': 'I don\'t understand',
     'can you speak slower?': 'Bạn có thể nói chậm lại không?',
     'can you speak slower': 'Bạn có thể nói chậm lại không?',
     'speak slower': 'Nói chậm lại',
@@ -401,6 +401,41 @@ class TranslatorEngine {
     'can you recommend a good restaurant': 'Bạn có thể giới thiệu một nhà hàng ngon không?',
     'bạn có thể giới thiệu nhà hàng ngon không': 'Can you recommend a good restaurant?',
     'nhà hàng ngon ở đâu': 'Where is a good restaurant?',
+
+    // Knowledge & Understanding (Vietnamese → English)
+    'tôi không biết': 'I don\'t know',
+    'tôi không biết địa chỉ': 'I don\'t know the address',
+    'tôi không biết đường': 'I don\'t know the way',
+    'tôi không biết nói tiếng anh': 'I can\'t speak English',
+    'tôi không biết nói tiếng việt': 'I can\'t speak Vietnamese',
+    'tôi biết': 'I know',
+    'tôi biết rồi': 'I know already / I understand',
+    'tôi hiểu rồi': 'I understand now',
+    'tôi không hiểu bạn nói gì': 'I don\'t understand what you are saying',
+    'bạn có hiểu không': 'Do you understand?',
+    'bạn hiểu không': 'Do you understand?',
+    'i don\'t know': 'Tôi không biết',
+    'i don\'t know the address': 'Tôi không biết địa chỉ',
+    'i don\'t know the way': 'Tôi không biết đường',
+    'i can\'t speak vietnamese': 'Tôi không biết nói tiếng Việt',
+    'i can\'t speak english': 'Tôi không biết nói tiếng Anh',
+    'do you understand': 'Bạn có hiểu không?',
+    'i understand': 'Tôi hiểu rồi',
+
+    // Additional common travel phrases (Vietnamese → English)
+    'tôi đang tìm': 'I am looking for',
+    'tôi cần giúp đỡ': 'I need help',
+    'tôi muốn hỏi': 'I would like to ask',
+    'cho tôi hỏi': 'Excuse me, may I ask',
+    'làm ơn': 'Please',
+    'không sao': 'It\'s okay / No problem',
+    'được': 'Okay / Yes',
+    'không được': 'Not okay / Cannot',
+    'tôi thích': 'I like',
+    'tôi không thích': 'I don\'t like',
+    'đẹp quá': 'So beautiful!',
+    'tốt lắm': 'Very good!',
+    'bao lâu': 'How long?',
   };
 
   // Data Science Vector Space Model (VSM) Corpus for Semantic Similarity Matching
@@ -480,6 +515,18 @@ class TranslatorEngine {
     {'en': 'thank you very much for your help', 'vi': 'Cảm ơn bạn rất nhiều vì đã giúp đỡ'},
     {'en': 'you are welcome no problem', 'vi': 'Không có chi, không vấn đề gì'},
     {'en': 'have you eaten anything yet', 'vi': 'Bạn đã ăn cơm chưa?'},
+    // Knowledge & Understanding
+    {'en': 'i do not know the address', 'vi': 'Tôi không biết địa chỉ'},
+    {'en': 'i dont know the address', 'vi': 'Tôi không biết địa chỉ'},
+    {'en': 'i do not know the way', 'vi': 'Tôi không biết đường'},
+    {'en': 'i dont know the way', 'vi': 'Tôi không biết đường'},
+    {'en': 'i do not know', 'vi': 'Tôi không biết'},
+    {'en': 'i dont know', 'vi': 'Tôi không biết'},
+    {'en': 'i cannot speak english', 'vi': 'Tôi không biết nói tiếng Anh'},
+    {'en': 'i cannot speak vietnamese', 'vi': 'Tôi không biết nói tiếng Việt'},
+    {'en': 'do you understand me', 'vi': 'Bạn có hiểu tôi nói không?'},
+    {'en': 'i know already', 'vi': 'Tôi biết rồi'},
+    {'en': 'i understand now', 'vi': 'Tôi hiểu rồi'},
   ];
 
   // Data Science: Transform text into word frequencies and character 3-gram feature vectors
@@ -791,6 +838,32 @@ class TranslatorEngine {
     // Time & Scheduling
     if (clean.contains('mấy giờ rồi') || clean.contains('bây giờ là mấy giờ')) {
       return 'What time is it?';
+    }
+
+    // Knowledge & Understanding Patterns (MUST be before Communication patterns)
+    if (clean.contains('không biết địa chỉ')) {
+      return 'I don\'t know the address';
+    }
+    if (clean.contains('không biết đường')) {
+      return 'I don\'t know the way';
+    }
+    if (clean.contains('không biết nói tiếng anh')) {
+      return 'I can\'t speak English';
+    }
+    if (clean.contains('không biết nói tiếng việt')) {
+      return 'I can\'t speak Vietnamese';
+    }
+    if (clean.contains('không biết') && !clean.contains('không biết nói')) {
+      return 'I don\'t know';
+    }
+    if (clean.contains('không hiểu') && clean.contains('bạn nói')) {
+      return 'I don\'t understand what you are saying';
+    }
+    if (clean.contains('không hiểu')) {
+      return 'I don\'t understand';
+    }
+    if (clean.contains('hiểu rồi') || clean.contains('biết rồi')) {
+      return 'I understand / I know already';
     }
 
     // Communication & Explaining Patterns
