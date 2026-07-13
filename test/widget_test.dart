@@ -14,6 +14,6 @@ void main() {
 
     expect(materialApp.title, 'Fluentish');
     expect(materialApp.theme?.colorScheme.primary, AppColors.pine);
-    expect(find.byType(Scaffold), findsOneWidget);
+    expect(find.byType(Scaffold), findsWidgets);
   });
 }

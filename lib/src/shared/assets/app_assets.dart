@@ -10,4 +10,8 @@ class AppAssets {
   static const friendMinh = 'assets/images/friends/minh.png';
   static const friendPhat = 'assets/images/friends/phat.png';
   static const friendVinhTien = 'assets/images/friends/vinhtien.png';
+
+  static const friendDongMinh = friendMinh;
+  static const friendTanPhat = friendPhat;
+  static const friendVinhTienPin = friendVinhTien;
 }
