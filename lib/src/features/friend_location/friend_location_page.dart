@@ -1,9 +1,11 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart' as fm;
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart' as ll;
 
 import '../../shared/shared.dart';
 import 'google_maps_api_status.dart';
@@ -18,6 +20,7 @@ class FriendLocationPage extends StatefulWidget {
 
 class _FriendLocationPageState extends State<FriendLocationPage> {
   static const _districtOne = LatLng(10.7769, 106.7009);
+  static const _districtOneOsm = ll.LatLng(10.7769, 106.7009);
   static const _friends = [
     _LocationFriend(
       avatarAsset: AppAssets.friendVinhTien,
@@ -62,6 +65,7 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
   ];
 
   GoogleMapController? _mapController;
+  final _osmMapController = fm.MapController();
   _LocationFriend? _selectedFriend = _friends.first;
   bool _myLocationEnabled = false;
   String? _locationMessage;
@@ -114,20 +118,31 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
       _locationMessage = 'Using your current location.';
     });
 
-    await _mapController?.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(target: target, zoom: 15),
-      ),
-    );
+    if (hasGoogleMapsApiKey) {
+      await _mapController?.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: target, zoom: 15),
+        ),
+      );
+      return;
+    }
+
+    _osmMapController.move(ll.LatLng(target.latitude, target.longitude), 15);
   }
 
   void _selectFriend(_LocationFriend friend) {
     setState(() => _selectedFriend = friend);
-    _mapController?.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(target: friend.position, zoom: 15.5),
-      ),
-    );
+
+    if (hasGoogleMapsApiKey) {
+      _mapController?.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: friend.position, zoom: 15.5),
+        ),
+      );
+      return;
+    }
+
+    _osmMapController.move(friend.osmPosition, 15.5);
   }
 
   void _dismissFriend() {
@@ -201,7 +216,7 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
                   Expanded(
                     child: _MapShell(
                       friends: _friends,
-                      hasRealMap: hasGoogleMapsApiKey,
+                      hasGoogleMap: hasGoogleMapsApiKey,
                       locationMessage: _locationMessage,
                       markers: _markers,
                       myLocationEnabled: _myLocationEnabled,
@@ -210,6 +225,7 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
                       onFriendDismissed: _dismissFriend,
                       onFriendSelected: _selectFriend,
                       onMapCreated: (controller) => _mapController = controller,
+                      osmMapController: _osmMapController,
                       onRouteTap: _openSelectedRoute,
                       onQuickActionTap: _showAction,
                       selectedEta: _selectedEta,
@@ -246,6 +262,8 @@ class _LocationFriend {
   final String? pinAvatarAsset;
   final LatLng position;
   final Offset previewOffset;
+
+  ll.LatLng get osmPosition => ll.LatLng(position.latitude, position.longitude);
 
   double get markerHue {
     if (color == AppColors.pine) {
@@ -332,7 +350,7 @@ class _LocationChip extends StatelessWidget {
 class _MapShell extends StatelessWidget {
   const _MapShell({
     required this.friends,
-    required this.hasRealMap,
+    required this.hasGoogleMap,
     required this.locationMessage,
     required this.markers,
     required this.myLocationEnabled,
@@ -341,6 +359,7 @@ class _MapShell extends StatelessWidget {
     required this.onFriendDismissed,
     required this.onFriendSelected,
     required this.onMapCreated,
+    required this.osmMapController,
     required this.onQuickActionTap,
     required this.onRouteTap,
     required this.selectedEta,
@@ -348,7 +367,7 @@ class _MapShell extends StatelessWidget {
   });
 
   final List<_LocationFriend> friends;
-  final bool hasRealMap;
+  final bool hasGoogleMap;
   final String? locationMessage;
   final Set<Marker> markers;
   final bool myLocationEnabled;
@@ -357,6 +376,7 @@ class _MapShell extends StatelessWidget {
   final VoidCallback onFriendDismissed;
   final ValueChanged<_LocationFriend> onFriendSelected;
   final ValueChanged<GoogleMapController> onMapCreated;
+  final fm.MapController osmMapController;
   final ValueChanged<String> onQuickActionTap;
   final VoidCallback onRouteTap;
   final String selectedEta;
@@ -389,13 +409,14 @@ class _MapShell extends StatelessWidget {
             return Stack(
               children: [
                 Positioned.fill(
-                  child: hasRealMap
+                  child: hasGoogleMap
                       ? _GoogleMapSurface(
                           markers: markers,
                           myLocationEnabled: myLocationEnabled,
                           onMapCreated: onMapCreated,
                         )
-                      : _MapPreview(
+                      : _OpenStreetMapSurface(
+                          controller: osmMapController,
                           friends: friends,
                           onFriendSelected: onFriendSelected,
                           selectedFriend: selectedFriend,
@@ -405,7 +426,7 @@ class _MapShell extends StatelessWidget {
                   left: AppSpacing.lg,
                   top: AppSpacing.lg,
                   child: _MapStatusPill(
-                    label: hasRealMap ? 'Google Maps' : 'Map preview',
+                    label: hasGoogleMap ? 'Google Maps' : 'OpenStreetMap',
                   ),
                 ),
                 Positioned(
@@ -422,11 +443,17 @@ class _MapShell extends StatelessWidget {
                   top: 74,
                   child: _LocationChip(label: '${friends.length} nearby'),
                 ),
+                if (!hasGoogleMap)
+                  const Positioned(
+                    left: AppSpacing.lg,
+                    top: 118,
+                    child: _OsmAttributionBadge(),
+                  ),
                 if (locationMessage != null)
                   Positioned(
                     left: AppSpacing.lg,
                     right: AppSpacing.lg,
-                    top: 118,
+                    top: hasGoogleMap ? 118 : 148,
                     child: _LocationMessage(message: locationMessage!),
                   ),
                 if (selectedFriend != null)
@@ -491,35 +518,82 @@ class _GoogleMapSurface extends StatelessWidget {
   }
 }
 
-class _MapPreview extends StatelessWidget {
-  const _MapPreview({
+class _OpenStreetMapSurface extends StatelessWidget {
+  const _OpenStreetMapSurface({
+    required this.controller,
     required this.friends,
     required this.onFriendSelected,
     required this.selectedFriend,
   });
 
+  final fm.MapController controller;
   final List<_LocationFriend> friends;
   final ValueChanged<_LocationFriend> onFriendSelected;
   final _LocationFriend? selectedFriend;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
+    return fm.FlutterMap(
+      mapController: controller,
+      options: const fm.MapOptions(
+        initialCenter: _FriendLocationPageState._districtOneOsm,
+        initialZoom: 14.4,
+        maxZoom: 18,
+        minZoom: 12,
+      ),
       children: [
-        const _MapGrid(),
-        for (final friend in friends)
-          Align(
-            alignment: Alignment(
-              friend.previewOffset.dx * 2 - 1,
-              friend.previewOffset.dy * 2 - 1,
-            ),
-            child: _FriendMapPin(
-              friend: friend,
-              isSelected: friend == selectedFriend,
-              onTap: () => onFriendSelected(friend),
-            ),
-          ),
+        fm.TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.fluentish.app',
+        ),
+        fm.MarkerLayer(
+          markers: [
+            for (final friend in friends)
+              fm.Marker(
+                point: friend.osmPosition,
+                height: 96,
+                width: 104,
+                child: _FriendMapPin(
+                  friend: friend,
+                  isSelected: friend == selectedFriend,
+                  onTap: () => onFriendSelected(friend),
+                ),
+              ),
+          ],
+        ),
       ],
+    );
+  }
+}
+
+class _OsmAttributionBadge extends StatelessWidget {
+  const _OsmAttributionBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.cardBorder),
+        borderRadius: BorderRadius.circular(10),
+        color: Colors.white.withValues(alpha: 0.72),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xs,
+          vertical: AppSpacing.xxs,
+        ),
+        child: Text(
+          'OpenStreetMap contributors',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.inter(
+            color: AppColors.pine,
+            fontSize: 9,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -694,61 +768,6 @@ class _FriendMapPin extends StatelessWidget {
       ),
     );
   }
-}
-
-class _MapGrid extends StatelessWidget {
-  const _MapGrid();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _MapGridPainter(),
-      child: const SizedBox.expand(),
-    );
-  }
-}
-
-class _MapGridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final roadPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.42)
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 18;
-    final thinRoadPaint = Paint()
-      ..color = AppColors.pine.withValues(alpha: 0.10)
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 5;
-
-    canvas.drawLine(
-      Offset(-20, size.height * 0.28),
-      Offset(size.width + 20, size.height * 0.12),
-      roadPaint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.16, -20),
-      Offset(size.width * 0.82, size.height + 20),
-      roadPaint,
-    );
-    canvas.drawLine(
-      Offset(-20, size.height * 0.72),
-      Offset(size.width + 20, size.height * 0.54),
-      roadPaint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.30, -20),
-      Offset(size.width * 0.42, size.height + 20),
-      thinRoadPaint,
-    );
-    canvas.drawLine(
-      Offset(-20, size.height * 0.42),
-      Offset(size.width + 20, size.height * 0.80),
-      thinRoadPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _FriendActionBubble extends StatelessWidget {

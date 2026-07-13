@@ -23,7 +23,8 @@ void main() {
 
     expect(find.text('Friend Location'), findsOneWidget);
     expect(find.text('Nearby friends'), findsOneWidget);
-    expect(find.text('Map preview'), findsOneWidget);
+    expect(find.text('OpenStreetMap'), findsOneWidget);
+    expect(find.text('OpenStreetMap contributors'), findsOneWidget);
     expect(find.text('District 1'), findsOneWidget);
     expect(find.text('4 nearby'), findsOneWidget);
     expect(find.text('Vĩnh Tiến'), findsWidgets);
