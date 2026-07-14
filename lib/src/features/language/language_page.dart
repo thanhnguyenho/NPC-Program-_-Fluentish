@@ -94,6 +94,8 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
       });
       _historyDebounceTimer?.cancel();
       return;
+    }
+
     // Auto-detect direction if clearly Vietnamese or English
     if (_looksLikeVietnamese(rawText)) {
       _sourceLang = 'Vietnamese';
