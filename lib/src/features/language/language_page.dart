@@ -54,6 +54,19 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
     super.dispose();
   }
 
+  bool _looksLikeVietnamese(String text) {
+    final lower = text.toLowerCase().trim();
+    const vnChars = 'ăâđêôơưáàảãạấầẩẫậéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ';
+    for (int i = 0; i < lower.length; i++) {
+      if (vnChars.contains(lower[i])) return true;
+    }
+    const vnPrefixes = ['xin ', 'xin', 'hôm nay', 'bạn', 'tôi', 'chúng ta', 'làm sao', 'cái này', 'ở đâu', 'ăn gì', 'bao nhiêu', 'chào', 'cảm ơn'];
+    for (final w in vnPrefixes) {
+      if (lower.startsWith(w) || lower.contains(' $w ')) return true;
+    }
+    return false;
+  }
+
   void _onSourceTextChanged(String text) {
     final rawText = text;
     if (rawText.trim().isEmpty) {
@@ -64,6 +77,15 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
       return;
     }
     
+    // Auto-detect direction if clearly Vietnamese or English
+    if (_looksLikeVietnamese(rawText)) {
+      _sourceLang = 'Vietnamese';
+      _targetLang = 'English';
+    } else if (rawText.toLowerCase().startsWith(RegExp(r'^(how |what |where |can you |may i |have you |hello|thanks|good|check )'))) {
+      _sourceLang = 'English';
+      _targetLang = 'Vietnamese';
+    }
+
     // Translate immediately for live feedback
     setState(() {
       _translatedText = TranslatorEngine.translateSync(rawText, _sourceLang, _targetLang);
@@ -595,12 +617,18 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                                     controller: _sourceController,
                                     onChanged: _onSourceTextChanged,
                                     maxLines: 4,
-                                    style: const TextStyle(fontSize: 18, color: Colors.black87),
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      height: 1.4,
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xFF2E3825),
+                                    ),
                                     decoration: const InputDecoration(
                                       hintText: 'Enter text here',
                                       hintStyle: TextStyle(
                                         color: Colors.black26,
                                         fontSize: 18,
+                                        height: 1.4,
                                       ),
                                       border: InputBorder.none,
                                       enabledBorder: InputBorder.none,
@@ -711,11 +739,12 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    _translatedText.isEmpty ? 'Xin chào' : _translatedText,
+                                    _translatedText.isEmpty ? 'Here is your translation...' : _translatedText,
                                     style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: _translatedText.isEmpty ? FontWeight.normal : FontWeight.w600,
-                                      color: _translatedText.isEmpty ? Colors.black26 : primaryGreen,
+                                      fontSize: 18,
+                                      height: 1.4,
+                                      fontWeight: _translatedText.isEmpty ? FontWeight.w400 : FontWeight.w600,
+                                      color: _translatedText.isEmpty ? Colors.black38 : const Color(0xFF3E4E31),
                                     ),
                                   ),
                                 ),
