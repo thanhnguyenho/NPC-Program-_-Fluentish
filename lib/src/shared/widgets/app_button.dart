@@ -16,6 +16,8 @@ class AppButton extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.expand = true,
+    this.backgroundColor,
+    this.foregroundColor,
   }) : variant = AppButtonVariant.filled;
 
   const AppButton.outlined({
@@ -24,7 +26,9 @@ class AppButton extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.expand = true,
-  }) : variant = AppButtonVariant.outlined;
+  })  : variant = AppButtonVariant.outlined,
+        backgroundColor = null,
+        foregroundColor = null;
 
   final bool expand;
   final IconData? icon;
@@ -32,9 +36,16 @@ class AppButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final AppButtonVariant variant;
 
+  /// Optional colors (only for filled button)
+  final Color? backgroundColor;
+  final Color? foregroundColor;
+
   @override
   Widget build(BuildContext context) {
-    final child = _ButtonChild(label: label, icon: icon);
+    final child = _ButtonChild(
+      label: label,
+      icon: icon,
+    );
 
     return SizedBox(
       height: AppSpacing.buttonHeight,
@@ -43,9 +54,12 @@ class AppButton extends StatelessWidget {
         AppButtonVariant.filled => ElevatedButton(
             onPressed: onPressed,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.blush,
-              foregroundColor: AppColors.pineMuted,
+              backgroundColor: backgroundColor ?? AppColors.blush,
+              foregroundColor: foregroundColor ?? AppColors.pineMuted,
               textStyle: AppTextStyles.button,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+              ),
             ),
             child: child,
           ),
@@ -53,8 +67,13 @@ class AppButton extends StatelessWidget {
             onPressed: onPressed,
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.blush,
-              side: const BorderSide(color: AppColors.blush),
+              side: const BorderSide(
+                color: AppColors.blush,
+              ),
               textStyle: AppTextStyles.button,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+              ),
             ),
             child: child,
           ),
@@ -75,14 +94,20 @@ class _ButtonChild extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (icon == null) {
-      return Text(label, textAlign: TextAlign.center);
+      return Text(
+        label,
+        textAlign: TextAlign.center,
+      );
     }
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 20),
+        Icon(
+          icon,
+          size: 20,
+        ),
         const SizedBox(width: AppSpacing.xs),
         Flexible(
           child: Text(
