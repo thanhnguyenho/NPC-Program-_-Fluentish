@@ -6,3 +6,6 @@ export 'theme/app_theme.dart';
 export 'widgets/app_bottom_nav.dart';
 export 'widgets/app_button.dart';
 export 'widgets/app_card.dart';
+export 'widgets/app_text_field.dart';
+export 'widgets/app_text_label.dart';
+export 'widgets/app_stroke_text.dart';
