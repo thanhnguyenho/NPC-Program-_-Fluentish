@@ -18,32 +18,51 @@ class LanguageTranslatorScreen extends StatefulWidget {
   const LanguageTranslatorScreen({super.key});
 
   @override
-  State<LanguageTranslatorScreen> createState() => _LanguageTranslatorScreenState();
+  State<LanguageTranslatorScreen> createState() =>
+      _LanguageTranslatorScreenState();
 }
 
 class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _sourceController = TextEditingController();
-  
+
   String _sourceLang = 'English';
   String _targetLang = 'Vietnamese';
   String _translatedText = 'Xin chào';
-  
+
   bool _isSourceStarred = false;
   bool _isTargetStarred = false;
-  
-
 
   // Debounce timer: only record to history AFTER user stops typing for 800ms
   Timer? _historyDebounceTimer;
 
   // Clean initial history & favourites
   final List<Map<String, String>> _historyList = [
-    {'source': 'How much is this?', 'target': 'Cái này giá bao nhiêu?', 'time': 'Just now'},
-    {'source': 'Can you speak slower?', 'target': 'Bạn có thể nói chậm lại không?', 'time': '2 mins ago'},
-    {'source': 'Where is the nearest hospital?', 'target': 'Bệnh viện gần nhất ở đâu?', 'time': '10 mins ago'},
-    {'source': 'Thank you very much', 'target': 'Xin cảm ơn rất nhiều', 'time': '1 hour ago'},
-    {'source': 'Can you explain it again?', 'target': 'Bạn có thể giải thích lại không?', 'time': 'Yesterday'},
+    {
+      'source': 'How much is this?',
+      'target': 'Cái này giá bao nhiêu?',
+      'time': 'Just now'
+    },
+    {
+      'source': 'Can you speak slower?',
+      'target': 'Bạn có thể nói chậm lại không?',
+      'time': '2 mins ago'
+    },
+    {
+      'source': 'Where is the nearest hospital?',
+      'target': 'Bệnh viện gần nhất ở đâu?',
+      'time': '10 mins ago'
+    },
+    {
+      'source': 'Thank you very much',
+      'target': 'Xin cảm ơn rất nhiều',
+      'time': '1 hour ago'
+    },
+    {
+      'source': 'Can you explain it again?',
+      'target': 'Bạn có thể giải thích lại không?',
+      'time': 'Yesterday'
+    },
   ];
 
   @override
@@ -63,10 +82,11 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
       _historyDebounceTimer?.cancel();
       return;
     }
-    
+
     // Translate immediately for live feedback
     setState(() {
-      _translatedText = TranslatorEngine.translateSync(rawText, _sourceLang, _targetLang);
+      _translatedText =
+          TranslatorEngine.translateSync(rawText, _sourceLang, _targetLang);
     });
 
     // Debounce history recording: only save AFTER user stops typing for 800ms
@@ -75,13 +95,15 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
       if (!mounted) return;
       final cleanSrc = rawText.trim();
       final translated = _translatedText;
-      if (cleanSrc.length >= 3 && translated.isNotEmpty && translated != cleanSrc) {
+      if (cleanSrc.length >= 3 &&
+          translated.isNotEmpty &&
+          translated != cleanSrc) {
         setState(() {
           // Remove any existing "Just now" entry for similar text to avoid duplicates
           _historyList.removeWhere((item) =>
-            item['time'] == 'Just now' &&
-            (cleanSrc.contains(item['source']!) || item['source']!.contains(cleanSrc))
-          );
+              item['time'] == 'Just now' &&
+              (cleanSrc.contains(item['source']!) ||
+                  item['source']!.contains(cleanSrc)));
           _historyList.insert(0, {
             'source': cleanSrc,
             'target': translated,
@@ -91,7 +113,6 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
       }
     });
   }
-
 
   void _swapLanguages() {
     setState(() {
@@ -195,7 +216,8 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                           color: const Color(0xFF3E4E31).withAlpha(30),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.volume_up, color: Color(0xFF3E4E31), size: 26),
+                        child: const Icon(Icons.volume_up,
+                            color: Color(0xFF3E4E31), size: 26),
                       ),
                       const SizedBox(width: 12),
                       Text(
@@ -222,7 +244,8 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF3E4E31).withAlpha(40)),
+                  border:
+                      Border.all(color: const Color(0xFF3E4E31).withAlpha(40)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,14 +281,16 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.tips_and_updates_outlined, color: Color(0xFF3E4E31), size: 20),
+                    const Icon(Icons.tips_and_updates_outlined,
+                        color: Color(0xFF3E4E31), size: 20),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         lang == 'Vietnamese'
                             ? 'Tip: Vietnamese is a tonal language. Pay attention to the diacritical marks!'
                             : 'Tip: Try to match the natural rhythm and stress of the phrase.',
-                        style: const TextStyle(fontSize: 13, color: Color(0xFF3E4E31)),
+                        style: const TextStyle(
+                            fontSize: 13, color: Color(0xFF3E4E31)),
                       ),
                     ),
                   ],
@@ -321,7 +346,8 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                           color: Colors.redAccent.withAlpha(40),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.mic, color: Colors.redAccent, size: 24),
+                        child: const Icon(Icons.mic,
+                            color: Colors.redAccent, size: 24),
                       ),
                       const SizedBox(width: 12),
                       Text(
@@ -373,15 +399,18 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                       },
                       borderRadius: BorderRadius.circular(14),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 14),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFF3E4E31).withAlpha(40)),
+                          border: Border.all(
+                              color: const Color(0xFF3E4E31).withAlpha(40)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.graphic_eq, color: Color(0xFF3E4E31), size: 20),
+                            const Icon(Icons.graphic_eq,
+                                color: Color(0xFF3E4E31), size: 20),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
@@ -393,7 +422,8 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                                 ),
                               ),
                             ),
-                            const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.black38),
+                            const Icon(Icons.arrow_forward_ios,
+                                size: 14, color: Colors.black38),
                           ],
                         ),
                       ),
@@ -427,7 +457,10 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                 children: [
                   const Text(
                     '🕒 Translation History & Favourites',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF3E4E31)),
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF3E4E31)),
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -445,11 +478,18 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                       color: Colors.white,
                       elevation: 1,
                       margin: const EdgeInsets.symmetric(vertical: 6),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       child: ListTile(
-                        title: Text(item['source']!, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(item['target']!, style: const TextStyle(color: Color(0xFF3E4E31), fontSize: 15)),
-                        trailing: Text(item['time']!, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                        title: Text(item['source']!,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text(item['target']!,
+                            style: const TextStyle(
+                                color: Color(0xFF3E4E31), fontSize: 15)),
+                        trailing: Text(item['time']!,
+                            style: const TextStyle(
+                                color: Colors.grey, fontSize: 12)),
                         onTap: () {
                           setState(() {
                             _sourceController.text = item['source']!;
@@ -457,7 +497,9 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                           });
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Loaded "${item['source']}" from history!')),
+                            SnackBar(
+                                content: Text(
+                                    'Loaded "${item['source']}" from history!')),
                           );
                         },
                       ),
@@ -485,7 +527,8 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
           children: [
             // Top App Bar / Title
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -503,12 +546,12 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                       color: Colors.white.withAlpha(150),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.share_outlined, size: 20, color: Colors.black87),
+                    child: const Icon(Icons.share_outlined,
+                        size: 20, color: Colors.black87),
                   )
                 ],
               ),
             ),
-
 
             Expanded(
               child: SingleChildScrollView(
@@ -527,7 +570,9 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                             _onSourceTextChanged(val);
                           });
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('🔍 Searching & translating: "$val"')),
+                            SnackBar(
+                                content:
+                                    Text('🔍 Searching & translating: "$val"')),
                           );
                         }
                       },
@@ -546,10 +591,11 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _buildLangPill(_sourceLang),
-                        
+
                         IconButton(
                           onPressed: _swapLanguages,
-                          icon: const Icon(Icons.swap_horiz, size: 28, color: primaryGreen),
+                          icon: const Icon(Icons.swap_horiz,
+                              size: 28, color: primaryGreen),
                           tooltip: 'Swap Languages',
                         ),
 
@@ -558,7 +604,8 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                         // History Icon (Leader Approved placement)
                         IconButton(
                           onPressed: _showHistorySheet,
-                          icon: const Icon(Icons.history, size: 26, color: Colors.black87),
+                          icon: const Icon(Icons.history,
+                              size: 26, color: Colors.black87),
                           tooltip: 'View History & Favourites',
                         ),
                       ],
@@ -595,7 +642,8 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                                     controller: _sourceController,
                                     onChanged: _onSourceTextChanged,
                                     maxLines: 4,
-                                    style: const TextStyle(fontSize: 18, color: Colors.black87),
+                                    style: const TextStyle(
+                                        fontSize: 18, color: Colors.black87),
                                     decoration: const InputDecoration(
                                       hintText: 'Enter text here',
                                       hintStyle: TextStyle(
@@ -622,7 +670,8 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                                         onTap: _clearSourceText,
                                         child: const Padding(
                                           padding: EdgeInsets.all(4.0),
-                                          child: Icon(Icons.close, color: Colors.black54, size: 22),
+                                          child: Icon(Icons.close,
+                                              color: Colors.black54, size: 22),
                                         ),
                                       ),
                                     const SizedBox(width: 8),
@@ -631,19 +680,25 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                                         setState(() {
                                           _isSourceStarred = !_isSourceStarred;
                                         });
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
                                           SnackBar(
                                             content: Text(_isSourceStarred
                                                 ? '⭐ Starred source: "${_sourceController.text}"'
                                                 : 'Unstarred source phrase'),
-                                            duration: const Duration(seconds: 1),
+                                            duration:
+                                                const Duration(seconds: 1),
                                             backgroundColor: primaryGreen,
                                           ),
                                         );
                                       },
                                       child: Icon(
-                                        _isSourceStarred ? Icons.star : Icons.star_border,
-                                        color: _isSourceStarred ? Colors.amber : Colors.black87,
+                                        _isSourceStarred
+                                            ? Icons.star
+                                            : Icons.star_border,
+                                        color: _isSourceStarred
+                                            ? Colors.amber
+                                            : Colors.black87,
                                         size: 26,
                                       ),
                                     ),
@@ -667,7 +722,8 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                               _buildActionIcon(
                                 Icons.volume_up_outlined,
                                 'Listen Pronunciation',
-                                () => _playAudioPronunciation(_sourceController.text, _sourceLang),
+                                () => _playAudioPronunciation(
+                                    _sourceController.text, _sourceLang),
                                 false,
                               ),
                               const SizedBox(width: 14),
@@ -711,23 +767,31 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    _translatedText.isEmpty ? 'Xin chào' : _translatedText,
+                                    _translatedText.isEmpty
+                                        ? 'Xin chào'
+                                        : _translatedText,
                                     style: TextStyle(
                                       fontSize: 20,
-                                      fontWeight: _translatedText.isEmpty ? FontWeight.normal : FontWeight.w600,
-                                      color: _translatedText.isEmpty ? Colors.black26 : primaryGreen,
+                                      fontWeight: _translatedText.isEmpty
+                                          ? FontWeight.normal
+                                          : FontWeight.w600,
+                                      color: _translatedText.isEmpty
+                                          ? Colors.black26
+                                          : primaryGreen,
                                     ),
                                   ),
                                 ),
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    if (_translatedText.isNotEmpty && _translatedText != 'Xin chào')
+                                    if (_translatedText.isNotEmpty &&
+                                        _translatedText != 'Xin chào')
                                       GestureDetector(
                                         onTap: _clearTargetText,
                                         child: const Padding(
                                           padding: EdgeInsets.all(4.0),
-                                          child: Icon(Icons.close, color: Colors.black54, size: 22),
+                                          child: Icon(Icons.close,
+                                              color: Colors.black54, size: 22),
                                         ),
                                       ),
                                     const SizedBox(width: 8),
@@ -736,19 +800,25 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                                         setState(() {
                                           _isTargetStarred = !_isTargetStarred;
                                         });
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
                                           SnackBar(
                                             content: Text(_isTargetStarred
                                                 ? '⭐ Saved "$_translatedText" to Favourites!'
                                                 : 'Removed from Favourites'),
-                                            duration: const Duration(seconds: 1),
+                                            duration:
+                                                const Duration(seconds: 1),
                                             backgroundColor: primaryGreen,
                                           ),
                                         );
                                       },
                                       child: Icon(
-                                        _isTargetStarred ? Icons.star : Icons.star_border,
-                                        color: _isTargetStarred ? Colors.amber : Colors.black87,
+                                        _isTargetStarred
+                                            ? Icons.star
+                                            : Icons.star_border,
+                                        color: _isTargetStarred
+                                            ? Colors.amber
+                                            : Colors.black87,
                                         size: 26,
                                       ),
                                     ),
@@ -765,14 +835,16 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                               _buildActionIcon(
                                 Icons.copy_outlined,
                                 'Copy Translation',
-                                () => _copyToClipboard(_translatedText, 'translation'),
+                                () => _copyToClipboard(
+                                    _translatedText, 'translation'),
                                 false,
                               ),
                               const SizedBox(width: 14),
                               _buildActionIcon(
                                 Icons.volume_up_outlined,
                                 'Listen Vietnamese Pronunciation',
-                                () => _playAudioPronunciation(_translatedText, _targetLang),
+                                () => _playAudioPronunciation(
+                                    _translatedText, _targetLang),
                                 false,
                               ),
                               const SizedBox(width: 14),
@@ -793,8 +865,6 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                 ),
               ),
             ),
-
-
           ],
         ),
       ),
@@ -826,14 +896,17 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
     );
   }
 
-  Widget _buildActionIcon(IconData icon, String tooltip, VoidCallback onTap, bool isHighlighted) {
+  Widget _buildActionIcon(
+      IconData icon, String tooltip, VoidCallback onTap, bool isHighlighted) {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(6.0),
         decoration: BoxDecoration(
-          color: isHighlighted ? Colors.redAccent.withAlpha(30) : Colors.transparent,
+          color: isHighlighted
+              ? Colors.redAccent.withAlpha(30)
+              : Colors.transparent,
           shape: BoxShape.circle,
         ),
         child: Icon(
@@ -844,8 +917,4 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
       ),
     );
   }
-
-
 }
-
-
