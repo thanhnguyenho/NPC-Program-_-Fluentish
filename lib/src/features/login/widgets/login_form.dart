@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:fluentish/src/features/forgot_password/forgot_password_page.dart';
+import 'package:fluentish/src/features/home/home_page.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
 class LoginForm extends StatefulWidget {
@@ -89,7 +90,10 @@ class _LoginFormState extends State<LoginForm> {
         AppButton(
           label: 'LOGIN',
           onPressed: () {
-            // TODO: Navigate to Home Page after authentication
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const HomePage()),
+            );
           },
         ),
       ],
