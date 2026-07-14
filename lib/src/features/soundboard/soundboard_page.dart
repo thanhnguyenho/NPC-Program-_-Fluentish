@@ -65,7 +65,7 @@ class _SoundboardPageState extends State<SoundboardPage> {
                     crossAxisCount: 2,
                     mainAxisSpacing: 16,
                     crossAxisSpacing: 16,
-                    childAspectRatio: 1.1,
+                    childAspectRatio: 1,
                   ),
                   itemBuilder: (context, index) {
                     final word = filteredWords[index];

@@ -12,7 +12,12 @@ import 'google_maps_api_status.dart';
 import 'maps_launcher.dart';
 
 class FriendLocationPage extends StatefulWidget {
-  const FriendLocationPage({super.key});
+  const FriendLocationPage({
+    super.key,
+    this.showBottomNavigation = true,
+  });
+
+  final bool showBottomNavigation;
 
   @override
   State<FriendLocationPage> createState() => _FriendLocationPageState();
@@ -255,10 +260,12 @@ class _FriendLocationPageState extends State<FriendLocationPage> {
 
     return Scaffold(
       backgroundColor: AppColors.blush,
-      bottomNavigationBar: const AppBottomNav(
-        currentIndex: 3,
-        onItemSelected: _ignoreNavTap,
-      ),
+      bottomNavigationBar: widget.showBottomNavigation
+          ? const AppBottomNav(
+              currentIndex: 3,
+              onItemSelected: _ignoreNavTap,
+            )
+          : null,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(
