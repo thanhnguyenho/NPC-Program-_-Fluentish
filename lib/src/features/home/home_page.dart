@@ -229,7 +229,7 @@ class _FavouritePhraseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      height: 140,
+      height: 148,
       padding: const EdgeInsets.all(AppSpacing.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
