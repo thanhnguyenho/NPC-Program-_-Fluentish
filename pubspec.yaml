@@ -20,6 +20,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/images/logo.gif
     - assets/images/fluentish_logo.png
     - assets/images/friends/
     - assets/google_fonts/
+    - assets/images/
