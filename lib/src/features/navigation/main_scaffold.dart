@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluentish/src/features/language/language_page.dart';
 import 'package:fluentish/src/features/community/community_page.dart';
+import 'package:fluentish/src/features/soundboard/soundboard_page.dart';
 
 class MainScaffold extends StatefulWidget {
   final int initialIndex;
@@ -33,7 +34,7 @@ class _MainScaffoldState extends State<MainScaffold> {
           // 1: Language Page (Figma Page 12)
           const LanguagePage(),
           // 2: Soundboard Placeholder
-          _buildPlaceholderPage('Soundboard & Pronunciation', Icons.volume_up_rounded),
+          const SoundboardPage(),
           // 3: Community Page (Figma Page 14)
           const CommunityPage(),
           // 4: Profile Placeholder

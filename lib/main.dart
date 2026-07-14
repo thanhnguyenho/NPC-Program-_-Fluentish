@@ -1,8 +1,20 @@
+// ignore: unused_import
+// import 'package:fluentish/debug_menu.dart';
 import 'package:flutter/material.dart';
-import 'src/shared/theme/app_theme.dart';
-import 'src/features/navigation/main_scaffold.dart';
 
-void main() {
+import 'package:fluentish/src/features/welcome/welcome_page.dart';
+import 'package:fluentish/src/shared/theme/app_theme.dart';
+// import 'src/features/navigation/main_scaffold.dart';
+
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(const MyApp());
 }
 
@@ -15,7 +27,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Fluentish',
       theme: AppTheme.light,
-      home: const MainScaffold(initialIndex: 1),
+      home: const WelcomePage(),
     );
   }
 }

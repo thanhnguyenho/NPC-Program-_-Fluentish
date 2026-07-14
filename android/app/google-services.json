@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "794059461770",
+    "project_id": "fluentish-9d857",
+    "storage_bucket": "fluentish-9d857.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:794059461770:android:e77186c2935fbdbc72c973",
+        "android_client_info": {
+          "package_name": "com.example.fluentish"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-pVl86SH8kE-sWVCjd_A7-8ghUge0cGY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -7,9 +7,16 @@ environment:
   sdk: ">=3.4.0 <4.0.0"
 
 dependencies:
+  audioplayers: ^6.7.1
+  firebase_core: ^4.11.0
   flutter:
     sdk: flutter
+  flutter_map: ^8.3.1
+  geolocator: ^14.0.3
   google_fonts: ^8.1.0
+  google_maps_flutter: ^2.17.1
+  latlong2: ^0.10.1
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
@@ -19,5 +26,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/images/logo.gif
     - assets/images/fluentish_logo.png
+    - assets/images/friends/
     - assets/google_fonts/
+    - assets/images/
+    - assets/audio/
