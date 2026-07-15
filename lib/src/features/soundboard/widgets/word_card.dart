@@ -5,7 +5,9 @@ class WordCard extends StatefulWidget {
   final String english;
   final String vietnamese;
   final String category;
-  final String audioPath;
+  final String englishAudio;
+  final String vietnameseAudio;
+  final bool isVietnamese;
   final bool favourite;
 
   const WordCard({
@@ -13,7 +15,9 @@ class WordCard extends StatefulWidget {
     required this.english,
     required this.vietnamese,
     required this.category,
-    required this.audioPath,
+    required this.englishAudio,
+    required this.vietnameseAudio,
+    required this.isVietnamese,
     this.favourite = false,
   });
 
@@ -39,18 +43,22 @@ class _WordCardState extends State<WordCard> {
   }
 
   Future<void> _playAudio() async {
-    if (widget.audioPath.isEmpty) return;
+    final audioPath = widget.isVietnamese
+        ? widget.vietnameseAudio
+        : widget.englishAudio;
+
+    if (audioPath.isEmpty) return;
 
     try {
       await _audioPlayer.stop();
 
-    setState(() {
-      _isPlaying = true;
-    });
+      setState(() {
+        _isPlaying = true;
+      });
 
-    await _audioPlayer.play(
-      AssetSource(widget.audioPath),
-    );
+      await _audioPlayer.play(
+        AssetSource(audioPath),
+      );
     } catch (error) {
       if (!mounted) return;
 
@@ -92,7 +100,9 @@ class _WordCardState extends State<WordCard> {
               children: [
                 Expanded(
                   child: Text(
-                    widget.english,
+                    widget.isVietnamese
+                        ? widget.english
+                        : widget.vietnamese,
                     style: TextStyle(
                       color: _isPlaying
                           ? Colors.white
@@ -116,7 +126,9 @@ class _WordCardState extends State<WordCard> {
             ),
             const SizedBox(height: 8),
             Text(
-              widget.vietnamese,
+              widget.isVietnamese
+                  ? widget.vietnamese
+                  : widget.english,
               style: TextStyle(
                 color: _isPlaying
                     ? Colors.white
