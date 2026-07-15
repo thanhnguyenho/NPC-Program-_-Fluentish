@@ -1,6 +1,10 @@
+// ignore: unused_import
+// import 'package:fluentish/debug_menu.dart';
 import 'package:flutter/material.dart';
-import 'src/shared/theme/app_theme.dart';
-import 'src/features/home/home_page.dart';
+
+import 'package:fluentish/src/features/welcome/welcome_page.dart';
+import 'package:fluentish/src/shared/theme/app_theme.dart';
+// import 'src/features/navigation/main_scaffold.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -23,7 +27,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Fluentish',
       theme: AppTheme.light,
-      home: const HomePage(),
+      home: const WelcomePage(),
     );
   }
 }
