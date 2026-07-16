@@ -59,7 +59,7 @@ class Auth {
     required String dateOfBirth,
     required String phoneNumber,
   }) async {
-    print('Starting registration');
+    //print('Starting registration');
     //create user account in firebase auth
     final UserCredential userCredential =
         await _firebaseAuth.createUserWithEmailAndPassword(
@@ -67,16 +67,16 @@ class Auth {
       password: password.trim(),
     );
 
-    print('Firebase Auth user created');
+    //print('Firebase Auth user created');
 
     final User? user = userCredential.user ?? _firebaseAuth.currentUser;
 
     if (user == null) {
-      print('User is null after registration');
+      //print('User is null after registration');
       return;
     }
 
-    print('Saving user to Firestore: ${user.uid}');
+    //print('Saving user to Firestore: ${user.uid}');
 
     try {
       //saves user info to firestore
@@ -95,9 +95,9 @@ class Auth {
           //aborts if it takes more than 10secs
           .timeout(const Duration(seconds: 10));
 
-      print('User saved to Firestore');
+      //print('User saved to Firestore');
     } catch (e) {
-      print('Firestore save failed: $e');
+      //print('Firestore save failed: $e');
     }
   }
 }
