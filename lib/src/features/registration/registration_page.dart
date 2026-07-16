@@ -17,7 +17,8 @@ class RegistrationPage extends StatefulWidget {
 }
 
 class _RegistrationPageState extends State<RegistrationPage> {
-  String? errorMessage = '';
+  String? errorMessage;
+  bool _isSubmitting = false;
   bool isLogin = true;
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
@@ -97,10 +98,25 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
   //displays error message
   Widget _errorMessage() {
-    return Text(errorMessage == '' ? '' : '$errorMessage');
+    final message = errorMessage;
+    if (message == null || message.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Text(
+      message,
+      style: GoogleFonts.itim(
+        color: Colors.red.shade800,
+        fontSize: 15,
+      ),
+    );
   }
 
   Future<void> createUser() async {
+    if (_isSubmitting) {
+      return;
+    }
+
     //remove unwanted spaces
     final firstName = _firstNameController.text.trim();
     final lastName = _lastNameController.text.trim();
@@ -151,6 +167,13 @@ class _RegistrationPageState extends State<RegistrationPage> {
       return;
     }
 
+    if (email.toLowerCase() != confirmEmail.toLowerCase()) {
+      setState(() {
+        errorMessage = 'Email addresses do not match';
+      });
+      return;
+    }
+
     if (agree == false) {
       setState(() {
         errorMessage =
@@ -158,6 +181,11 @@ class _RegistrationPageState extends State<RegistrationPage> {
       });
       return;
     }
+
+    setState(() {
+      _isSubmitting = true;
+      errorMessage = null;
+    });
 
     try {
       //create entry and store user info
@@ -171,7 +199,13 @@ class _RegistrationPageState extends State<RegistrationPage> {
         dateOfBirth: dob,
         phoneNumber: phone,
       );
+
+      if (!mounted) {
+        return;
+      }
+
       //if error display error
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } on FirebaseAuthException catch (e) {
       setState(() {
         errorMessage = e.message;
@@ -180,6 +214,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
       setState(() {
         errorMessage = e.toString();
       });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
 
@@ -335,6 +375,9 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 ],
               ),
               const SizedBox(height: AppSpacing.xl),
+              _errorMessage(),
+              if (errorMessage != null && errorMessage!.isNotEmpty)
+                const SizedBox(height: AppSpacing.md),
               AppButton(
                 label: 'CREATE ACCOUNT',
                 backgroundColor: AppColors.pine,
