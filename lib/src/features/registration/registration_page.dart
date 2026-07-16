@@ -6,6 +6,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:fluentish/src/features/login/login_page.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fluentish/src/shared/services/auth_service.dart';
+
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});
 
@@ -14,37 +17,42 @@ class RegistrationPage extends StatefulWidget {
 }
 
 class _RegistrationPageState extends State<RegistrationPage> {
-  final firstNameController = TextEditingController();
-  final lastNameController = TextEditingController();
-  final preferredNameController = TextEditingController();
+  String? errorMessage;
+  bool _isSubmitting = false;
+  bool isLogin = true;
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  final TextEditingController _preferredNameController =
+      TextEditingController();
 
-  final usernameController = TextEditingController();
-  final dobController = TextEditingController();
-  final phoneController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _dobController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
 
-  final emailController = TextEditingController();
-  final confirmEmailController = TextEditingController();
+  final TextEditingController _controllerEmail = TextEditingController();
+  final TextEditingController _confirmEmailController = TextEditingController();
 
-  final passwordController = TextEditingController();
-  final confirmPasswordController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   bool agree = false;
 
   @override
   void dispose() {
-    firstNameController.dispose();
-    lastNameController.dispose();
-    preferredNameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _preferredNameController.dispose();
 
-    usernameController.dispose();
-    dobController.dispose();
-    phoneController.dispose();
+    _usernameController.dispose();
+    _dobController.dispose();
+    _phoneController.dispose();
 
-    emailController.dispose();
-    confirmEmailController.dispose();
+    _controllerEmail.dispose();
+    _confirmEmailController.dispose();
 
-    passwordController.dispose();
-    confirmPasswordController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
 
     super.dispose();
   }
@@ -88,7 +96,134 @@ class _RegistrationPageState extends State<RegistrationPage> {
     );
   }
 
-    @override
+  //displays error message
+  Widget _errorMessage() {
+    final message = errorMessage;
+    if (message == null || message.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Text(
+      message,
+      style: GoogleFonts.itim(
+        color: Colors.red.shade800,
+        fontSize: 15,
+      ),
+    );
+  }
+
+  Future<void> createUser() async {
+    if (_isSubmitting) {
+      return;
+    }
+
+    //remove unwanted spaces
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
+    final preferredName = _preferredNameController.text.trim();
+    final username = _usernameController.text.trim();
+    final dob = _dobController.text.trim();
+    final phone = _phoneController.text.trim();
+    final email = _controllerEmail.text.trim();
+    final confirmEmail = _confirmEmailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    //ensure all fields are filled
+
+    if (preferredName.isEmpty) {
+      setState(() {
+        errorMessage = 'Preferred name is required';
+      });
+      return;
+    }
+
+    if (username.isEmpty) {
+      setState(() {
+        errorMessage = 'Username is required';
+      });
+      return;
+    }
+
+    if (firstName.isEmpty ||
+        lastName.isEmpty ||
+        email.isEmpty ||
+        confirmEmail.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty ||
+        dob.isEmpty ||
+        phone.isEmpty) {
+      setState(() {
+        errorMessage = 'Please fill in all fields';
+      });
+      return;
+    }
+
+    //ensures passwords match
+    if (password != confirmPassword) {
+      setState(() {
+        errorMessage = 'Passwords do not match';
+      });
+      return;
+    }
+
+    if (email.toLowerCase() != confirmEmail.toLowerCase()) {
+      setState(() {
+        errorMessage = 'Email addresses do not match';
+      });
+      return;
+    }
+
+    if (agree == false) {
+      setState(() {
+        errorMessage =
+            'You must agree to the Terms of Service and Privacy Policy';
+      });
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      errorMessage = null;
+    });
+
+    try {
+      //create entry and store user info
+      await Auth().createUser(
+        firstName: firstName,
+        lastName: lastName,
+        preferredName: preferredName,
+        username: username,
+        email: email,
+        password: password,
+        dateOfBirth: dob,
+        phoneNumber: phone,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      //if error display error
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        errorMessage = e.message;
+      });
+    } catch (e) {
+      setState(() {
+        errorMessage = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.blush,
@@ -117,15 +252,13 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   fontSize: 36,
                 ),
               ),
-
               const SizedBox(height: AppSpacing.xl),
-
               Row(
                 children: [
                   Expanded(
                     child: buildField(
                       label: 'FIRST NAME:',
-                      controller: firstNameController,
+                      controller: _firstNameController,
                       hint: 'e.g Chloe',
                     ),
                   ),
@@ -133,84 +266,66 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   Expanded(
                     child: buildField(
                       label: 'LAST NAME:',
-                      controller: lastNameController,
+                      controller: _lastNameController,
                       hint: 'e.g Nguyen',
                     ),
                   ),
                 ],
               ),
-
               const SizedBox(height: AppSpacing.md),
-
               buildField(
                 label: 'PREFERRED NAME:',
-                controller: preferredNameController,
+                controller: _preferredNameController,
                 hint: 'e.g Chloe',
               ),
-
               const SizedBox(height: AppSpacing.md),
-
               buildField(
                 label: 'USERNAME:',
-                controller: usernameController,
+                controller: _usernameController,
                 hint: 'e.g Chloe123',
               ),
-
               const SizedBox(height: AppSpacing.md),
-
               buildField(
                 label: 'DATE OF BIRTH:',
-                controller: dobController,
+                controller: _dobController,
                 hint: 'DD/MM/YYYY',
               ),
-
               const SizedBox(height: AppSpacing.md),
-
               buildField(
                 label: 'PHONE NUMBER:',
-                controller: phoneController,
+                controller: _phoneController,
                 hint: '0412345678',
                 keyboardType: TextInputType.phone,
               ),
-
               const SizedBox(height: AppSpacing.md),
-
               buildField(
                 label: 'EMAIL:',
-                controller: emailController,
+                controller: _controllerEmail,
                 hint: 'example@gmail.com',
                 keyboardType: TextInputType.emailAddress,
               ),
-
               const SizedBox(height: AppSpacing.md),
-
               buildField(
                 label: 'CONFIRM EMAIL:',
-                controller: confirmEmailController,
+                controller: _confirmEmailController,
                 hint: 'example@gmail.com',
                 keyboardType: TextInputType.emailAddress,
               ),
-
               const SizedBox(height: AppSpacing.md),
-
               buildField(
                 label: 'PASSWORD:',
-                controller: passwordController,
+                controller: _passwordController,
                 hint: 'Minimum 8 characters',
                 obscure: true,
               ),
-
               const SizedBox(height: AppSpacing.md),
-
               buildField(
                 label: 'CONFIRM PASSWORD:',
-                controller: confirmPasswordController,
+                controller: _confirmPasswordController,
                 hint: 'Re-enter password',
                 obscure: true,
               ),
-
               const SizedBox(height: AppSpacing.md),
-
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -250,8 +365,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                               ),
                             ),
                             TextSpan(
-                              text:
-                                  ', and confirm I am 18 years or older.',
+                              text: ', and confirm I am 18 years or older.',
                             ),
                           ],
                         ),
@@ -260,18 +374,17 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   ),
                 ],
               ),
-
               const SizedBox(height: AppSpacing.xl),
-
+              _errorMessage(),
+              if (errorMessage != null && errorMessage!.isNotEmpty)
+                const SizedBox(height: AppSpacing.md),
               AppButton(
                 label: 'CREATE ACCOUNT',
                 backgroundColor: AppColors.pine,
                 foregroundColor: AppColors.blush,
-                onPressed: _goToLogin,
+                onPressed: createUser,
               ),
-
               const SizedBox(height: AppSpacing.lg),
-
               Center(
                 child: GestureDetector(
                   onTap: _goToLogin,
@@ -288,8 +401,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                           text: 'Log in',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            decoration:
-                                TextDecoration.underline,
+                            decoration: TextDecoration.underline,
                           ),
                         ),
                       ],
@@ -297,7 +409,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   ),
                 ),
               ),
-
               const SizedBox(height: AppSpacing.xl),
             ],
           ),
