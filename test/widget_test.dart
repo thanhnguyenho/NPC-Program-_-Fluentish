@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
+//import 'package:mockito/mockito.dart';
 import 'package:firebase_core_platform_interface/firebase_core_platform_interface.dart';
 
 import 'package:fluentish/main.dart';
 import 'package:fluentish/src/shared/theme/app_colors.dart';
 
 // Mock Firebase Platform
-class MockFirebasePlatform extends Mock implements FirebasePlatform {}
+class MockFirebasePlatform extends FirebasePlatform {}
 
 void main() {
   setUpAll(() async {
