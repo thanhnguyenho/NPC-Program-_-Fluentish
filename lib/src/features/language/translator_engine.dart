@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'corpus/travel_corpus.dart';
 
 class TranslatorEngine {
   // Exhaustive bidirectional dictionary covering 700+ core vocabulary concepts & travel landmarks
@@ -628,7 +629,17 @@ class TranslatorEngine {
       return _dictionary[clean]!;
     }
 
-    // 2. Data Science Vector Cosine Similarity Search over Semantic Corpus
+    // 1.5. Check TravelCorpus exact sentence matches
+    for (final item in TravelCorpus.entries) {
+      if (item['vi']!.toLowerCase() == clean || item['vi']!.toLowerCase().replaceAll(RegExp(r'[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ\s]'), '') == clean.replaceAll(RegExp(r'[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ\s]'), '')) {
+        return item['en']!;
+      }
+      if (item['en']!.toLowerCase() == clean || item['en']!.toLowerCase().replaceAll(RegExp(r'[^a-z0-9\s]'), '') == clean.replaceAll(RegExp(r'[^a-z0-9\s]'), '')) {
+        return item['vi']!;
+      }
+    }
+
+    // 2. Data Science Vector Cosine Similarity Search over Semantic Corpus + TravelCorpus
     final queryVector = _vectorize(clean);
     double maxSim = 0.0;
     String bestMatch = '';
@@ -641,6 +652,15 @@ class TranslatorEngine {
       if (sim > maxSim) {
         maxSim = sim;
         bestMatch = pair[tgtKey]!;
+      }
+    }
+
+    for (final item in TravelCorpus.entries) {
+      final corpusVector = _vectorize(item[srcKey]!);
+      final sim = _cosineSimilarity(queryVector, corpusVector);
+      if (sim > maxSim) {
+        maxSim = sim;
+        bestMatch = item[tgtKey]!;
       }
     }
 
@@ -806,6 +826,20 @@ class TranslatorEngine {
       if (clean.contains('siêu thị')) return 'Where is the supermarket?';
       if (clean.contains('nhà hàng') || clean.contains('quán')) return 'Where is a good restaurant / eatery?';
       return 'Where is this located?';
+    }
+
+    // Polite Request ("Xin ...") Patterns
+    if (clean.startsWith('xin ')) {
+      if (clean.contains('chỉ tôi đường') || clean.contains('chỉ đường')) return 'Please show me the way to...';
+      if (clean.contains('giúp đỡ') || clean.contains('giúp tôi')) return 'Please help me with this matter';
+      if (clean.contains('mở cửa')) return 'Please open the door for me';
+      if (clean.contains('dẫn tôi qua đường') || clean.contains('qua đường')) return 'Please help me cross the street';
+      if (clean.contains('cảm ơn')) return 'Thank you very much';
+      if (clean.contains('lỗi') || clean.contains('không hiểu')) return 'Sorry, I do not understand';
+      if (clean.contains('chậm lại')) return 'Please speak more slowly';
+      if (clean.contains('thực đơn') || clean.contains('menu')) return 'May I see the menu, please?';
+      if (clean.contains('tính tiền') || clean.contains('hóa đơn')) return 'Check please / Bill please';
+      return 'Please ${original.substring(4)}';
     }
 
     // Pricing & Shopping Patterns
