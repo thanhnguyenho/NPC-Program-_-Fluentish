@@ -127,6 +127,7 @@ class FakeAuthGateway implements AuthGateway {
   Object? signInError;
   String? signedInEmail;
   String? signedInPassword;
+  bool signedInWithGoogle = false;
   bool signedOut = false;
 
   @override
@@ -148,6 +149,12 @@ class FakeAuthGateway implements AuthGateway {
   }) async {
     signedInEmail = email;
     signedInPassword = password;
+    if (signInError != null) throw signInError!;
+  }
+
+  @override
+  Future<void> signInWithGoogle() async {
+    signedInWithGoogle = true;
     if (signInError != null) throw signInError!;
   }
 

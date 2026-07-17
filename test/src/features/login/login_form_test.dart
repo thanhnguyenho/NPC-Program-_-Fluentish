@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:fluentish/src/features/login/widgets/login_form.dart';
+import 'package:fluentish/src/features/login/widgets/login_google_button.dart';
 import 'package:fluentish/src/shared/theme/app_theme.dart';
 
 import '../../../helpers/fakes.dart';
@@ -43,5 +44,20 @@ void main() {
     await tester.pump();
 
     expect(find.text('Invalid account.'), findsOneWidget);
+  });
+
+  testWidgets('submits Google sign-in', (tester) async {
+    final auth = FakeAuthGateway();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(body: LoginGoogleButton(auth: auth)),
+      ),
+    );
+
+    await tester.tap(find.text('Continue with Google'));
+    await tester.pump();
+
+    expect(auth.signedInWithGoogle, isTrue);
   });
 }
