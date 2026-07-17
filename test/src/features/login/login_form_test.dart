@@ -2,46 +2,46 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:fluentish/src/features/login/widgets/login_form.dart';
-import 'package:fluentish/src/features/navigation/main_scaffold.dart';
 import 'package:fluentish/src/shared/theme/app_theme.dart';
 
+import '../../../helpers/fakes.dart';
+
 void main() {
-  Widget buildSubject() {
-    return MaterialApp(
-      theme: AppTheme.light,
-      home: const Scaffold(
-        body: SingleChildScrollView(
-          child: LoginForm(),
-        ),
+  testWidgets('submits Firebase email and password', (tester) async {
+    final auth = FakeAuthGateway();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(body: LoginForm(auth: auth)),
       ),
     );
-  }
-
-  testWidgets('demo admin credentials open the main app', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(buildSubject());
 
     final fields = find.byType(TextField);
-    await tester.enterText(fields.at(0), 'admin');
-    await tester.enterText(fields.at(1), 'admin123');
+    await tester.enterText(fields.at(0), 'demo@example.com');
+    await tester.enterText(fields.at(1), 'secret123');
     await tester.tap(find.widgetWithText(ElevatedButton, 'LOGIN'));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
-    expect(find.byType(MainScaffold), findsOneWidget);
+    expect(auth.signedInEmail, 'demo@example.com');
+    expect(auth.signedInPassword, 'secret123');
+    expect(find.text('Invalid demo username or password'), findsNothing);
   });
 
-  testWidgets('invalid demo credentials show an error', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(buildSubject());
+  testWidgets('shows Firebase sign-in errors', (tester) async {
+    final auth = FakeAuthGateway(signInError: StateError('Invalid account.'));
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(body: LoginForm(auth: auth)),
+      ),
+    );
 
     final fields = find.byType(TextField);
-    await tester.enterText(fields.at(0), 'wrong');
+    await tester.enterText(fields.at(0), 'wrong@example.com');
     await tester.enterText(fields.at(1), 'password');
     await tester.tap(find.widgetWithText(ElevatedButton, 'LOGIN'));
     await tester.pump();
 
-    expect(find.text('Invalid demo username or password'), findsOneWidget);
+    expect(find.text('Invalid account.'), findsOneWidget);
   });
 }

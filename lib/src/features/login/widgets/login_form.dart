@@ -1,55 +1,59 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import 'package:fluentish/src/features/forgot_password/forgot_password_page.dart';
-import 'package:fluentish/src/features/navigation/main_scaffold.dart';
 import 'package:fluentish/src/shared/shared.dart';
-// import 'package:fluentish/src/features/registration/registration_page.dart';
-// import 'package:firebase_auth/firebase_auth.dart';
-// import 'package:fluentish/src/shared/services/auth_service.dart';
 
 class LoginForm extends StatefulWidget {
-  const LoginForm({super.key});
+  const LoginForm({super.key, this.auth});
+
+  final AuthGateway? auth;
 
   @override
   State<LoginForm> createState() => _LoginFormState();
 }
 
 class _LoginFormState extends State<LoginForm> {
-  static const _demoUsername = 'admin';
-  static const _demoPassword = 'admin123';
-
-  final usernameController = TextEditingController();
+  final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
   bool obscurePassword = true;
+  bool _isSubmitting = false;
+
+  AuthGateway get _auth => widget.auth ?? Auth.instance;
 
   @override
   void dispose() {
-    usernameController.dispose();
+    emailController.dispose();
     passwordController.dispose();
     super.dispose();
   }
 
-  void _login() {
-    final isDemoAdmin = usernameController.text.trim() == _demoUsername &&
-        passwordController.text == _demoPassword;
-
-    if (!isDemoAdmin) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text('Invalid demo username or password'),
-          ),
-        );
+  Future<void> _login() async {
+    if (_isSubmitting) return;
+    final email = emailController.text.trim();
+    final password = passwordController.text;
+    if (email.isEmpty || password.isEmpty) {
+      _showError('Enter your email and password.');
       return;
     }
+    setState(() => _isSubmitting = true);
+    try {
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
+    } on FirebaseAuthException catch (error) {
+      _showError(error.message ?? 'Unable to sign in.');
+    } catch (error) {
+      _showError(error.toString().replaceFirst('Bad state: ', ''));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
 
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (_) => const MainScaffold(initialIndex: 0),
-      ),
-      (route) => false,
-    );
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -57,11 +61,12 @@ class _LoginFormState extends State<LoginForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const AppTextLabel(text: 'Username'),
+        const AppTextLabel(text: 'Email'),
         const SizedBox(height: AppSpacing.xs),
         AppTextField(
-          controller: usernameController,
-          hintText: 'Enter your username',
+          controller: emailController,
+          hintText: 'Enter your email',
+          keyboardType: TextInputType.emailAddress,
         ),
         const SizedBox(height: AppSpacing.lg),
         const AppTextLabel(text: 'Password'),
@@ -75,24 +80,17 @@ class _LoginFormState extends State<LoginForm> {
               obscurePassword ? Icons.visibility_off : Icons.visibility,
               color: AppColors.pine,
             ),
-            onPressed: () {
-              setState(() {
-                obscurePassword = !obscurePassword;
-              });
-            },
+            onPressed: () =>
+                setState(() => obscurePassword = !obscurePassword),
           ),
         ),
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const ForgotPasswordPage(),
-                ),
-              );
-            },
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ForgotPasswordPage()),
+            ),
             child: Text(
               'Forgot Password?',
               style: AppTextStyles.body.copyWith(
@@ -105,8 +103,8 @@ class _LoginFormState extends State<LoginForm> {
         ),
         const SizedBox(height: AppSpacing.md),
         AppButton(
-          label: 'LOGIN',
-          onPressed: _login,
+          label: _isSubmitting ? 'SIGNING IN...' : 'LOGIN',
+          onPressed: _isSubmitting ? null : _login,
         ),
       ],
     );

@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:fluentish/src/shared/widgets/app_bottom_nav.dart';
-import 'package:fluentish/src/shared/widgets/app_card.dart';
-import 'package:fluentish/src/features/language/language_page.dart';
-import 'package:fluentish/src/features/soundboard/soundboard_page.dart';
-import 'package:fluentish/src/features/community/community_page.dart';
-import 'package:fluentish/src/features/profile/profile_page.dart';
-import 'package:fluentish/src/features/guides_review/guides_review_page.dart';
-import 'package:fluentish/src/shared/theme/app_spacing.dart';
-import 'package:fluentish/src/shared/theme/app_text_styles.dart';
-import 'package:fluentish/src/shared/theme/app_colors.dart';
+
+import '../../shared/shared.dart';
+import '../community/community_page.dart';
+import '../friends/friends_page.dart';
+import '../guides_review/guides_review_page.dart';
+import '../language/language_page.dart';
+import '../profile/profile_page.dart';
+import '../soundboard/soundboard_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -21,116 +19,200 @@ class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
 
   Widget _pageForIndex(int index) {
-    switch (index) {
-      case 0:
-        return HomeScreen(
-          onNavigateToGuides: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const GuidesPage()),
-            );
-          },
-        );
-      case 1:
-        return const LanguagePage();
-      case 2:
-        return const SoundboardPage();
-      case 3:
-        return const CommunityPage();
-      case 4:
-        return const ProfilePage();
-      default:
-        return const SizedBox.shrink();
-    }
+    return switch (index) {
+      0 => HomeScreen(
+          onNavigateToGuides: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const GuidesPage()),
+          ),
+        ),
+      1 => const LanguagePage(),
+      2 => const SoundboardPage(),
+      3 => const CommunityPage(),
+      4 => const ProfilePage(),
+      _ => const SizedBox.shrink(),
+    };
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true,
       body: _pageForIndex(_currentIndex),
       bottomNavigationBar: AppBottomNav(
         currentIndex: _currentIndex,
-        onItemSelected: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onItemSelected: (index) => setState(() => _currentIndex = index),
       ),
     );
   }
 }
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key, required this.onNavigateToGuides});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({
+    super.key,
+    required this.onNavigateToGuides,
+    this.auth,
+    this.friendRepository,
+    this.guideRepository,
+  });
 
   final VoidCallback onNavigateToGuides;
+  final AuthGateway? auth;
+  final FriendDataSource? friendRepository;
+  final GuideDataSource? guideRepository;
 
-  static const _dummyGuides = [
-    _GuidePreview(
-      description: 'The best local vendors near you.',
-      distance: '250 m',
-      icon: Icons.restaurant_outlined,
-      name: 'Street Food Basics',
-      rating: '4/5',
-    ),
-    _GuidePreview(
-      description: 'A short walk littered with interesting spots.',
-      distance: '0.8 km',
-      icon: Icons.map_outlined,
-      name: 'District 1 Walk',
-      rating: '5 stops',
-    ),
-    _GuidePreview(
-      description: 'Easy phrases to use when meeting someone over coffee.',
-      distance: '400 m',
-      icon: Icons.local_cafe_outlined,
-      name: 'Cafe Conversation',
-      rating: '4.7/5',
-    ),
-  ];
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  late final AuthGateway _auth;
+  late final FriendDataSource _friends;
+  late final GuideDataSource _guides;
+
+  @override
+  void initState() {
+    super.initState();
+    _auth = widget.auth ?? Auth.instance;
+    _friends = widget.friendRepository ?? FriendRepository();
+    _guides = widget.guideRepository ?? GuideRepository();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final uid = _auth.currentUserId;
     return SafeArea(
       bottom: false,
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.lg,
-          AppSpacing.lg,
+          AppSpacing.md,
           AppSpacing.lg,
           AppSpacing.bottomNavHeight + AppSpacing.xl,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _PageHeader(),
-            const SizedBox(height: AppSpacing.xl),
-            const _SectionTitle('Favourite Phrases'),
-            const SizedBox(height: AppSpacing.md),
-            const _FavouritePhrasesGrid(),
-            const SizedBox(height: AppSpacing.xl),
-            const _SectionTitle('Nearby Recommendations'),
-            const SizedBox(height: AppSpacing.md),
-            for (final guide in _dummyGuides) ...[
-              _GuidePreviewCard(
-                guide: guide,
-                onTap: onNavigateToGuides,
+            StreamBuilder<PublicProfile?>(
+              stream: _auth.watchCurrentProfile(),
+              builder: (context, snapshot) => Text(
+                'Welcome Back, ${snapshot.data?.displayName ?? 'Fluentish user'}!',
+                style: AppTextStyles.title.copyWith(fontSize: 34),
               ),
-              const SizedBox(height: AppSpacing.md),
-            ],
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Discover language guides and meet friends nearby.',
+              style: AppTextStyles.body.copyWith(color: AppColors.pineMuted),
+            ),
             const SizedBox(height: AppSpacing.xl),
-            const _SectionTitle('Soundboard Favourites'),
+            _SectionHeader(
+              title: 'Nearby Recommendations',
+              action: 'See all',
+              onTap: widget.onNavigateToGuides,
+            ),
             const SizedBox(height: AppSpacing.md),
-            const _SoundboardFavourites(),
-            const SizedBox(height: AppSpacing.xl),
-            const _SectionTitle('Active Friends'),
+            StreamBuilder<List<GuideRecord>>(
+              stream: _guides.watchPublishedGuides(),
+              builder: (context, snapshot) {
+                final guides = (snapshot.data ?? const <GuideRecord>[])
+                    .where((guide) =>
+                        guide.isMapVisible && guide.type != GuideType.collection)
+                    .take(3)
+                    .toList();
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    guides.isEmpty) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (guides.isEmpty) {
+                  return const _EmptyCard('No published guides yet.');
+                }
+                return Column(
+                  children: [
+                    for (final guide in guides)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                        child: AppCard(
+                          onTap: widget.onNavigateToGuides,
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              guide.type == GuideType.route
+                                  ? Icons.route
+                                  : Icons.place,
+                              color: AppColors.pine,
+                            ),
+                            title: Text(guide.title),
+                            subtitle: Text(
+                              guide.summary,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            _SectionHeader(
+              title: 'Active Friends',
+              action: 'Manage',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => FriendsPage(
+                    auth: widget.auth,
+                    friendRepository: widget.friendRepository,
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(height: AppSpacing.md),
-            const _BlankListCard(),
-            const SizedBox(height: AppSpacing.md),
-            const _SectionTitle('Find your Friends'),
-            const SizedBox(height: AppSpacing.md),
-            const _BlankListCard(),
+            if (uid == null)
+              const _EmptyCard('Sign in to see your friends.')
+            else
+              StreamBuilder<List<PublicProfile>>(
+                stream: _friends.watchFriends(uid),
+                builder: (context, snapshot) {
+                  final active = (snapshot.data ?? const <PublicProfile>[])
+                      .where((friend) => friend.isOnline)
+                      .toList();
+                  if (snapshot.connectionState == ConnectionState.waiting &&
+                      active.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (active.isEmpty) {
+                    return const _EmptyCard(
+                      'No active friends. Add friends from your profile.',
+                    );
+                  }
+                  return AppCard(
+                    width: double.infinity,
+                    child: Wrap(
+                      spacing: AppSpacing.md,
+                      runSpacing: AppSpacing.md,
+                      children: [
+                        for (final friend in active)
+                          SizedBox(
+                            width: 72,
+                            child: Column(
+                              children: [
+                                _HomeAvatar(profile: friend),
+                                const SizedBox(height: AppSpacing.xs),
+                                Text(
+                                  friend.displayName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyles.body.copyWith(fontSize: 11),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             const SizedBox(height: AppSpacing.xxl),
           ],
         ),
@@ -139,411 +221,59 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class _PageHeader extends StatelessWidget {
-  const _PageHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Welcome Back, <User>!',
-          style: AppTextStyles.title.copyWith(fontSize: 34),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          'Ready for another seamless interaction with the locals?',
-          style: AppTextStyles.body.copyWith(
-            color: AppColors.pineMuted,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.title);
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: AppTextStyles.title.copyWith(fontSize: 28),
-    );
-  }
-}
-
-class _FavouritePhrase {
-  const _FavouritePhrase({
-    required this.english,
-    required this.vietnamese,
-  });
-
-  final String english;
-  final String vietnamese;
-}
-
-class _FavouritePhrasesGrid extends StatelessWidget {
-  const _FavouritePhrasesGrid();
-
-  static const _phrases = [
-    _FavouritePhrase(english: 'Hello', vietnamese: 'Xin chào'),
-    _FavouritePhrase(english: 'Thank you', vietnamese: 'Cảm ơn'),
-    _FavouritePhrase(english: 'Goodbye', vietnamese: 'Tạm biệt'),
-    _FavouritePhrase(english: 'Excuse me', vietnamese: 'Xin lỗi'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const spacing = AppSpacing.md;
-        final cardWidth = (constraints.maxWidth - spacing) / 2;
-
-        return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          children: [
-            for (final phrase in _phrases)
-              SizedBox(
-                width: cardWidth,
-                child: _FavouritePhraseCard(phrase: phrase),
-              ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _FavouritePhraseCard extends StatelessWidget {
-  const _FavouritePhraseCard({required this.phrase});
-
-  final _FavouritePhrase phrase;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      height: 148,
-      padding: const EdgeInsets.all(AppSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  phrase.english,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.title.copyWith(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              IconButton(
-                onPressed: () {},
-                constraints: const BoxConstraints.tightFor(
-                  height: 32,
-                  width: 32,
-                ),
-                padding: EdgeInsets.zero,
-                tooltip: 'Remove from favourites',
-                icon: const Icon(
-                  Icons.star_border_rounded,
-                  color: Colors.white,
-                  size: 29,
-                ),
-              ),
-            ],
-          ),
-          Text(
-            phrase.vietnamese,
-            style: AppTextStyles.body.copyWith(
-              color: AppColors.pineMuted,
-              fontSize: 16,
-            ),
-          ),
-          const Spacer(),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: IconButton.filled(
-              onPressed: () {},
-              constraints: const BoxConstraints.tightFor(
-                height: 38,
-                width: 38,
-              ),
-              padding: EdgeInsets.zero,
-              tooltip: 'Play pronunciation',
-              style: IconButton.styleFrom(
-                backgroundColor: AppColors.textMuted.withValues(alpha: 0.22),
-                foregroundColor: Colors.white,
-              ),
-              icon: const Icon(Icons.volume_up_outlined, size: 23),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GuidePreview {
-  const _GuidePreview({
-    required this.description,
-    required this.distance,
-    required this.icon,
-    required this.name,
-    required this.rating,
-  });
-
-  final String description;
-  final String distance;
-  final IconData icon;
-  final String name;
-  final String rating;
-}
-
-class _GuidePreviewCard extends StatelessWidget {
-  const _GuidePreviewCard({
-    required this.guide,
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.title,
+    required this.action,
     required this.onTap,
   });
 
-  final _GuidePreview guide;
+  final String title;
+  final String action;
   final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      height: 158,
-      onTap: onTap,
-      padding: const EdgeInsets.all(AppSpacing.sm),
-      child: Row(
-        children: [
-          Container(
-            width: 116,
-            height: double.infinity,
-            decoration: BoxDecoration(
-              color: AppColors.shell,
-              borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Icon(
-                  guide.icon,
-                  color: AppColors.pineMuted,
-                  size: 48,
-                ),
-                Positioned(
-                  left: AppSpacing.sm,
-                  top: AppSpacing.sm,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: AppSpacing.xs,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.cardSurface,
-                      borderRadius: BorderRadius.circular(
-                        AppSpacing.pillRadius,
-                      ),
-                    ),
-                    child: Text(
-                      guide.distance,
-                      style: AppTextStyles.body.copyWith(
-                        color: AppColors.pine,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  guide.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.title.copyWith(fontSize: 22),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  '${guide.distance} · ${guide.rating}',
-                  style: AppTextStyles.body.copyWith(
-                    color: AppColors.pineMuted,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  guide.description,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.body.copyWith(
-                    color: AppColors.pineMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SoundboardFavourite {
-  const _SoundboardFavourite({
-    required this.label,
-    this.isHighlighted = false,
-  });
-
-  final bool isHighlighted;
-  final String label;
-}
-
-class _SoundboardFavourites extends StatelessWidget {
-  const _SoundboardFavourites();
-
-  static const _favourites = [
-    _SoundboardFavourite(label: 'Ở đâu?'),
-    _SoundboardFavourite(label: 'Ngon quá'),
-    _SoundboardFavourite(label: 'Tính tiền', isHighlighted: true),
-  ];
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        for (var index = 0; index < _favourites.length; index++) ...[
-          Expanded(
-            child: _SoundboardFavouriteButton(
-              favourite: _favourites[index],
-            ),
-          ),
-          if (index != _favourites.length - 1)
-            const SizedBox(width: AppSpacing.sm),
-        ],
+        Expanded(
+          child: Text(title, style: AppTextStyles.title.copyWith(fontSize: 24)),
+        ),
+        TextButton(onPressed: onTap, child: Text(action)),
       ],
     );
   }
 }
 
-class _SoundboardFavouriteButton extends StatelessWidget {
-  const _SoundboardFavouriteButton({required this.favourite});
+class _EmptyCard extends StatelessWidget {
+  const _EmptyCard(this.message);
 
-  final _SoundboardFavourite favourite;
-
-  @override
-  Widget build(BuildContext context) {
-    final backgroundColor =
-        favourite.isHighlighted ? AppColors.pine : AppColors.pineMuted;
-    final foregroundColor =
-        favourite.isHighlighted ? AppColors.blush : AppColors.pine;
-
-    return SizedBox(
-      height: 64,
-      child: Material(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(AppSpacing.pillRadius),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () {},
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  favourite.label,
-                  maxLines: 1,
-                  style: AppTextStyles.title.copyWith(
-                    color: foregroundColor,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BlankListCard extends StatelessWidget {
-  const _BlankListCard();
+  final String message;
 
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        children: List.generate(
-          4,
-          (index) => const Padding(
-            padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
-            child: _BlankListTile(),
-          ),
-        ),
-      ),
+      width: double.infinity,
+      child: Text(message, style: AppTextStyles.body),
     );
   }
 }
 
-class _BlankListTile extends StatelessWidget {
-  const _BlankListTile();
+class _HomeAvatar extends StatelessWidget {
+  const _HomeAvatar({required this.profile});
+
+  final PublicProfile profile;
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
-      children: [
-        CircleAvatar(
-          radius: 18,
-          backgroundColor: AppColors.shell,
-        ),
-        SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: _BlankLine(width: double.infinity, height: 12),
-        ),
-      ],
-    );
-  }
-}
-
-class _BlankLine extends StatelessWidget {
-  const _BlankLine({
-    required this.width,
-    required this.height,
-  });
-
-  final double width;
-  final double height;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: AppColors.textMuted.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(AppSpacing.pillRadius),
-      ),
+    final url = profile.avatarUrl;
+    return CircleAvatar(
+      radius: 28,
+      backgroundColor: AppColors.shell,
+      backgroundImage: url != null && url.isNotEmpty ? NetworkImage(url) : null,
+      child: url == null || url.isEmpty
+          ? Text(profile.displayName.characters.first.toUpperCase())
+          : null,
     );
   }
 }

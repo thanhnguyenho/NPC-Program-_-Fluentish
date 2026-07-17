@@ -7,10 +7,11 @@ import 'package:fluentish/src/features/login/login_page.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:fluentish/src/shared/services/auth_service.dart';
 
 class RegistrationPage extends StatefulWidget {
-  const RegistrationPage({super.key});
+  const RegistrationPage({super.key, this.auth});
+
+  final AuthGateway? auth;
 
   @override
   State<RegistrationPage> createState() => _RegistrationPageState();
@@ -37,6 +38,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
       TextEditingController();
 
   bool agree = false;
+
+  AuthGateway get _auth => widget.auth ?? Auth.instance;
 
   @override
   void dispose() {
@@ -189,7 +192,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
     try {
       //create entry and store user info
-      await Auth().createUser(
+      await _auth.createUser(
         firstName: firstName,
         lastName: lastName,
         preferredName: preferredName,

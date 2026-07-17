@@ -1,477 +1,441 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 
-import '../../shared/theme/app_colors.dart';
-import '../../shared/theme/app_spacing.dart';
-import '../../shared/theme/app_text_styles.dart';
-import '../../shared/widgets/app_card.dart';
+import '../../shared/shared.dart';
 
-class GuidesPage extends StatelessWidget {
-  const GuidesPage({super.key});
+class GuidesPage extends StatefulWidget {
+  const GuidesPage({
+    super.key,
+    this.initialGuideId,
+    this.onShowPlaceOnMap,
+    this.auth,
+    this.repository,
+    this.locationRepository,
+  });
+
+  final String? initialGuideId;
+  final ValueChanged<String>? onShowPlaceOnMap;
+  final AuthGateway? auth;
+  final GuideDataSource? repository;
+  final LocationDataSource? locationRepository;
 
   @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: AppColors.blush,
-      body: GuidesScreen(),
-    );
-  }
+  State<GuidesPage> createState() => _GuidesPageState();
 }
 
-class GuidesScreen extends StatefulWidget {
-  const GuidesScreen({super.key});
-
-  @override
-  State<GuidesScreen> createState() => _GuidesScreenState();
-}
-
-class _GuidesScreenState extends State<GuidesScreen> {
+class _GuidesPageState extends State<GuidesPage> {
   static const _filters = ['Nearby', 'Food', 'Routes', 'Saved'];
 
-  static const _guides = [
-    _GuideItem(
-      category: 'Food',
-      description: 'The best local vendors near you.',
-      details:
-          'A short beginner guide for ordering Vietnamese street food with confidence.',
-      distance: '250 m',
-      icon: Icons.restaurant_outlined,
-      rating: '4/5',
-      title: 'Street Food Basics',
-    ),
-    _GuideItem(
-      category: 'Routes',
-      description: 'A short walk littered with interesting spots.',
-      details:
-          'Follow a walking route through District 1. Each stop includes a practical phrase for asking directions or meeting friends.',
-      distance: '0.8 km',
-      icon: Icons.map_outlined,
-      rating: '5 stops',
-      title: 'District 1 Walk',
-    ),
-    _GuideItem(
-      category: 'Nearby',
-      description: 'Easy phrases to use when meeting someone over coffee.',
-      details: 'Practise greetings and simple conversation prompts.',
-      distance: '400 m',
-      icon: Icons.local_cafe_outlined,
-      rating: '4.7/5',
-      title: 'Cafe Conversation',
-    ),
-    _GuideItem(
-      category: 'Saved',
-      description: 'Three phrase sets and two routes available offline.',
-      details:
-          'A dummy saved collection that contains greetings, phrases and walking routes.',
-      distance: 'Offline',
-      icon: Icons.download_done_outlined,
-      rating: '5 items',
-      title: 'Offline Guide Pack',
-    ),
-  ];
-
+  late final AuthGateway _auth;
+  late final GuideDataSource _repository;
+  late final LocationDataSource _locations;
+  Position? _position;
   String _query = '';
   String _selectedFilter = 'Nearby';
+  bool _openedInitialGuide = false;
 
-  List<_GuideItem> get _visibleGuides {
+  @override
+  void initState() {
+    super.initState();
+    _auth = widget.auth ?? Auth.instance;
+    _repository = widget.repository ?? GuideRepository();
+    _locations = widget.locationRepository ?? LocationRepository();
+    _loadPosition();
+  }
+
+  Future<void> _loadPosition() async {
+    try {
+      final position = await _locations.currentPosition();
+      if (mounted) setState(() => _position = position);
+    } catch (_) {}
+  }
+
+  double? _distanceTo(PlaceRecord? place) {
+    if (_position == null || place == null) return null;
+    return Geolocator.distanceBetween(
+      _position!.latitude,
+      _position!.longitude,
+      place.point.latitude,
+      place.point.longitude,
+    );
+  }
+
+  String _distanceLabel(double? meters) {
+    if (meters == null) return 'Distance unavailable';
+    if (meters < 1000) return '${meters.round()} m';
+    return '${(meters / 1000).toStringAsFixed(1)} km';
+  }
+
+  IconData _iconFor(GuideRecord guide) => switch (guide.category) {
+        'food' => Icons.restaurant_outlined,
+        'cafe' => Icons.local_cafe_outlined,
+        'route' => Icons.map_outlined,
+        _ => guide.type == GuideType.collection
+            ? Icons.download_done_outlined
+            : Icons.place_outlined,
+      };
+
+  List<GuideRecord> _visibleGuides(
+    List<GuideRecord> guides,
+    Set<String> savedIds,
+  ) {
     final query = _query.trim().toLowerCase();
-
-    return _guides.where((guide) {
-      final matchesFilter = _selectedFilter == 'Nearby'
-          ? guide.category != 'Saved'
-          : guide.category == _selectedFilter;
+    return guides.where((guide) {
+      final matchesFilter = switch (_selectedFilter) {
+        'Food' => guide.category == 'food' || guide.category == 'cafe',
+        'Routes' => guide.type == GuideType.route,
+        'Saved' => savedIds.contains(guide.id),
+        _ => guide.type != GuideType.collection,
+      };
       final matchesQuery = query.isEmpty ||
           guide.title.toLowerCase().contains(query) ||
-          guide.description.toLowerCase().contains(query);
+          guide.summary.toLowerCase().contains(query) ||
+          guide.category.toLowerCase().contains(query);
       return matchesFilter && matchesQuery;
     }).toList();
   }
 
-  void _openGuide(_GuideItem guide) {
-    showModalBottomSheet<void>(
-      backgroundColor: AppColors.shell,
+  Future<void> _openGuide(
+    GuideRecord guide,
+    PlaceRecord? place,
+    bool saved,
+  ) async {
+    final stops = guide.type == GuideType.route
+        ? await _repository.loadStops(guide.id)
+        : const <GuideStop>[];
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppSpacing.xl),
-        ),
-      ),
-      builder: (context) => _GuideDetailsSheet(guide: guide),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final guides = _visibleGuides;
-
-    return SafeArea(
-      bottom: false,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          AppSpacing.md,
-          AppSpacing.lg,
-          AppSpacing.xxl,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const BackButton(),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'Fluentish Guides',
-              style: AppTextStyles.title.copyWith(fontSize: 36),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            TextField(
-              onChanged: (value) => setState(() => _query = value),
-              style: AppTextStyles.body.copyWith(fontSize: 16),
-              decoration: const InputDecoration(
-                hintText: 'Search guides, places, routes...',
-                prefixIcon: Icon(
-                  Icons.search,
-                  color: AppColors.pine,
+      backgroundColor: AppColors.shell,
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            0,
+            AppSpacing.lg,
+            MediaQuery.viewPaddingOf(sheetContext).bottom + AppSpacing.xl,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                height: 150,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppColors.blush,
+                  borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
                 ),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg,
-                  vertical: AppSpacing.md,
-                ),
+                child: Icon(_iconFor(guide), color: AppColors.pine, size: 64),
               ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              children: [
-                for (final filter in _filters)
-                  ChoiceChip(
-                    label: Text(filter),
-                    selected: _selectedFilter == filter,
-                    showCheckmark: false,
-                    onSelected: (_) {
-                      setState(() => _selectedFilter = filter);
-                    },
-                    backgroundColor: AppColors.pineMuted,
-                    selectedColor: AppColors.pine,
-                    labelStyle: AppTextStyles.body.copyWith(
-                      color: AppColors.blush,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    side: BorderSide.none,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.xs,
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            if (guides.isEmpty)
-              const _EmptyGuides()
-            else
-              for (final guide in guides) ...[
-                _GuideCard(
-                  guide: guide,
-                  onTap: () => _openGuide(guide),
-                ),
-                const SizedBox(height: AppSpacing.md),
-              ],
-            if (_selectedFilter != 'Saved') ...[
               const SizedBox(height: AppSpacing.lg),
               Text(
-                'Saved for later',
-                style: AppTextStyles.title.copyWith(fontSize: 32),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _SavedGuideCard(
-                guide: _guides.last,
-                onTap: () => _openGuide(_guides.last),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GuideItem {
-  const _GuideItem({
-    required this.category,
-    required this.description,
-    required this.details,
-    required this.distance,
-    required this.icon,
-    required this.rating,
-    required this.title,
-  });
-
-  final String category;
-  final String description;
-  final String details;
-  final String distance;
-  final IconData icon;
-  final String rating;
-  final String title;
-}
-
-class _GuideCard extends StatelessWidget {
-  const _GuideCard({required this.guide, required this.onTap});
-
-  final _GuideItem guide;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      height: 164,
-      onTap: onTap,
-      padding: EdgeInsets.zero,
-      child: Row(
-        children: [
-          Container(
-            width: 132,
-            height: double.infinity,
-            decoration: const BoxDecoration(color: AppColors.shell),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Icon(
-                  guide.icon,
+                guide.category.toUpperCase(),
+                style: AppTextStyles.body.copyWith(
                   color: AppColors.pineMuted,
-                  size: 52,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.1,
                 ),
-                Positioned(
-                  left: AppSpacing.sm,
-                  top: AppSpacing.sm,
-                  child: _MetadataPill(text: guide.distance),
+              ),
+              Text(guide.title,
+                  style: AppTextStyles.title.copyWith(fontSize: 30)),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                [
+                  if (place != null) _distanceLabel(_distanceTo(place)),
+                  if (guide.ratingAverage != null)
+                    '${guide.ratingAverage!.toStringAsFixed(1)}/5',
+                  if (guide.type == GuideType.route) '${stops.length} stops',
+                ].join(' · '),
+                style: AppTextStyles.body.copyWith(
+                  color: AppColors.pineMuted,
+                  fontWeight: FontWeight.w600,
                 ),
+              ),
+              if (place != null) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text('${place.name}\n${place.address}',
+                    style: AppTextStyles.body),
               ],
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+              const SizedBox(height: AppSpacing.lg),
+              Text(guide.content.isEmpty ? guide.summary : guide.content,
+                  style: AppTextStyles.body.copyWith(fontSize: 16)),
+              if (stops.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.lg),
+                Text('Route stops',
+                    style: AppTextStyles.title.copyWith(fontSize: 21)),
+                const SizedBox(height: AppSpacing.sm),
+                for (final stop in stops)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      backgroundColor: AppColors.pine,
+                      foregroundColor: Colors.white,
+                      child: Text('${stop.order}'),
+                    ),
+                    title: Text(stop.name),
+                    subtitle: Text(stop.instruction),
+                  ),
+              ],
+              const SizedBox(height: AppSpacing.lg),
+              Row(
                 children: [
-                  Text(
-                    guide.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.title.copyWith(
-                      fontSize: 21,
-                      fontWeight: FontWeight.w600,
+                  Expanded(
+                    child: AppButton(
+                      label: saved ? 'Remove Saved' : 'Save Guide',
+                      icon: saved ? Icons.bookmark_remove : Icons.bookmark_add,
+                      backgroundColor: AppColors.pine,
+                      foregroundColor: Colors.white,
+                      onPressed: () async {
+                        final uid = _auth.currentUserId;
+                        if (uid == null) return;
+                        await _repository.setSaved(
+                          uid: uid,
+                          guideId: guide.id,
+                          saved: !saved,
+                        );
+                        if (sheetContext.mounted) Navigator.pop(sheetContext);
+                      },
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    '${guide.distance} · ${guide.rating}',
-                    style: AppTextStyles.body.copyWith(
-                      color: AppColors.pineMuted,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    guide.description,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.body,
                   ),
                 ],
               ),
-            ),
+              if (guide.isMapVisible &&
+                  guide.placeId.isNotEmpty &&
+                  widget.onShowPlaceOnMap != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                AppButton(
+                  label: 'Show on map',
+                  icon: Icons.map_outlined,
+                  backgroundColor: AppColors.blush,
+                  foregroundColor: AppColors.pine,
+                  onPressed: () {
+                    Navigator.pop(sheetContext);
+                    Navigator.maybePop(context);
+                    widget.onShowPlaceOnMap!(guide.placeId);
+                  },
+                ),
+              ],
+            ],
           ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  void _openInitialGuide(
+    List<GuideRecord> guides,
+    Map<String, PlaceRecord> places,
+    Set<String> savedIds,
+  ) {
+    if (_openedInitialGuide || widget.initialGuideId == null) return;
+    for (final guide in guides) {
+      if (guide.id == widget.initialGuideId) {
+        _openedInitialGuide = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _openGuide(guide, places[guide.placeId], savedIds.contains(guide.id));
+        });
+        return;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final uid = _auth.currentUserId;
+    return Scaffold(
+      backgroundColor: AppColors.blush,
+      body: SafeArea(
+        bottom: false,
+        child: StreamBuilder<List<GuideRecord>>(
+          stream: _repository.watchPublishedGuides(),
+          builder: (context, guideSnapshot) {
+            final guides = guideSnapshot.data ?? const <GuideRecord>[];
+            return StreamBuilder<List<PlaceRecord>>(
+              stream: _repository.watchPublishedPlaces(),
+              builder: (context, placeSnapshot) {
+                final places = {
+                  for (final place
+                      in placeSnapshot.data ?? const <PlaceRecord>[])
+                    place.id: place,
+                };
+                final savedStream = uid == null
+                    ? Stream.value(const <String>[])
+                    : _repository.watchSavedGuideIds(uid);
+                return StreamBuilder<List<String>>(
+                  stream: savedStream,
+                  builder: (context, savedSnapshot) {
+                    final savedIds = (savedSnapshot.data ?? const <String>[])
+                        .toSet();
+                    _openInitialGuide(guides, places, savedIds);
+                    final visible = _visibleGuides(guides, savedIds);
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        AppSpacing.md,
+                        AppSpacing.lg,
+                        AppSpacing.xxl,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const BackButton(),
+                          Text('Fluentish Guides',
+                              style:
+                                  AppTextStyles.title.copyWith(fontSize: 36)),
+                          const SizedBox(height: AppSpacing.lg),
+                          TextField(
+                            onChanged: (value) =>
+                                setState(() => _query = value),
+                            decoration: const InputDecoration(
+                              hintText: 'Search guides, places, routes...',
+                              prefixIcon:
+                                  Icon(Icons.search, color: AppColors.pine),
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          Wrap(
+                            spacing: AppSpacing.sm,
+                            children: [
+                              for (final filter in _filters)
+                                ChoiceChip(
+                                  label: Text(filter),
+                                  selected: _selectedFilter == filter,
+                                  showCheckmark: false,
+                                  onSelected: (_) => setState(
+                                    () => _selectedFilter = filter,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.xl),
+                          if (guideSnapshot.connectionState ==
+                                  ConnectionState.waiting &&
+                              guides.isEmpty)
+                            const Center(child: CircularProgressIndicator())
+                          else if (guideSnapshot.hasError)
+                            AppCard(
+                              child: Text(
+                                'Unable to load guides: ${guideSnapshot.error}',
+                              ),
+                            )
+                          else if (visible.isEmpty)
+                            const AppCard(
+                              width: double.infinity,
+                              child: Text(
+                                'No guides match your search.',
+                                textAlign: TextAlign.center,
+                              ),
+                            )
+                          else
+                            for (final guide in visible) ...[
+                              _GuideCard(
+                                guide: guide,
+                                place: places[guide.placeId],
+                                distance: _distanceLabel(
+                                  _distanceTo(places[guide.placeId]),
+                                ),
+                                saved: savedIds.contains(guide.id),
+                                icon: _iconFor(guide),
+                                onTap: () => _openGuide(
+                                  guide,
+                                  places[guide.placeId],
+                                  savedIds.contains(guide.id),
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                            ],
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
 }
 
-class _SavedGuideCard extends StatelessWidget {
-  const _SavedGuideCard({required this.guide, required this.onTap});
+class _GuideCard extends StatelessWidget {
+  const _GuideCard({
+    required this.guide,
+    required this.place,
+    required this.distance,
+    required this.saved,
+    required this.icon,
+    required this.onTap,
+  });
 
-  final _GuideItem guide;
+  final GuideRecord guide;
+  final PlaceRecord? place;
+  final String distance;
+  final bool saved;
+  final IconData icon;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return AppCard(
       onTap: onTap,
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.download_done_outlined,
-            color: AppColors.pine,
-            size: 34,
+          Container(
+            height: 92,
+            width: 92,
+            decoration: BoxDecoration(
+              color: AppColors.shell,
+              borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+            ),
+            child: Icon(icon, color: AppColors.pine, size: 42),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        guide.title,
+                        style: AppTextStyles.title.copyWith(fontSize: 20),
+                      ),
+                    ),
+                    if (saved)
+                      const Icon(Icons.bookmark, color: AppColors.pine),
+                  ],
+                ),
                 Text(
-                  guide.title,
-                  style: AppTextStyles.title.copyWith(
-                    fontSize: 20,
+                  [
+                    if (place != null) distance,
+                    if (guide.ratingAverage != null)
+                      '${guide.ratingAverage!.toStringAsFixed(1)}/5',
+                    if (guide.type == GuideType.route)
+                      '${guide.stopCount} stops',
+                  ].join(' · '),
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.pineMuted,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
-                Text(guide.description, style: AppTextStyles.body),
+                Text(
+                  guide.summary,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.body,
+                ),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _MetadataPill extends StatelessWidget {
-  const _MetadataPill({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(AppSpacing.pillRadius),
-      ),
-      child: Text(
-        text,
-        style: AppTextStyles.body.copyWith(
-          color: AppColors.pine,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-class _GuideDetailsSheet extends StatelessWidget {
-  const _GuideDetailsSheet({required this.guide});
-
-  final _GuideItem guide;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          AppSpacing.xs,
-          AppSpacing.lg,
-          MediaQuery.viewPaddingOf(context).bottom + AppSpacing.xl,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              height: 150,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: AppColors.blush,
-                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-              ),
-              child: Icon(
-                guide.icon,
-                color: AppColors.pine,
-                size: 64,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              guide.category.toUpperCase(),
-              style: AppTextStyles.body.copyWith(
-                color: AppColors.pineMuted,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.1,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              guide.title,
-              style: AppTextStyles.title.copyWith(fontSize: 30),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              '${guide.distance} · ${guide.rating}',
-              style: AppTextStyles.body.copyWith(
-                color: AppColors.pineMuted,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(guide.details,
-                style: AppTextStyles.body.copyWith(fontSize: 16)),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              'What this guide includes',
-              style: AppTextStyles.title.copyWith(fontSize: 21),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            const _DetailRow(
-              icon: Icons.chat_bubble_outline,
-              text: 'Useful phrases and pronunciation notes',
-            ),
-            const _DetailRow(
-              icon: Icons.place_outlined,
-              text: 'Local context and practical tips',
-            ),
-            const _DetailRow(
-              icon: Icons.bookmark_border,
-              text: 'Save progress for later',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.pine, size: 22),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(child: Text(text, style: AppTextStyles.body)),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyGuides extends StatelessWidget {
-  const _EmptyGuides();
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      width: double.infinity,
-      child: Text(
-        'No guides match your search.',
-        style: AppTextStyles.body,
-        textAlign: TextAlign.center,
       ),
     );
   }
