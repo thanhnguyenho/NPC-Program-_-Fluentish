@@ -40,6 +40,9 @@ class _LoginFormState extends State<LoginForm> {
     setState(() => _isSubmitting = true);
     try {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     } on FirebaseAuthException catch (error) {
       _showError(error.message ?? 'Unable to sign in.');
     } catch (error) {
@@ -80,8 +83,7 @@ class _LoginFormState extends State<LoginForm> {
               obscurePassword ? Icons.visibility_off : Icons.visibility,
               color: AppColors.pine,
             ),
-            onPressed: () =>
-                setState(() => obscurePassword = !obscurePassword),
+            onPressed: () => setState(() => obscurePassword = !obscurePassword),
           ),
         ),
         Align(

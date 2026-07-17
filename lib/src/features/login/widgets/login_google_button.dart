@@ -19,6 +19,9 @@ class _LoginGoogleButtonState extends State<LoginGoogleButton> {
     setState(() => _isSubmitting = true);
     try {
       await (widget.auth ?? Auth.instance).signInWithGoogle();
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)

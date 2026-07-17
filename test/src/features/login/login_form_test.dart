@@ -60,4 +60,36 @@ void main() {
 
     expect(auth.signedInWithGoogle, isTrue);
   });
+
+  testWidgets('returns to AuthGate route after email sign-in', (tester) async {
+    final auth = FakeAuthGateway();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => Scaffold(body: LoginForm(auth: auth)),
+                ),
+              ),
+              child: const Text('OPEN LOGIN'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('OPEN LOGIN'));
+    await tester.pumpAndSettle();
+
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), 'demo@example.com');
+    await tester.enterText(fields.at(1), 'secret123');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'LOGIN'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('OPEN LOGIN'), findsOneWidget);
+    expect(find.byType(LoginForm), findsNothing);
+  });
 }
