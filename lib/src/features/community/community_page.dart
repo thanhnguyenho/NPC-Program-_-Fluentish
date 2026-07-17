@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+/// Fluentish Community Page (Exact Figma Page 14/42 Scrollable UI)
+/// Recreates Images 1 & 2 perfectly with compact, elegant layout:
+/// - Active Friends horizontal/grid compact cards
+/// - Find a Friend interactive-style Map Card + Locate button
+/// - Friend Note Activity List (Chris OMW / Vĩnh Tiến Library later) + Reply & Route buttons
+/// - Find your Way Route Card (District 1 Walk)
+/// - Connect with Fluentish social footer
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
 
@@ -8,570 +15,630 @@ class CommunityPage extends StatefulWidget {
 }
 
 class _CommunityPageState extends State<CommunityPage> {
-  String _selectedMood = 'Coffee';
-  String _selectedDuration = '30 min';
-  final TextEditingController _noteController =
-      TextEditingController(text: 'Cafe after class?');
-
+  final Color _bgPastelRose = const Color(0xFFF8EDED);
   final Color _primaryOlive = const Color(0xFF3E4E31);
-  final Color _lightRose = const Color(0xFFF8EDED);
+  final Color _cardCream = const Color(0xFFF3ECE5);
+  final Color _textSubOlive = const Color(0xFF6B7E5D);
+  final Color _greenOnline = const Color(0xFF58D668);
 
-  @override
-  void dispose() {
-    _noteController.dispose();
-    super.dispose();
-  }
+  final List<Map<String, dynamic>> _activeFriends = [
+    {'name': 'Chloe', 'icon': Icons.pets, 'color': const Color(0xFF4A6572)},
+    {'name': 'Chris', 'icon': Icons.people_alt, 'color': const Color(0xFF2C3E50)},
+    {'name': 'AnhQuan', 'icon': Icons.person, 'color': const Color(0xFFD32F2F)},
+    {'name': 'Mary', 'icon': Icons.face_3, 'color': const Color(0xFF8E44AD)},
+    {'name': 'Minh', 'icon': Icons.camera_alt, 'color': const Color(0xFF16A085)},
+    {'name': 'Vĩnh Tiến', 'icon': Icons.cruelty_free, 'color': const Color(0xFFB7950B)},
+    {'name': 'Tấn Phát', 'icon': Icons.directions_walk, 'color': const Color(0xFF27AE60)},
+    {'name': 'Keem', 'icon': Icons.workspace_premium, 'color': const Color(0xFFF39C12)},
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE5E9E2),
-      body: Stack(
-        children: [
-          // 1. Stylized Campus Map Background with University Streets & Buildings
-          _buildCampusBackgroundMap(),
+      backgroundColor: _bgPastelRose,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 1. Header Title & Subtitle
+              Text(
+                'Fluentish Community',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  color: _primaryOlive,
+                  fontFamily: 'Georgia',
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                "Let's see what your friends are up to!",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: _textSubOlive,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 22),
 
-          // 2. Friends Nearby Avatars & Status Bubbles on Map
-          _buildFriendMapMarkers(),
-
-          // 3. Top Header Bar ("Friend Location - Posting my note" & "Note" Pill)
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              // 2. Active Friends Section (Compact & Proportional Grid)
+              _buildSectionTitle('Active Friends'),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                 decoration: BoxDecoration(
-                  color: _lightRose.withAlpha(235),
-                  borderRadius: BorderRadius.circular(28),
+                  color: _cardCream,
+                  borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withAlpha(15),
+                      color: Colors.black.withAlpha(8),
                       blurRadius: 10,
-                      offset: const Offset(0, 4),
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
-                child: Row(
+                child: Wrap(
+                  spacing: 16,
+                  runSpacing: 18,
+                  alignment: WrapAlignment.spaceAround,
+                  children: _activeFriends.map((f) {
+                    return SizedBox(
+                      width: 72,
+                      child: _buildFriendAvatarCard(
+                        f['name'] as String,
+                        f['icon'] as IconData,
+                        f['color'] as Color,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 26),
+
+              // 3. Find a Friend Section (Map Card + Notes list below)
+              _buildSectionTitle('Find a Friend'),
+              const SizedBox(height: 12),
+              _buildFindAFriendMapCard(),
+              const SizedBox(height: 14),
+
+              // Friend notes cards matching Figma (Chris OMW & Vĩnh Tiến Library later)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: _cardCream,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(8),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
                   children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new,
-                        size: 18,
-                        color: Color(0xFF3E4E31),
-                      ),
+                    _buildFriendNoteRow(
+                      nameTitle: 'Chris: OMW in 8 min.',
+                      subtitle: 'Cafe meetup near campus',
+                      avatarIcon: Icons.people_alt,
+                      avatarColor: const Color(0xFF2C3E50),
+                      btnText: 'Reply',
+                      onBtnTap: () => _showActionToast('Replying to Chris...'),
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Friend Location',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: _primaryOlive,
-                            ),
-                          ),
-                          const Text(
-                            'Posting my note',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.black54,
-                            ),
-                          ),
-                        ],
-                      ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Divider(color: Colors.black12, height: 1),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _primaryOlive,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF98E37E),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          const Text(
-                            'Note',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
+                    _buildFriendNoteRow(
+                      nameTitle: 'Vĩnh Tiến: Library later.',
+                      subtitle: 'Close to your current spot',
+                      avatarIcon: Icons.cruelty_free,
+                      avatarColor: const Color(0xFFB7950B),
+                      btnText: 'Route',
+                      onBtnTap: () => _showActionToast('Routing to Vĩnh Tiến...'),
                     ),
                   ],
                 ),
               ),
-            ),
-          ),
+              const SizedBox(height: 28),
 
-          // 4. Draggable Scrollable Bottom Sheet ("Post a Note")
-          _buildPostANoteBottomSheet(),
-        ],
-      ),
-    );
-  }
+              // 4. Find your Way Section
+              _buildSectionTitle('Find your Way'),
+              const SizedBox(height: 12),
+              _buildFindYourWayRouteCard(),
+              const SizedBox(height: 32),
 
-  // Map representation matching Figma Page 14 campus layout
-  Widget _buildCampusBackgroundMap() {
-    return Positioned.fill(
-      child: CustomPaint(
-        painter: _CampusMapPainter(),
-      ),
-    );
-  }
+              // 5. Connect with Fluentish Footer Card
+              _buildConnectFooterCard(),
+              const SizedBox(height: 14),
 
-  // Friend Map Markers matching Figma Page 14
-  Widget _buildFriendMapMarkers() {
-    return Stack(
-      children: [
-        // Top Left: Cat Avatar
-        Positioned(
-          top: 130,
-          left: 45,
-          child: _buildAvatarMarker(
-            label: null,
-            iconBadge: Icons.coffee,
-            borderColor: Colors.amber.shade200,
-            imageText: '🐱',
-          ),
-        ),
-
-        // Top Right: 2 Friends Selfie
-        Positioned(
-          top: 190,
-          right: 55,
-          child: _buildAvatarMarker(
-            label: null,
-            iconBadge: Icons.auto_awesome,
-            borderColor: _primaryOlive.withAlpha(100),
-            imageText: '👭',
-          ),
-        ),
-
-        // Center Left: Tấn Phát ("On campus")
-        Positioned(
-          top: 410,
-          left: 30,
-          child: _buildAvatarMarker(
-            label: 'Tấn Phát',
-            statusBubble: 'On campus',
-            borderColor: Colors.green.shade300,
-            imageText: '👦🏻',
-          ),
-        ),
-
-        // Center: Friend with chat badge
-        Positioned(
-          top: 360,
-          left: 125,
-          child: _buildAvatarMarker(
-            label: null,
-            statusBubble: 'Library later',
-            iconBadge: Icons.chat_bubble_outline,
-            borderColor: Colors.pink.shade200,
-            imageText: '👧🏻',
-          ),
-        ),
-
-        // Center Right: Keem ("New vocab", Kanji 金)
-        Positioned(
-          top: 330,
-          right: 40,
-          child: _buildAvatarMarker(
-            label: 'Keem',
-            statusBubble: 'New vocab',
-            borderColor: Colors.amber.shade300,
-            imageText: '金',
-            isKanji: true,
-          ),
-        ),
-
-        // Center Right Lower: Friend ("Free now")
-        Positioned(
-          top: 460,
-          right: 60,
-          child: _buildAvatarMarker(
-            label: null,
-            statusBubble: 'Free now',
-            iconBadge: Icons.headphones,
-            borderColor: Colors.teal.shade200,
-            imageText: '🎧',
-          ),
-        ),
-
-        // Center User Location Pulse Ring
-        Positioned(
-          top: 470,
-          left: 175,
-          child: Container(
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.blue.withAlpha(40),
-              border: Border.all(color: Colors.blue.shade300, width: 2),
-            ),
-            child: Center(
-              child: Container(
-                width: 46,
-                height: 46,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xFF6B8DB9),
+              Center(
+                child: Text(
+                  '© 2026 Fluentish. All rights reserved.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _textSubOlive.withAlpha(180),
+                  ),
                 ),
-                child: const Icon(Icons.person, color: Colors.white, size: 28),
               ),
-            ),
+              const SizedBox(height: 20),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildAvatarMarker({
-    String? label,
-    String? statusBubble,
-    IconData? iconBadge,
-    required Color borderColor,
-    required String imageText,
-    bool isKanji = false,
-  }) {
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w700,
+        color: _primaryOlive,
+        fontFamily: 'Georgia',
+      ),
+    );
+  }
+
+  Widget _buildFriendAvatarCard(String name, IconData icon, Color color) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (statusBubble != null)
-          Container(
-            margin: const EdgeInsets.only(bottom: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: _primaryOlive,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Text(
-              statusBubble,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
         Stack(
-          clipBehavior: Clip.none,
           children: [
             Container(
-              width: 54,
-              height: 54,
+              width: 58,
+              height: 58,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white,
-                border: Border.all(color: borderColor, width: 3),
+                color: color.withAlpha(25),
+                border: Border.all(color: Colors.white, width: 2.5),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withAlpha(20),
+                    color: Colors.black.withAlpha(15),
                     blurRadius: 6,
-                    offset: const Offset(0, 3),
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              child: Center(
-                child: Text(
-                  imageText,
-                  style: TextStyle(
-                    fontSize: isKanji ? 24 : 26,
-                    fontWeight: isKanji ? FontWeight.bold : FontWeight.normal,
-                  ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            Positioned(
+              right: 2,
+              bottom: 2,
+              child: Container(
+                width: 13,
+                height: 13,
+                decoration: BoxDecoration(
+                  color: _greenOnline,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
                 ),
               ),
             ),
-            if (iconBadge != null)
-              Positioned(
-                top: -4,
-                right: -4,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withAlpha(30), blurRadius: 4),
-                    ],
-                  ),
-                  child: Icon(iconBadge, size: 14, color: _primaryOlive),
-                ),
-              ),
           ],
         ),
-        if (label != null)
-          Container(
-            margin: const EdgeInsets.only(top: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withAlpha(15), blurRadius: 4),
-              ],
-            ),
-            child: Text(
-              label,
-              style: TextStyle(
-                color: _primaryOlive,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+        const SizedBox(height: 6),
+        Text(
+          name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: _primaryOlive,
           ),
+        ),
       ],
     );
   }
 
-  // Draggable Scrollable Bottom Sheet matching Figma Page 14
-  Widget _buildPostANoteBottomSheet() {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.45,
-      minChildSize: 0.35,
-      maxChildSize: 0.82,
-      builder: (context, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: _lightRose,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(25),
-                blurRadius: 15,
-                offset: const Offset(0, -4),
-              ),
-            ],
+  Widget _buildFindAFriendMapCard() {
+    return Container(
+      height: 220,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(12),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          child: SingleChildScrollView(
-            controller: scrollController,
-            padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Top Drag Handle Pill
-                Center(
-                  child: Container(
-                    width: 44,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withAlpha(35),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          children: [
+            // Custom Campus Street Map Painter
+            CustomPaint(
+              size: const Size(double.infinity, 220),
+              painter: _CampusMapPainter(),
+            ),
 
-                // Header Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Top-left floating info card ("8 nearby · 2 close enough to meet")
+            Positioned(
+              left: 14,
+              top: 14,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(245),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Post a Note',
+                      '8 nearby',
                       style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
                         color: _primaryOlive,
                       ),
                     ),
-                    const Text(
-                      'friends nearby',
+                    const SizedBox(height: 2),
+                    Text(
+                      '2 close enough to meet',
                       style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.black45,
+                        fontSize: 12,
+                        color: _textSubOlive,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+              ),
+            ),
 
-                // Note Input Field Card ("Cafe after class?")
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(10),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    controller: _noteController,
-                    maxLines: 2,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: _primaryOlive,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: 'Share what you are up to...',
-                      hintStyle: TextStyle(color: Colors.grey.shade400),
-                    ),
+            // Bottom-right floating Locate button
+            Positioned(
+              right: 14,
+              bottom: 14,
+              child: ElevatedButton(
+                onPressed: () => _showActionToast('Locating campus meetup spot...'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primaryOlive,
+                  foregroundColor: Colors.white,
+                  elevation: 4,
+                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
                   ),
                 ),
-                const SizedBox(height: 20),
-
-                // Mood Filter Row
-                Text(
-                  'Mood',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: _primaryOlive,
-                  ),
+                child: const Text(
+                  'Locate',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
                 ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 10,
-                  children: ['Coffee', 'Study', 'Free', 'Busy'].map((mood) {
-                    final isSelected = _selectedMood == mood;
-                    return ChoiceChip(
-                      label: Text(
-                        mood,
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : _primaryOlive,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      selected: isSelected,
-                      selectedColor: _primaryOlive,
-                      backgroundColor: _primaryOlive.withAlpha(35),
-                      onSelected: (selected) {
-                        if (selected) setState(() => _selectedMood = mood);
-                      },
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 20),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-                // Duration & Distance Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Duration',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: _primaryOlive,
-                      ),
-                    ),
-                    Row(
+  Widget _buildFriendNoteRow({
+    required String nameTitle,
+    required String subtitle,
+    required IconData avatarIcon,
+    required Color avatarColor,
+    required String btnText,
+    required VoidCallback onBtnTap,
+  }) {
+    return Row(
+      children: [
+        Stack(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: avatarColor.withAlpha(30),
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: Icon(avatarIcon, color: avatarColor, size: 24),
+            ),
+            Positioned(
+              right: 1,
+              bottom: 1,
+              child: Container(
+                width: 11,
+                height: 11,
+                decoration: BoxDecoration(
+                  color: _greenOnline,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1.8),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                nameTitle,
+                style: TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.bold,
+                  color: _primaryOlive,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: _textSubOlive,
+                ),
+              ),
+            ],
+          ),
+        ),
+        ElevatedButton(
+          onPressed: onBtnTap,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF7E9866),
+            foregroundColor: Colors.white,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          child: Text(
+            btnText,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFindYourWayRouteCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: _cardCream,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(8),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: 140,
+              child: CustomPaint(
+                painter: _RouteMapPainter(),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.location_on_outlined,
-                            size: 16, color: _primaryOlive),
-                        const SizedBox(width: 4),
-                        const Text(
-                          'Current location · 0.0 km',
+                        Text(
+                          'District 1 Walk',
                           style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.black54,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: _primaryOlive,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Saved route with food phrases and coffee stops.',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: _textSubOlive,
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-
-                // Action Pills & Buttons Row
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    ...['30 min', '1 hr', 'Today'].map((dur) {
-                      final isSelected = _selectedDuration == dur;
-                      return ChoiceChip(
-                        label: Text(
-                          dur,
-                          style: TextStyle(
-                            color: isSelected ? Colors.white : _primaryOlive,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        selected: isSelected,
-                        selectedColor: _primaryOlive,
-                        backgroundColor: _primaryOlive.withAlpha(35),
-                        onSelected: (selected) {
-                          if (selected) setState(() => _selectedDuration = dur);
-                        },
-                      );
-                    }),
-                    ActionChip(
-                      label: const Text('Cancel'),
-                      backgroundColor: Colors.white,
-                      onPressed: () {},
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _primaryOlive,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 22, vertical: 12),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: () => _showActionToast('Opening District 1 Walk Route...'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _primaryOlive,
+                      foregroundColor: Colors.white,
+                      elevation: 2,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                                'Note posted: "${_noteController.text}" ($_selectedMood)'),
-                            backgroundColor: _primaryOlive,
-                          ),
-                        );
-                      },
-                      child: const Text('Post',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
-                  ],
+                    child: const Text(
+                      'Route',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConnectFooterCard() {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: _cardCream,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(8),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 44,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.black12,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _primaryOlive.withAlpha(25),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 40),
+                child: Icon(Icons.people_alt_rounded, color: _primaryOlive, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Connect with Fluentish',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: _primaryOlive,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Follow updates, community notes, and nearby language moments.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              color: _textSubOlive,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildSocialBtn('fb', Icons.facebook, const Color(0xFF1877F2)),
+              _buildSocialBtn('insta', Icons.camera_alt, const Color(0xFFE4405F)),
+              _buildSocialBtn('tiktok', Icons.music_note, Colors.black87),
+              _buildSocialBtn('mail', Icons.mail_rounded, _primaryOlive),
+              _buildSocialBtn('web', Icons.language, const Color(0xFF7E9866)),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withAlpha(220),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'hello@fluentish.app',
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: _primaryOlive,
+                  ),
+                ),
+                Text(
+                  'Privacy · Terms',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: _textSubOlive,
+                  ),
+                ),
               ],
             ),
           ),
-        );
-      },
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSocialBtn(String label, IconData icon, Color color) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        InkWell(
+          onTap: () => _showActionToast('Opening $label...'),
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withAlpha(60),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: Colors.white, size: 22),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w500,
+            color: _textSubOlive,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showActionToast(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        duration: const Duration(seconds: 1),
+        backgroundColor: _primaryOlive,
+      ),
     );
   }
 }
 
-// Stylized Campus Street Map Painter
 class _CampusMapPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final bgPaint = Paint()..color = const Color(0xFFE2E7DE);
+    final bgPaint = Paint()..color = const Color(0xFFE2E9DE);
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
 
     final roadPaint = Paint()
@@ -580,33 +647,61 @@ class _CampusMapPainter extends CustomPainter {
       ..strokeWidth = 24
       ..strokeCap = StrokeCap.round;
 
-    // Draw stylized campus roads
     final path = Path()
-      ..moveTo(0, size.height * 0.25)
-      ..lineTo(size.width * 0.5, size.height * 0.35)
-      ..lineTo(size.width, size.height * 0.2)
-      ..moveTo(size.width * 0.35, 0)
-      ..lineTo(size.width * 0.45, size.height * 0.7)
+      ..moveTo(0, size.height * 0.3)
+      ..lineTo(size.width * 0.55, size.height * 0.45)
+      ..lineTo(size.width, size.height * 0.25)
+      ..moveTo(size.width * 0.4, 0)
+      ..lineTo(size.width * 0.48, size.height * 0.75)
       ..lineTo(size.width * 0.8, size.height);
 
     canvas.drawPath(path, roadPaint);
 
-    // Draw building blocks
-    final buildingPaint = Paint()..color = const Color(0xFFD6DDD0);
+    final bldgPaint = Paint()..color = const Color(0xFFCED6C9);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        const Rect.fromLTWH(20, 180, 110, 80),
+        const Rect.fromLTWH(20, 140, 110, 60),
         const Radius.circular(12),
       ),
-      buildingPaint,
+      bldgPaint,
     );
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromLTWH(size.width - 140, 260, 120, 90),
+        Rect.fromLTWH(size.width - 130, 120, 110, 70),
         const Radius.circular(12),
       ),
-      buildingPaint,
+      bldgPaint,
     );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _RouteMapPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bgPaint = Paint()..color = const Color(0xFFDFE6D8);
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
+
+    final roadPaint = Paint()
+      ..color = Colors.white.withAlpha(230)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 18
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path()
+      ..moveTo(0, size.height * 0.6)
+      ..lineTo(size.width * 0.6, size.height * 0.3)
+      ..lineTo(size.width, size.height * 0.7);
+
+    canvas.drawPath(path, roadPaint);
+
+    final routePaint = Paint()
+      ..color = const Color(0xFF3E4E31)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4;
+    canvas.drawPath(path, routePaint);
   }
 
   @override

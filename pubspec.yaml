@@ -7,7 +7,6 @@ environment:
   sdk: ">=3.4.0 <4.0.0"
 
 dependencies:
-<<<<<<< Updated upstream
   firebase_core: ^4.11.0
 =======
   audioplayers: ^6.7.1
@@ -37,3 +36,4 @@ flutter:
     - assets/images/friends/
     - assets/google_fonts/
     - assets/images/
+    - assets/audio/
