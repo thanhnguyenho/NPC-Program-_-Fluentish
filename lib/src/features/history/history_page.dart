@@ -1,5 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'package:fluentish/src/features/language/language_page.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
 class _HistoryEntry {
@@ -12,7 +15,7 @@ class _HistoryEntry {
 
   final String term;
   final String translation;
-  final String date; // group header, e.g. "Today", "Yesterday"
+  final DateTime date;
   final IconData icon;
 }
 
@@ -29,68 +32,76 @@ class _HistoryPageState extends State<HistoryPage> {
   final _searchController = TextEditingController();
   String _query = '';
 
-  // TODO: replace with real history pulled from local storage / backend.
-  final List<_HistoryEntry> _allEntries = [
-    const _HistoryEntry(
-      term: 'Xin chào',
-      translation: 'Hello',
-      date: 'Today',
-      icon: Icons.chat_bubble_outline,
-    ),
-    const _HistoryEntry(
-      term: 'Cảm ơn',
-      translation: 'Thank you',
-      date: 'Today',
-      icon: Icons.favorite_border,
-    ),
-    const _HistoryEntry(
-      term: 'Bao nhiêu tiền?',
-      translation: 'How much is it?',
-      date: 'Yesterday',
-      icon: Icons.shopping_bag_outlined,
-    ),
-    const _HistoryEntry(
-      term: 'Ngon quá',
-      translation: 'Delicious',
-      date: 'Yesterday',
-      icon: Icons.restaurant_outlined,
-    ),
-    const _HistoryEntry(
-      term: 'Tạm biệt',
-      translation: 'Goodbye',
-      date: 'Earlier',
-      icon: Icons.waving_hand_outlined,
-    ),
-    const _HistoryEntry(
-      term: 'Nhà vệ sinh ở đâu?',
-      translation: 'Where is the restroom?',
-      date: 'Earlier',
-      icon: Icons.wc_outlined,
-    ),
-  ];
-
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
-  Map<String, List<_HistoryEntry>> get _grouped {
+  Map<String, List<_HistoryEntry>> _grouped(List<_HistoryEntry> entries) {
     final filtered = _query.isEmpty
-        ? _allEntries
-        : _allEntries.where(
+        ? entries
+        : entries.where(
             (e) =>
                 e.term.toLowerCase().contains(_query.toLowerCase()) ||
                 e.translation.toLowerCase().contains(_query.toLowerCase()),
           );
     final map = <String, List<_HistoryEntry>>{};
     for (final e in filtered) {
-      map.putIfAbsent(e.date, () => []).add(e);
+      map.putIfAbsent(_dateGroup(e.date), () => []).add(e);
     }
     return map;
   }
 
-  void _clearHistory() {
+  String _dateGroup(DateTime date) {
+    final now = DateTime.now();
+    final day = DateTime(date.year, date.month, date.day);
+    final today = DateTime(now.year, now.month, now.day);
+    if (day == today) return 'Today';
+    if (day == today.subtract(const Duration(days: 1))) return 'Yesterday';
+    return 'Earlier';
+  }
+
+  Stream<List<_HistoryEntry>> get _historyStream {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return Stream.value(const <_HistoryEntry>[]);
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('history')
+        .snapshots()
+        .map((snapshot) {
+      final entries = snapshot.docs.map((document) {
+        final data = document.data();
+        final timestamp = data['createdAt'];
+        return _HistoryEntry(
+          term: (data['term'] ?? data['source'] ?? '').toString(),
+          translation: (data['translation'] ?? data['target'] ?? '').toString(),
+          date: timestamp is Timestamp ? timestamp.toDate() : DateTime(1970),
+          icon: Icons.translate_outlined,
+        );
+      }).where((entry) => entry.term.isNotEmpty).toList()
+        ..sort((a, b) => b.date.compareTo(a.date));
+      return entries;
+    });
+  }
+
+  Future<void> _clearHistory() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final history = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('history');
+    final snapshot = await history.get();
+    final batch = FirebaseFirestore.instance.batch();
+    for (final document in snapshot.docs) {
+      batch.delete(document.reference);
+    }
+    if (snapshot.docs.isNotEmpty) await batch.commit();
+  }
+
+  void _confirmClearHistory() {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -105,8 +116,9 @@ class _HistoryPageState extends State<HistoryPage> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              setState(() => _allEntries.clear());
+            onPressed: () async {
+              await _clearHistory();
+              if (!ctx.mounted) return;
               Navigator.pop(ctx);
             },
             child: const Text('Clear', style: TextStyle(color: Colors.red,)),
@@ -118,8 +130,6 @@ class _HistoryPageState extends State<HistoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final grouped = _grouped;
-
     return Scaffold(
       backgroundColor: AppColors.shell,
       body: Column(
@@ -149,7 +159,7 @@ class _HistoryPageState extends State<HistoryPage> {
                     color: AppColors.blush,
                   ),
                   tooltip: 'Clear history',
-                  onPressed: _clearHistory,
+                  onPressed: _confirmClearHistory,
                 ),
               ],
             ),
@@ -179,14 +189,24 @@ class _HistoryPageState extends State<HistoryPage> {
             ),
           ),
           Expanded(
-            child: grouped.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No history found',
-                      style: TextStyle(color: AppColors.textMuted),
-                    ),
-                  )
-                : ListView(
+            child: StreamBuilder<List<_HistoryEntry>>(
+              stream: _historyStream,
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Center(child: Text('Unable to load history'));
+                }
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final grouped = _grouped(snapshot.data!);
+                return grouped.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No history found',
+                          style: TextStyle(color: AppColors.textMuted),
+                        ),
+                      )
+                    : ListView(
                     padding: const EdgeInsets.fromLTRB(
                       AppSpacing.md,
                       AppSpacing.xs,
@@ -234,7 +254,9 @@ class _HistoryPageState extends State<HistoryPage> {
                         ),
                       ],
                     ],
-                  ),
+                  );
+              },
+            ),
           ),
         ],
       ),
@@ -251,7 +273,9 @@ class _HistoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        // TODO: navigate to full lookup/detail view for this entry.
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const LanguagePage()),
+        );
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(

@@ -23,4 +23,5 @@ linux/flutter/ephemeral/
 *.log
 *.tmp
 .DS_Store
+**/.DS_Store
 

@@ -1,10 +1,10 @@
 import 'package:fluentish/src/features/navigation/main_scaffold.dart';
+import 'package:fluentish/src/services/auth_service.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:fluentish/src/features/forgot_password/forgot_password_page.dart';
-import 'package:fluentish/src/features/navigation/main_scaffold.dart';
 import 'package:fluentish/src/shared/shared.dart';
-
 
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
@@ -14,42 +14,90 @@ class LoginForm extends StatefulWidget {
 }
 
 class _LoginFormState extends State<LoginForm> {
-  static const _demoUsername = 'admin';
-  static const _demoPassword = 'admin123';
+  final AuthService _authService = AuthService();
 
-  final usernameController = TextEditingController();
+  final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
   bool obscurePassword = true;
+  bool _isSubmitting = false;
+  String? errorMessage;
 
   @override
   void dispose() {
-    usernameController.dispose();
+    emailController.dispose();
     passwordController.dispose();
     super.dispose();
   }
 
-  void _login() {
-    final isDemoAdmin = usernameController.text.trim() == _demoUsername &&
-        passwordController.text == _demoPassword;
+  Future<void> _login() async {
+    if (_isSubmitting) return;
 
-    if (!isDemoAdmin) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text('Invalid demo username or password'),
-          ),
-        );
+    final email = emailController.text.trim();
+    final password = passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      setState(() {
+        errorMessage = 'Please enter your email and password.';
+      });
       return;
     }
 
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (_) => const MainScaffold(initialIndex: 0),
-      ),
-      (route) => false,
-    );
+    setState(() {
+      _isSubmitting = true;
+      errorMessage = null;
+    });
+
+    try {
+      await _authService.login(email: email, password: password);
+
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const MainScaffold(initialIndex: 0),
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      String message = 'Login failed. Please try again.';
+
+      switch (e.code) {
+        case 'user-not-found':
+          message = 'No account found with this email.';
+          break;
+        case 'wrong-password':
+          message = 'Incorrect password.';
+          break;
+        case 'invalid-email':
+          message = 'Invalid email address.';
+          break;
+        case 'invalid-credential':
+          message = 'Incorrect email or password.';
+          break;
+        case 'user-disabled':
+          message = 'This account has been disabled.';
+          break;
+        default:
+          message = e.message ?? message;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        errorMessage = message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        errorMessage = 'Something went wrong. Please try again.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -57,11 +105,12 @@ class _LoginFormState extends State<LoginForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const AppTextLabel(text: 'Username'),
+        const AppTextLabel(text: 'Email'),
         const SizedBox(height: AppSpacing.xs),
         AppTextField(
-          controller: usernameController,
-          hintText: 'Enter your username',
+          controller: emailController,
+          hintText: 'Enter your email',
+          keyboardType: TextInputType.emailAddress,
         ),
         const SizedBox(height: AppSpacing.lg),
         const AppTextLabel(text: 'Password'),
@@ -82,6 +131,15 @@ class _LoginFormState extends State<LoginForm> {
             },
           ),
         ),
+        if (errorMessage != null && errorMessage!.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            errorMessage!,
+            style: AppTextStyles.body.copyWith(
+              color: Colors.red.shade200,
+            ),
+          ),
+        ],
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
@@ -105,13 +163,8 @@ class _LoginFormState extends State<LoginForm> {
         ),
         const SizedBox(height: AppSpacing.md),
         AppButton(
-          label: 'LOGIN',
-          onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const HomePage()),
-            );
-          },
+          label: _isSubmitting ? 'LOGGING IN...' : 'LOGIN',
+          onPressed: _login,
         ),
       ],
     );

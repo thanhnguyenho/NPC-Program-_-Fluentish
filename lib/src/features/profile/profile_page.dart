@@ -4,6 +4,7 @@ import 'package:fluentish/src/features/history/history_page.dart';
 import 'package:fluentish/src/features/profile_menu/profile_menu_options_page.dart';
 import 'package:fluentish/src/features/settings/settings_page.dart';
 import 'package:fluentish/src/features/welcome/welcome_page.dart';
+import 'package:fluentish/src/services/auth_service.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
 /// The Profile tab: avatar + stats header, account/preferences menu,
@@ -34,6 +35,13 @@ class _ProfilePageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = AuthService().currentUser;
+    final email = user?.email ?? '';
+    final displayName = user?.displayName?.trim();
+    final name = displayName?.isNotEmpty == true
+        ? displayName!
+        : (email.contains('@') ? email.split('@').first : 'User');
+
     return Column(
       children: [
         Container(
@@ -79,16 +87,15 @@ class _ProfilePageContent extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppSpacing.xs),
-              // TODO: pull from the logged-in user's real profile data.
               Text(
-                'Chloe',
+                name,
                 style: AppTextStyles.title.copyWith(
                   color: AppColors.blush,
                   fontSize: 18,
                 ),
               ),
               Text(
-                'chloe123@gmail.com',
+                email,
                 style: AppTextStyles.body.copyWith(
                   color: AppColors.blush.withValues(alpha: 0.75),
                   fontSize: 13,
@@ -293,4 +300,3 @@ class _AccountTile extends StatelessWidget {
 
 
   
-
