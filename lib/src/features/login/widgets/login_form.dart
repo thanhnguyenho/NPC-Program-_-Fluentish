@@ -1,8 +1,10 @@
+import 'package:fluentish/src/features/navigation/main_scaffold.dart';
 import 'package:flutter/material.dart';
 
 import 'package:fluentish/src/features/forgot_password/forgot_password_page.dart';
 import 'package:fluentish/src/features/home/home_page.dart';
 import 'package:fluentish/src/shared/shared.dart';
+
 
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
@@ -90,10 +92,14 @@ class _LoginFormState extends State<LoginForm> {
         AppButton(
           label: 'LOGIN',
           onPressed: () {
+<<<<<<< Updated upstream
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (_) => const HomePage()),
             );
+=======
+            _login();
+>>>>>>> Stashed changes
           },
         ),
       ],

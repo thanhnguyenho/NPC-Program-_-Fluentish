@@ -68,8 +68,8 @@ class _ProfileMenuOptionsPageState
             decoration: const BoxDecoration(
               color: AppColors.pine,
               borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
+                bottomLeft: Radius.circular(15),
+                bottomRight: Radius.circular(15),
               ),
             ),
             padding: const EdgeInsets.fromLTRB(

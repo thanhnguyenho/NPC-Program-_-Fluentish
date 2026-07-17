@@ -2,9 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:fluentish/src/features/login/login_page.dart';
 import 'package:fluentish/src/shared/shared.dart';
+import '../../services/auth_service.dart';
 
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});
@@ -14,6 +16,8 @@ class RegistrationPage extends StatefulWidget {
 }
 
 class _RegistrationPageState extends State<RegistrationPage> {
+  final AuthService _authService = AuthService();
+
   final firstNameController = TextEditingController();
   final lastNameController = TextEditingController();
   final preferredNameController = TextEditingController();
@@ -58,6 +62,99 @@ class _RegistrationPageState extends State<RegistrationPage> {
     );
   }
 
+  Future<void> _register() async {
+    if (!agree) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please accept the Terms of Service.'),
+        ),
+      );
+      return;
+    }
+
+    if (emailController.text.trim().isEmpty ||
+        passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Email and Password are required.'),
+        ),
+      );
+      return;
+    }
+
+    if (emailController.text.trim() !=
+        confirmEmailController.text.trim()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Emails do not match.'),
+        ),
+      );
+      return;
+    }
+
+    if (passwordController.text !=
+        confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Passwords do not match.'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      await _authService.register(
+        email: emailController.text.trim(),
+        password: passwordController.text,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account created successfully!'),
+        ),
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const LoginPage(),
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      String message = 'Registration failed';
+
+      switch (e.code) {
+        case 'email-already-in-use':
+          message = 'This email is already registered.';
+          break;
+        case 'invalid-email':
+          message = 'Invalid email address.';
+          break;
+        case 'weak-password':
+          message = 'Password must be at least 6 characters.';
+          break;
+        default:
+          message = e.message ?? message;
+      }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Something went wrong.'),
+        ),
+      );
+    }
+  }
+
   Widget buildField({
     required String label,
     required TextEditingController controller,
@@ -88,7 +185,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
     );
   }
 
-    @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.blush,
@@ -157,8 +254,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
               ),
 
               const SizedBox(height: AppSpacing.md),
-
-              buildField(
+                            buildField(
                 label: 'DATE OF BIRTH:',
                 controller: dobController,
                 hint: 'DD/MM/YYYY',
@@ -196,7 +292,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
               buildField(
                 label: 'PASSWORD:',
                 controller: passwordController,
-                hint: 'Minimum 8 characters',
+                hint: 'Minimum 6 characters',
                 obscure: true,
               ),
 
@@ -267,7 +363,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 label: 'CREATE ACCOUNT',
                 backgroundColor: AppColors.pine,
                 foregroundColor: AppColors.blush,
-                onPressed: _goToLogin,
+                onPressed: _register,
               ),
 
               const SizedBox(height: AppSpacing.lg),
@@ -288,8 +384,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                           text: 'Log in',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            decoration:
-                                TextDecoration.underline,
+                            decoration: TextDecoration.underline,
                           ),
                         ),
                       ],
@@ -299,10 +394,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
               ),
 
               const SizedBox(height: AppSpacing.xl),
-            ],
+              const SizedBox(height: AppSpacing.xl),
+                          ],
           ),
         ),
       ),
     );
   }
 }
+

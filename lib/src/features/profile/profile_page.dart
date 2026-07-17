@@ -16,37 +16,13 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  bool _menuOpen = false;
 
-  void _toggleMenu() => setState(() => _menuOpen = !_menuOpen);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.shell,
-      body: Stack(
-        children: [
-          _ProfilePageContent(onMenuTap: _toggleMenu),
-          if (_menuOpen)
-            GestureDetector(
-              onTap: _toggleMenu,
-              child: AnimatedOpacity(
-                opacity: _menuOpen ? 1 : 0,
-                duration: const Duration(milliseconds: 200),
-                child: Container(color: Colors.black.withValues(alpha: 0.25)),
-              ),
-            ),
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 260),
-            curve: Curves.easeOut,
-            top: 0,
-            bottom: 0,
-            right: _menuOpen ? 0 : -300,
-            width: 300,
-            child: _SideMenu(onClose: _toggleMenu),
-          ),
-        ],
-      ),
+      body: _ProfilePageContent(onMenuTap: () {  },),
     );
   }
 }
@@ -71,26 +47,22 @@ class _ProfilePageContent extends StatelessWidget {
           decoration: const BoxDecoration(
             color: AppColors.pine,
             borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(28),
-              bottomRight: Radius.circular(28),
+              bottomLeft: Radius.circular(15),
+              bottomRight: Radius.circular(15),
             ),
           ),
           child: Column(
             children: [
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.menu, color: AppColors.blush, size: 26),
-                    onPressed: onMenuTap,
-                  ),
-                ],
-              ),
               Stack(
                 children: [
                   const CircleAvatar(
                     radius: 46,
                     backgroundColor: AppColors.blush,
-                    child: Icon(Icons.person, size: 48, color: AppColors.pine),
+                    child: Icon(
+                      Icons.person,
+                      size: 48,
+                      color: AppColors.pine,
+                    ),
                   ),
                   Positioned(
                     bottom: 0,
@@ -315,113 +287,10 @@ class _AccountTile extends StatelessWidget {
   }
 }
 
-/// Green sliding navigation panel opened from the top-left hamburger icon.
-class _SideMenu extends StatelessWidget {
-  const _SideMenu({required this.onClose});
 
-  final VoidCallback onClose;
 
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.pine,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.md,
-            AppSpacing.xs,
-            AppSpacing.md,
-            AppSpacing.md,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.blush),
-                  onPressed: onClose,
-                ),
-              ),
-              const CircleAvatar(
-                radius: 34,
-                backgroundColor: AppColors.blush,
-                child: Icon(Icons.person, size: 36, color: AppColors.pine),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                'Chloe',
-                style: AppTextStyles.title.copyWith(color: AppColors.blush, fontSize: 17),
-              ),
-              Text(
-                'chloe123@gmail.com',
-                style: AppTextStyles.body.copyWith(
-                  color: AppColors.blush.withValues(alpha: 0.75),
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Divider(color: AppColors.blush.withValues(alpha: 0.25)),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                'Main',
-                style: AppTextStyles.body.copyWith(
-                  color: AppColors.blush.withValues(alpha: 0.75),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              // NOTE: these tabs live in HomePage's bottom nav; this menu
-              // is a shortcut that just closes back to whichever tab the
-              // user is already on until cross-tab navigation is wired up.
-              _MenuItem(icon: Icons.home_outlined, label: 'Home', onTap: onClose),
-              _MenuItem(icon: Icons.translate, label: 'Language', onTap: onClose),
-              _MenuItem(
-                icon: Icons.volume_up_outlined,
-                label: 'Soundboard',
-                onTap: onClose,
-              ),
-              _MenuItem(
-                icon: Icons.groups_2_outlined,
-                label: 'Community',
-                onTap: onClose,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
-class _MenuItem extends StatelessWidget {
-  const _MenuItem({required this.icon, required this.label, required this.onTap});
 
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
 
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-        child: Row(
-          children: [
-            Icon(icon, color: AppColors.blush.withValues(alpha: 0.75), size: 20),
-            const SizedBox(width: AppSpacing.md),
-            Text(
-              label,
-              style: AppTextStyles.body.copyWith(
-                color: AppColors.blush.withValues(alpha: 0.75),
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+  
+
