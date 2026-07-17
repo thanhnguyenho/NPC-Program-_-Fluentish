@@ -11,7 +11,7 @@ import 'package:fluentish/src/features/terms_of_service/terms_of_service_sheet.d
 import 'package:fluentish/src/shared/shared.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:fluentish/src/services/auth_service.dart';
+import 'package:fluentish/src/shared/services/auth_service.dart';
 
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});
@@ -21,11 +21,6 @@ class RegistrationPage extends StatefulWidget {
 }
 
 class _RegistrationPageState extends State<RegistrationPage> {
-  final AuthService _authService = AuthService();
-
-  late final TapGestureRecognizer _privacyPolicyRecognizer;
-  late final TapGestureRecognizer _termsOfServiceRecognizer;
-
   String? errorMessage;
   bool _isSubmitting = false;
   bool isLogin = true;
@@ -39,8 +34,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final TextEditingController _phoneController = TextEditingController();
 
   final TextEditingController _controllerEmail = TextEditingController();
-  final TextEditingController _confirmEmailController =
-      TextEditingController();
+  final TextEditingController _confirmEmailController = TextEditingController();
 
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
@@ -50,7 +44,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
   DateTime _selectedDob = DateTime(2000, 1, 1);
 
-  // Danh sách domain email được chấp nhận. Thêm domain khác vào đây nếu cần.
+ 
   static const List<String> _allowedEmailDomains = [
     'gmail.com',
     'yahoo.com',
@@ -109,7 +103,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
   bool _isValidEmailDomain(String email) {
     final trimmed = email.trim().toLowerCase();
 
-    // Kiểm tra format email cơ bản trước (có @ và có phần domain).
+ 
     final basicEmailRegex = RegExp(r'^[\w\.\-\+]+@[\w\-]+(\.[\w\-]+)+$');
     if (!basicEmailRegex.hasMatch(trimmed)) return false;
 
@@ -117,7 +111,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
     return _allowedEmailDomains.contains(domain);
   }
 
-  /// Trả về null nếu password hợp lệ, hoặc thông báo lỗi tương ứng.
   String? _validatePassword(String password) {
     if (password.length < 8) {
       return 'Password must be at least 8 characters.';
@@ -138,7 +131,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
     return null;
   }
 
-  // ---- DATE OF BIRTH PICKER (kiểu cuộn) ---------------------------------
+  // ---- DATE OF BIRTH PICKER---------------------------------
 
   Future<void> _pickDob() async {
     DateTime tempPicked = _selectedDob;

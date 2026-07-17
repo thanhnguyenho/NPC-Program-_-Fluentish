@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:fluentish/src/features/friends/friends_page.dart';
 import 'package:fluentish/src/features/history/history_page.dart';
 import 'package:fluentish/src/features/profile_menu/profile_menu_options_page.dart';
 import 'package:fluentish/src/features/settings/settings_page.dart';
@@ -158,7 +159,9 @@ class _ProfilePageContent extends StatelessWidget {
                 icon: Icons.people_outline,
                 iconBg: AppColors.blush,
                 label: 'MY FRIENDS',
-                onTap: () {},
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const FriendsPage()),
+                ),
               ),
               const SizedBox(height: AppSpacing.xs),
               const _SectionLabel('PREFERENCES'),

@@ -19,7 +19,7 @@ class CategoryFilter extends StatelessWidget {
       {'icon': Icons.translate, 'label': 'Common Words'},
       {'icon': Icons.waving_hand_outlined, 'label': 'Greetings'},
       {'icon': Icons.numbers, 'label': 'Numbers'},
-      {'icon': Icons.restaurant_outlined, 'label': 'Food'},
+      {'icon': Icons.restaurant_outlined, 'label': 'Dining'},
       {'icon': Icons.shopping_cart_outlined, 'label': 'Shopping'},
       {'icon': Icons.flight_takeoff, 'label': 'Travel'},
       {'icon': Icons.local_hospital_outlined, 'label': 'Emergency'},
