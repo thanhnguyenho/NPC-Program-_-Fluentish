@@ -10,6 +10,8 @@ import 'package:fluentish/src/features/privacy_policy/privacy_policy_sheet.dart'
 import 'package:fluentish/src/features/terms_of_service/terms_of_service_sheet.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
+import 'package:firebase_auth/firebase_auth.dart';
+
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key, this.auth});
 
@@ -51,7 +53,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
     'live.com',
   ];
 
-  AuthGateway get _auth => widget.auth ?? Auth.instance;
+
 
   @override
   void initState() {
@@ -65,6 +67,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
         showTermsOfServiceSheet(context);
       };
   }
+
+  AuthGateway get _auth => widget.auth ?? Auth.instance;
 
   @override
   void dispose() {

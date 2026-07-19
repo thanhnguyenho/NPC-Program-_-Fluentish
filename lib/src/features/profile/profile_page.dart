@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 
-import 'package:fluentish/src/features/friends/friends_page.dart';
-import 'package:fluentish/src/features/history/history_page.dart';
-import 'package:fluentish/src/features/profile_menu/profile_menu_options_page.dart';
-import 'package:fluentish/src/features/settings/settings_page.dart';
-import 'package:fluentish/src/features/welcome/welcome_page.dart';
-import 'package:fluentish/src/shared/shared.dart';
+import '../../shared/shared.dart';
+import '../friends/friends_page.dart';
+import '../history/history_page.dart';
+import '../profile_menu/profile_menu_options_page.dart';
+import '../settings/settings_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({
@@ -251,8 +250,8 @@ class _ProfilePageState extends State<ProfilePage> {
 class _StatColumn extends StatelessWidget {
   const _StatColumn({required this.value, required this.label});
 
-  final String label;
   final String value;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -305,13 +304,11 @@ class _SectionLabel extends StatelessWidget {
 class _AccountTile extends StatelessWidget {
   const _AccountTile({
     required this.icon,
-    required this.iconBg,
     required this.label,
     required this.onTap,
   });
 
   final IconData icon;
-  final Color iconBg;
   final String label;
   final VoidCallback onTap;
 

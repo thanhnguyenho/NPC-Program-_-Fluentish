@@ -3,9 +3,6 @@ import 'package:flutter/material.dart';
 
 import 'package:fluentish/src/features/forgot_password/forgot_password_page.dart';
 import 'package:fluentish/src/shared/shared.dart';
-// import 'package:fluentish/src/features/registration/registration_page.dart';
-// import 'package:firebase_auth/firebase_auth.dart';
-// import 'package:fluentish/src/shared/services/auth_service.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key, this.auth});
@@ -43,6 +40,20 @@ class _LoginFormState extends State<LoginForm> {
       setState(() => errorMessage = 'Enter your email and password.');
       return;
     }
+    setState(() => _isSubmitting = true);
+    try {
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } on FirebaseAuthException catch (error) {
+      _showError(error.message ?? 'Unable to sign in.');
+    } catch (error) {
+      _showError(error.toString().replaceFirst('Bad state: ', ''));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
 
     setState(() {
       _isSubmitting = true;
