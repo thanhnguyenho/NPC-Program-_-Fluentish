@@ -1,7 +1,10 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class WordCard extends StatefulWidget {
+  final String id;
   final String english;
   final String vietnamese;
   final String category;
@@ -9,9 +12,11 @@ class WordCard extends StatefulWidget {
   final String vietnameseAudio;
   final bool isVietnamese;
   final bool favourite;
+  final VoidCallback? onFavouriteChanged;
 
   const WordCard({
     super.key,
+    required this.id,
     required this.english,
     required this.vietnamese,
     required this.category,
@@ -19,6 +24,7 @@ class WordCard extends StatefulWidget {
     required this.vietnameseAudio,
     required this.isVietnamese,
     this.favourite = false,
+    this.onFavouriteChanged,
   });
 
   @override
@@ -28,10 +34,13 @@ class WordCard extends StatefulWidget {
 class _WordCardState extends State<WordCard> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isPlaying = false;
+  late bool _isFavourite;
 
   @override
   void initState() {
     super.initState();
+
+    _isFavourite = widget.favourite;
 
     _audioPlayer.onPlayerComplete.listen((_) {
       if (!mounted) return;
@@ -40,6 +49,17 @@ class _WordCardState extends State<WordCard> {
         _isPlaying = false;
       });
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant WordCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.favourite != widget.favourite) {
+      setState(() {
+        _isFavourite = widget.favourite;
+      });
+    }
   }
 
   Future<void> _playAudio() async {
@@ -67,6 +87,55 @@ class _WordCardState extends State<WordCard> {
       });
 
       debugPrint('Error playing audio: $error');
+    }
+  }
+
+  Future<void> _toggleFavourite() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      debugPrint('User not logged in');
+      return;
+    }
+
+    final languageId = widget.isVietnamese
+        ? 'vietnamese'
+        : 'english';
+    final favouriteId = '${widget.id}_$languageId';
+
+    final favouriteReference = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('favouriteSoundboardBites')
+        .doc(favouriteId);
+
+    try {
+      if (_isFavourite) {
+        await favouriteReference.delete();
+      } else {
+        await favouriteReference.set({
+          'english': widget.english,
+          'vietnamese': widget.vietnamese,
+          'category': widget.category,
+          'englishAudio': widget.englishAudio,
+          'vietnameseAudio': widget.vietnameseAudio,
+          'preferredLanguage': widget.isVietnamese
+              ? 'vietnamese'
+              : 'english',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _isFavourite = !_isFavourite;
+      });
+
+      widget.onFavouriteChanged?.call();
+
+    } catch (error) {
+      debugPrint('Error toggling favourite: $error');
     }
   }
 
@@ -112,15 +181,20 @@ class _WordCardState extends State<WordCard> {
                     ),
                   ),
                 ),
-                Icon(
-                  widget.favourite
-                    ? Icons.star
-                    : Icons.star_border,
-                  color: widget.favourite
-                      ? const Color(0xFFFFF8A6)
-                      : _isPlaying
-                          ? Colors.white
-                          : Colors.grey,
+                IconButton(
+                  onPressed: _toggleFavourite,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: Icon(
+                    _isFavourite
+                        ? Icons.star
+                        : Icons.star_border,
+                    color: _isFavourite
+                        ? const Color(0xFFFFF8AF)
+                        : _isPlaying
+                            ? Colors.white
+                            : Colors.grey,
+                  ),
                 ),
               ],
             ),

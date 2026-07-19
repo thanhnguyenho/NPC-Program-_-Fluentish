@@ -4,6 +4,8 @@ import 'widgets/category_filter.dart';
 import 'widgets/word_card.dart';
 import 'data/words.dart';
 import 'models/soundboard_word.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SoundboardPage extends StatefulWidget {
   const SoundboardPage({super.key});
@@ -16,18 +18,47 @@ class _SoundboardPageState extends State<SoundboardPage> {
   String selectedCategory = 'All Words';
   bool isVietnamese = true;
 
+  Set<String> favouriteIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavourites();
+  }
+
   List<SoundboardWord> get filteredWords {
     if (selectedCategory == 'All Words') {
       return words;
     }
 
     if (selectedCategory == 'Favourites') {
-      return words.where((word) => word.favourite).toList();
+
+      final languageId = isVietnamese ? 'vietnamese' : 'english';
+
+      return words.where((word) {
+        return favouriteIds.contains('${word.id}_$languageId');
+      }).toList();
     }
 
     return words
         .where((word) => word.category == selectedCategory)
         .toList();
+  }
+
+  Future<void> _loadFavourites() async {
+    final user = FirebaseAuth.instance.currentUser;
+    debugPrint('Loading favourites for user: ${user?.uid}');
+    if (user == null) return;
+
+    final snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('favouriteSoundboardBites')
+        .get();
+
+    setState(() {
+      favouriteIds = snapshot.docs.map((doc) => doc.id).toSet();
+    });
   }
 
   @override
@@ -78,13 +109,18 @@ class _SoundboardPageState extends State<SoundboardPage> {
                     final word = filteredWords[index];
 
                     return WordCard(
+                      key: ValueKey(word.id),
+                      id: word.id,
                       english: word.english,
                       vietnamese: word.vietnamese,
                       category: word.category,
                       englishAudio: word.englishAudio,
                       vietnameseAudio: word.vietnameseAudio,
                       isVietnamese: isVietnamese,
-                      favourite: word.favourite,
+                      favourite: favouriteIds.contains(
+                        '${word.id}_${isVietnamese ? 'vietnamese' : 'english'}',
+                      ),
+                      onFavouriteChanged: _loadFavourites,
                     );
                   },
                 ),
