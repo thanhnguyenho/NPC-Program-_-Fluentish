@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:fluentish/src/shared/theme/app_theme.dart';
+import 'package:fluentish/src/shared/services/auth_service.dart';
 // import 'src/features/navigation/main_scaffold.dart';
 import 'src/shared/widgets/widget_tree.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -18,7 +19,9 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, this.auth});
+
+  final AuthGateway? auth;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +29,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Fluentish',
       theme: AppTheme.light,
-      home: const WidgetTree(),
+      home: WidgetTree(auth: auth),
     );
   }
 }

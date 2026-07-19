@@ -1,4 +1,9 @@
 export 'assets/app_assets.dart';
+export 'models/firestore_models.dart';
+export 'services/auth_service.dart';
+export 'services/friend_repository.dart';
+export 'services/guide_repository.dart';
+export 'services/location_repository.dart';
 export 'theme/app_colors.dart';
 export 'theme/app_spacing.dart';
 export 'theme/app_text_styles.dart';

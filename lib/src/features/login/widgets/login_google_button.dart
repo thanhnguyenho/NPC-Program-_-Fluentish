@@ -2,8 +2,37 @@ import 'package:flutter/material.dart';
 
 import 'package:fluentish/src/shared/shared.dart';
 
-class LoginGoogleButton extends StatelessWidget {
-  const LoginGoogleButton({super.key});
+class LoginGoogleButton extends StatefulWidget {
+  const LoginGoogleButton({super.key, this.auth});
+
+  final AuthGateway? auth;
+
+  @override
+  State<LoginGoogleButton> createState() => _LoginGoogleButtonState();
+}
+
+class _LoginGoogleButtonState extends State<LoginGoogleButton> {
+  bool _isSubmitting = false;
+
+  Future<void> _signIn() async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    try {
+      await (widget.auth ?? Auth.instance).signInWithGoogle();
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(
+          content: Text(error.toString().replaceFirst('Bad state: ', '')),
+        ));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,9 +61,11 @@ class LoginGoogleButton extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.lg),
         OutlinedButton.icon(
-          onPressed: () {},
+          onPressed: _isSubmitting ? null : _signIn,
           icon: const Icon(Icons.g_mobiledata),
-          label: const Text('Continue with Google'),
+          label: Text(
+            _isSubmitting ? 'Signing in...' : 'Continue with Google',
+          ),
         ),
       ],
     );
