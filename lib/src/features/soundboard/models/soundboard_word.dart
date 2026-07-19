@@ -2,14 +2,16 @@ class SoundboardWord {
   final String english;
   final String vietnamese;
   final String category;
-  final String audioPath;
+  final String englishAudio;
+  final String vietnameseAudio;
   final bool favourite;
 
   const SoundboardWord({
     required this.english,
     required this.vietnamese,
     required this.category,
-    required this.audioPath,
+    required this.englishAudio,
+    required this.vietnameseAudio,
     this.favourite = false,
   });
 }

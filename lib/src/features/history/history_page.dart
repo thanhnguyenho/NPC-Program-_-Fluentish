@@ -10,17 +10,14 @@ class _HistoryEntry {
     required this.term,
     required this.translation,
     required this.date,
-    required this.icon,
   });
 
   final String term;
   final String translation;
   final DateTime date;
-  final IconData icon;
 }
 
-/// Shows the user's past lookups, grouped by day, with search and a
-/// "clear history" action.
+/// Shows the signed-in user's past lookups, grouped by day.
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
 
@@ -39,18 +36,21 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   Map<String, List<_HistoryEntry>> _grouped(List<_HistoryEntry> entries) {
-    final filtered = _query.isEmpty
+    final query = _query.toLowerCase();
+    final filtered = query.isEmpty
         ? entries
-        : entries.where(
-            (e) =>
-                e.term.toLowerCase().contains(_query.toLowerCase()) ||
-                e.translation.toLowerCase().contains(_query.toLowerCase()),
-          );
-    final map = <String, List<_HistoryEntry>>{};
-    for (final e in filtered) {
-      map.putIfAbsent(_dateGroup(e.date), () => []).add(e);
+        : entries
+            .where(
+              (entry) =>
+                  entry.term.toLowerCase().contains(query) ||
+                  entry.translation.toLowerCase().contains(query),
+            )
+            .toList();
+    final groups = <String, List<_HistoryEntry>>{};
+    for (final entry in filtered) {
+      groups.putIfAbsent(_dateGroup(entry.date), () => []).add(entry);
     }
-    return map;
+    return groups;
   }
 
   String _dateGroup(DateTime date) {
@@ -65,22 +65,26 @@ class _HistoryPageState extends State<HistoryPage> {
   Stream<List<_HistoryEntry>> get _historyStream {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return Stream.value(const <_HistoryEntry>[]);
+
     return FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
         .collection('history')
         .snapshots()
         .map((snapshot) {
-      final entries = snapshot.docs.map((document) {
-        final data = document.data();
-        final timestamp = data['createdAt'];
-        return _HistoryEntry(
-          term: (data['term'] ?? data['source'] ?? '').toString(),
-          translation: (data['translation'] ?? data['target'] ?? '').toString(),
-          date: timestamp is Timestamp ? timestamp.toDate() : DateTime(1970),
-          icon: Icons.translate_outlined,
-        );
-      }).where((entry) => entry.term.isNotEmpty).toList()
+      final entries = snapshot.docs
+          .map((document) {
+            final data = document.data();
+            final timestamp = data['createdAt'];
+            return _HistoryEntry(
+              term: (data['term'] ?? data['source'] ?? '').toString(),
+              translation:
+                  (data['translation'] ?? data['target'] ?? '').toString(),
+              date: timestamp is Timestamp ? timestamp.toDate() : DateTime(1970),
+            );
+          })
+          .where((entry) => entry.term.isNotEmpty)
+          .toList()
         ..sort((a, b) => b.date.compareTo(a.date));
       return entries;
     });
@@ -89,6 +93,7 @@ class _HistoryPageState extends State<HistoryPage> {
   Future<void> _clearHistory() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
+
     final history = FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
@@ -104,24 +109,23 @@ class _HistoryPageState extends State<HistoryPage> {
   void _confirmClearHistory() {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Clear History'),
         content: const Text(
-          'This will remove all your saved lookup history. '
-          'This cannot be undone.',
+          'This will remove all your saved lookup history. This cannot be undone.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
               await _clearHistory();
-              if (!ctx.mounted) return;
-              Navigator.pop(ctx);
+              if (!dialogContext.mounted) return;
+              Navigator.pop(dialogContext);
             },
-            child: const Text('Clear', style: TextStyle(color: Colors.red,)),
+            child: const Text('Clear', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -137,7 +141,12 @@ class _HistoryPageState extends State<HistoryPage> {
           Container(
             width: double.infinity,
             color: AppColors.pine,
-            padding: const EdgeInsets.fromLTRB(4, 50, AppSpacing.md, AppSpacing.md),
+            padding: const EdgeInsets.fromLTRB(
+              4,
+              50,
+              AppSpacing.md,
+              AppSpacing.md,
+            ),
             child: Row(
               children: [
                 IconButton(
@@ -173,14 +182,15 @@ class _HistoryPageState extends State<HistoryPage> {
             ),
             child: TextField(
               controller: _searchController,
-              onChanged: (v) => setState(() => _query = v),
-              style: const TextStyle(color: AppColors.pine),
+              onChanged: (value) => setState(() => _query = value),
+              style: const TextStyle(color: AppColors.ink),
               decoration: InputDecoration(
                 hintText: 'Search history...',
                 prefixIcon: const Icon(Icons.search, color: AppColors.textMuted),
                 filled: true,
                 fillColor: AppColors.cardSurface,
-                contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                   borderSide: BorderSide.none,
@@ -198,63 +208,66 @@ class _HistoryPageState extends State<HistoryPage> {
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
+
                 final grouped = _grouped(snapshot.data!);
-                return grouped.isEmpty
-                    ? const Center(
+                if (grouped.isEmpty) {
+                  return const Center(child: Text('No history found'));
+                }
+
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    AppSpacing.xs,
+                    AppSpacing.md,
+                    AppSpacing.xl,
+                  ),
+                  children: [
+                    for (final dateGroup in grouped.keys) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: AppSpacing.xs,
+                          top: AppSpacing.sm,
+                          left: AppSpacing.xxs,
+                        ),
                         child: Text(
-                          'No history found',
-                          style: TextStyle(color: AppColors.textMuted),
-                        ),
-                      )
-                    : ListView(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.md,
-                      AppSpacing.xs,
-                      AppSpacing.md,
-                      AppSpacing.xl,
-                    ),
-                    children: [
-                      for (final dateGroup in grouped.keys) ...[
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: AppSpacing.xs,
-                            top: AppSpacing.sm,
-                            left: AppSpacing.xxs,
-                          ),
-                          child: Text(
-                            dateGroup.toUpperCase(),
-                            style: AppTextStyles.body.copyWith(
-                              color: AppColors.textMuted,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          dateGroup.toUpperCase(),
+                          style: AppTextStyles.body.copyWith(
+                            color: AppColors.textMuted,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.cardSurface,
-                            border: Border.all(color: AppColors.cardBorder),
-                            borderRadius: BorderRadius.circular(
-                              AppSpacing.cardRadius,
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              for (var i = 0; i < grouped[dateGroup]!.length; i++) ...[
-                                _HistoryTile(entry: grouped[dateGroup]![i]),
-                                if (i != grouped[dateGroup]!.length - 1)
-                                  const Divider(
-                                    height: 1,
-                                    indent: 52,
-                                    color: AppColors.cardBorder,
-                                  ),
-                              ],
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.cardSurface,
+                          border: Border.all(color: AppColors.cardBorder),
+                          borderRadius:
+                              BorderRadius.circular(AppSpacing.cardRadius),
+                        ),
+                        child: Column(
+                          children: [
+                            for (
+                              var index = 0;
+                              index < grouped[dateGroup]!.length;
+                              index++
+                            ) ...[
+                              _HistoryTile(
+                                entry: grouped[dateGroup]![index],
+                              ),
+                              if (index != grouped[dateGroup]!.length - 1)
+                                const Divider(
+                                  height: 1,
+                                  indent: 52,
+                                  color: AppColors.cardBorder,
+                                ),
                             ],
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
                     ],
-                  );
+                  ],
+                );
               },
             ),
           ),
@@ -274,7 +287,9 @@ class _HistoryTile extends StatelessWidget {
     return InkWell(
       onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const LanguagePage()),
+          MaterialPageRoute(
+            builder: (_) => LanguagePage(initialQuery: entry.term),
+          ),
         );
       },
       child: Padding(
@@ -290,7 +305,11 @@ class _HistoryTile extends StatelessWidget {
                 color: AppColors.shell,
                 borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
               ),
-              child: Icon(entry.icon, size: 18, color: AppColors.pine),
+              child: const Icon(
+                Icons.translate_outlined,
+                size: 18,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
@@ -300,7 +319,7 @@ class _HistoryTile extends StatelessWidget {
                   Text(
                     entry.term,
                     style: AppTextStyles.body.copyWith(
-                      color: AppColors.pine,
+                      color: AppColors.ink,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -311,7 +330,11 @@ class _HistoryTile extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
+            const Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: AppColors.textMuted,
+            ),
           ],
         ),
       ),

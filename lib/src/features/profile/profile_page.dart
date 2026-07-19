@@ -1,190 +1,240 @@
 import 'package:flutter/material.dart';
 
+import 'package:fluentish/src/features/friends/friends_page.dart';
 import 'package:fluentish/src/features/history/history_page.dart';
 import 'package:fluentish/src/features/profile_menu/profile_menu_options_page.dart';
 import 'package:fluentish/src/features/settings/settings_page.dart';
 import 'package:fluentish/src/features/welcome/welcome_page.dart';
-import 'package:fluentish/src/services/auth_service.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
-/// The Profile tab: avatar + stats header, account/preferences menu,
-/// logout, and a hamburger side menu.
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  const ProfilePage({
+    super.key,
+    this.auth,
+    this.friendRepository,
+    this.guideRepository,
+    this.locationRepository,
+  });
+
+  final AuthGateway? auth;
+  final FriendDataSource? friendRepository;
+  final GuideDataSource? guideRepository;
+  final LocationDataSource? locationRepository;
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  late final AuthGateway _auth;
+  late final FriendDataSource _friends;
+  late final GuideDataSource _guides;
 
+  @override
+  void initState() {
+    super.initState();
+    _auth = widget.auth ?? Auth.instance;
+    _friends = widget.friendRepository ?? FriendRepository();
+    _guides = widget.guideRepository ?? GuideRepository();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final uid = _auth.currentUserId;
+
     return Scaffold(
       backgroundColor: AppColors.shell,
-      body: _ProfilePageContent(onMenuTap: () {  },),
-    );
-  }
-}
+      body: StreamBuilder<PublicProfile?>(
+        stream: _auth.watchCurrentProfile(),
+        builder: (context, profileSnapshot) {
+          final profile = profileSnapshot.data;
+          final email = _auth.currentEmail ?? '';
+          final displayName = profile?.displayName.trim();
+          final name = (displayName != null && displayName.isNotEmpty)
+              ? displayName
+              : (email.contains('@') ? email.split('@').first : 'Fluentish user');
+          final avatarUrl = profile?.avatarUrl;
 
-class _ProfilePageContent extends StatelessWidget {
-  const _ProfilePageContent({required this.onMenuTap});
-
-  final VoidCallback onMenuTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final user = AuthService().currentUser;
-    final email = user?.email ?? '';
-    final displayName = user?.displayName?.trim();
-    final name = displayName?.isNotEmpty == true
-        ? displayName!
-        : (email.contains('@') ? email.split('@').first : 'User');
-
-    return Column(
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.md,
-            50,
-            AppSpacing.md,
-            AppSpacing.lg,
-          ),
-          decoration: const BoxDecoration(
-            color: AppColors.pine,
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(15),
-              bottomRight: Radius.circular(15),
-            ),
-          ),
-          child: Column(
-            children: [
-              Stack(
-                children: [
-                  const CircleAvatar(
-                    radius: 46,
-                    backgroundColor: AppColors.blush,
-                    child: Icon(
-                      Icons.person,
-                      size: 48,
+          return CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                pinned: true,
+                automaticallyImplyLeading: false,
+                expandedHeight: 360,
+                backgroundColor: AppColors.pine,
+                elevation: 0,
+                flexibleSpace: FlexibleSpaceBar(
+                  collapseMode: CollapseMode.pin,
+                  background: Container(
+                    decoration: const BoxDecoration(
                       color: AppColors.pine,
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: AppColors.blush,
-                        shape: BoxShape.circle,
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(28),
+                        bottomRight: Radius.circular(28),
                       ),
-                      child: const Icon(Icons.edit, size: 14, color: AppColors.pine),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      56,
+                      AppSpacing.md,
+                      AppSpacing.lg,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        CircleAvatar(
+                          radius: 62,
+                          backgroundColor: AppColors.blush,
+                          backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
+                              ? NetworkImage(avatarUrl)
+                              : null,
+                          child: avatarUrl == null || avatarUrl.isEmpty
+                              ? Text(
+                                  name.isNotEmpty ? name.substring(0, 1).toUpperCase() : '?',
+                                  style: AppTextStyles.title.copyWith(
+                                    color: AppColors.pine,
+                                    fontSize: 34,
+                                  ),
+                                )
+                              : null,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          name,
+                          style: AppTextStyles.title.copyWith(
+                            color: AppColors.blush,
+                            fontSize: 20,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          email,
+                          style: AppTextStyles.body.copyWith(
+                            color: AppColors.blush.withValues(alpha: 0.75),
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              if (uid != null)
+                                StreamBuilder<List<String>>(
+                                  stream: _guides.watchSavedGuideIds(uid),
+                                  builder: (context, snapshot) => _StatColumn(
+                                    value: '${snapshot.data?.length ?? 0}',
+                                    label: 'Saved',
+                                  ),
+                                )
+                              else
+                                const _StatColumn(value: '0', label: 'Saved'),
+                              const _StatColumn(value: '—', label: 'History'),
+                              if (uid != null)
+                                StreamBuilder<List<PublicProfile>>(
+                                  stream: _friends.watchFriends(uid),
+                                  builder: (context, snapshot) => _StatColumn(
+                                    value: '${snapshot.data?.length ?? 0}',
+                                    label: 'Friends',
+                                  ),
+                                )
+                              else
+                                const _StatColumn(value: '0', label: 'Friends'),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                name,
-                style: AppTextStyles.title.copyWith(
-                  color: AppColors.blush,
-                  fontSize: 18,
                 ),
               ),
-              Text(
-                email,
-                style: AppTextStyles.body.copyWith(
-                  color: AppColors.blush.withValues(alpha: 0.75),
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _StatColumn(value: '36', label: 'Saved'),
-                    _StatColumn(value: '36', label: 'History'),
-                    _StatColumn(value: '36', label: 'Friends'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.lg,
-              AppSpacing.md,
-              AppSpacing.bottomNavHeight + AppSpacing.xl,
-            ),
-            children: [
-              const _SectionLabel('MY ACCOUNT'),
-              _AccountTile(
-                icon: Icons.person_outline,
-                iconBg: AppColors.blush,
-                label: 'MY DETAILS',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const ProfileMenuOptionsPage(),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                    AppSpacing.bottomNavHeight + AppSpacing.xl,
+                  ),
+                  child: Column(
+                    children: [
+                      const _SectionLabel('MY ACCOUNT'),
+                      _AccountTile(
+                        icon: Icons.person_outline,
+                        iconBg: AppColors.blush,
+                        label: 'MY DETAILS',
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const ProfileMenuOptionsPage(),
+                          ),
+                        ),
+                      ),
+                      _AccountTile(
+                        icon: Icons.star_border,
+                        iconBg: AppColors.blush,
+                        label: 'FAVOURITE LIST',
+                        onTap: () {},
+                      ),
+                      _AccountTile(
+                        icon: Icons.history,
+                        iconBg: AppColors.blush,
+                        label: 'HISTORY',
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const HistoryPage()),
+                        ),
+                      ),
+                      _AccountTile(
+                        icon: Icons.people_outline,
+                        iconBg: AppColors.blush,
+                        label: 'MY FRIENDS',
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => FriendsPage(
+                              auth: widget.auth,
+                              friendRepository: widget.friendRepository,
+                              locationRepository: widget.locationRepository,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      const _SectionLabel('PREFERENCES'),
+                      _AccountTile(
+                        icon: Icons.build_outlined,
+                        iconBg: AppColors.blush,
+                        label: 'SETTINGS',
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const SettingsPage()),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      AppButton(
+                        label: 'Logout',
+                        icon: Icons.logout,
+                        backgroundColor: AppColors.blush,
+                        foregroundColor: AppColors.pine,
+                        onPressed: () async {
+                          await _auth.signOut();
+                          if (!context.mounted) return;
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(builder: (_) => const WelcomePage()),
+                            (route) => false,
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ),
-              _AccountTile(
-                icon: Icons.star_border,
-                iconBg: AppColors.blush,
-                label: 'FAVOURITE LIST',
-                onTap: () {},
-              ),
-              _AccountTile(
-                icon: Icons.history,
-                iconBg: AppColors.blush,
-                label: 'HISTORY',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const HistoryPage()),
-                ),
-              ),
-              _AccountTile(
-                icon: Icons.people_outline,
-                iconBg: AppColors.blush,
-                label: 'MY FRIENDS',
-                onTap: () {},
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              const _SectionLabel('PREFERENCES'),
-              _AccountTile(
-                icon: Icons.build_outlined,
-                iconBg: AppColors.blush,
-                label: 'SETTINGS',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SettingsPage()),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              AppButton(
-                label: 'Logout',
-                icon: Icons.logout,
-                backgroundColor: AppColors.blush,
-                foregroundColor: AppColors.pine,
-                onPressed: () => Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const WelcomePage()),
-                  (route) => false,
-                ),
-              ),
             ],
-          ),
-        ),
-      ],
+          );
+        },
+      ),
     );
   }
 }
@@ -201,12 +251,16 @@ class _StatColumn extends StatelessWidget {
       children: [
         Text(
           value,
-          style: AppTextStyles.title.copyWith(color: AppColors.blush, fontSize: 20),
+          style: AppTextStyles.title.copyWith(
+            color: AppColors.blush,
+            fontSize: 22,
+          ),
         ),
+        const SizedBox(height: 4),
         Text(
           label,
           style: AppTextStyles.body.copyWith(
-            color: AppColors.blush.withValues(alpha: 0.75),
+            color: AppColors.blush.withValues(alpha: 0.8),
             fontSize: 12,
           ),
         ),
@@ -216,20 +270,23 @@ class _StatColumn extends StatelessWidget {
 }
 
 class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text);
+  const _SectionLabel(this.label);
 
-  final String text;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xs, left: AppSpacing.xxs),
-      child: Text(
-        text,
-        style: AppTextStyles.body.copyWith(
-          color: AppColors.textMuted,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          label,
+          style: AppTextStyles.body.copyWith(
+            color: AppColors.pineMuted,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+          ),
         ),
       ),
     );
@@ -253,50 +310,40 @@ class _AccountTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Material(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: AppSpacing.xs,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.xs),
-                  decoration: BoxDecoration(
-                    color: iconBg,
-                    borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-                  ),
-                  child: Icon(icon, size: 20, color: AppColors.pine),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: AppTextStyles.body.copyWith(
-                      color: AppColors.pine,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
-                    ),
+                child: Icon(icon, color: AppColors.pine),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Text(
+                  label,
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.pine,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ],
-            ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.pineMuted),
+            ],
           ),
         ),
       ),
     );
   }
 }
-
-
-
-
-
-
-  

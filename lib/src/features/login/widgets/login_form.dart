@@ -1,27 +1,27 @@
-import 'package:fluentish/src/features/navigation/main_scaffold.dart';
-import 'package:fluentish/src/services/auth_service.dart';
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 
 import 'package:fluentish/src/features/forgot_password/forgot_password_page.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
 class LoginForm extends StatefulWidget {
-  const LoginForm({super.key});
+  const LoginForm({super.key, this.auth});
+
+  final AuthGateway? auth;
 
   @override
   State<LoginForm> createState() => _LoginFormState();
 }
 
 class _LoginFormState extends State<LoginForm> {
-  final AuthService _authService = AuthService();
-
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
   bool obscurePassword = true;
   bool _isSubmitting = false;
   String? errorMessage;
+
+  AuthGateway get _auth => widget.auth ?? Auth.instance;
 
   @override
   void dispose() {
@@ -37,9 +37,7 @@ class _LoginFormState extends State<LoginForm> {
     final password = passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      setState(() {
-        errorMessage = 'Please enter your email and password.';
-      });
+      setState(() => errorMessage = 'Enter your email and password.');
       return;
     }
 
@@ -49,53 +47,26 @@ class _LoginFormState extends State<LoginForm> {
     });
 
     try {
-      await _authService.login(email: email, password: password);
-
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
       if (!mounted) return;
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const MainScaffold(initialIndex: 0),
-        ),
-      );
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } on FirebaseAuthException catch (e) {
-      String message = 'Login failed. Please try again.';
-
-      switch (e.code) {
-        case 'user-not-found':
-          message = 'No account found with this email.';
-          break;
-        case 'wrong-password':
-          message = 'Incorrect password.';
-          break;
-        case 'invalid-email':
-          message = 'Invalid email address.';
-          break;
-        case 'invalid-credential':
-          message = 'Incorrect email or password.';
-          break;
-        case 'user-disabled':
-          message = 'This account has been disabled.';
-          break;
-        default:
-          message = e.message ?? message;
-      }
-
+      final message = switch (e.code) {
+        'user-not-found' => 'No account found with this email.',
+        'wrong-password' => 'Incorrect password.',
+        'invalid-email' => 'Invalid email address.',
+        'invalid-credential' => 'Incorrect email or password.',
+        'user-disabled' => 'This account has been disabled.',
+        _ => e.message ?? 'Login failed. Please try again.',
+      };
       if (!mounted) return;
-      setState(() {
-        errorMessage = message;
-      });
+      setState(() => errorMessage = message);
     } catch (_) {
       if (!mounted) return;
-      setState(() {
-        errorMessage = 'Something went wrong. Please try again.';
-      });
+      setState(() => errorMessage = 'Something went wrong. Please try again.');
     } finally {
       if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
+        setState(() => _isSubmitting = false);
       }
     }
   }
@@ -124,33 +95,23 @@ class _LoginFormState extends State<LoginForm> {
               obscurePassword ? Icons.visibility_off : Icons.visibility,
               color: AppColors.pine,
             ),
-            onPressed: () {
-              setState(() {
-                obscurePassword = !obscurePassword;
-              });
-            },
+            onPressed: () => setState(() => obscurePassword = !obscurePassword),
           ),
         ),
         if (errorMessage != null && errorMessage!.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.sm),
           Text(
             errorMessage!,
-            style: AppTextStyles.body.copyWith(
-              color: Colors.red.shade200,
-            ),
+            style: AppTextStyles.body.copyWith(color: Colors.red.shade200),
           ),
         ],
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const ForgotPasswordPage(),
-                ),
-              );
-            },
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ForgotPasswordPage()),
+            ),
             child: Text(
               'Forgot Password?',
               style: AppTextStyles.body.copyWith(
@@ -164,7 +125,7 @@ class _LoginFormState extends State<LoginForm> {
         const SizedBox(height: AppSpacing.md),
         AppButton(
           label: _isSubmitting ? 'LOGGING IN...' : 'LOGIN',
-          onPressed: _login,
+          onPressed: _isSubmitting ? null : _login,
         ),
       ],
     );

@@ -1,8 +1,8 @@
 // ignore_for_file: prefer_const_constructors
 
-import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:fluentish/src/features/login/login_page.dart';
@@ -10,19 +10,16 @@ import 'package:fluentish/src/features/privacy_policy/privacy_policy_sheet.dart'
 import 'package:fluentish/src/features/terms_of_service/terms_of_service_sheet.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:fluentish/src/services/auth_service.dart';
-
 class RegistrationPage extends StatefulWidget {
-  const RegistrationPage({super.key});
+  const RegistrationPage({super.key, this.auth});
+
+  final AuthGateway? auth;
 
   @override
   State<RegistrationPage> createState() => _RegistrationPageState();
 }
 
 class _RegistrationPageState extends State<RegistrationPage> {
-  final AuthService _authService = AuthService();
-
   late final TapGestureRecognizer _privacyPolicyRecognizer;
   late final TapGestureRecognizer _termsOfServiceRecognizer;
 
@@ -31,26 +28,18 @@ class _RegistrationPageState extends State<RegistrationPage> {
   bool isLogin = true;
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
-  final TextEditingController _preferredNameController =
-      TextEditingController();
-
+  final TextEditingController _preferredNameController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-
   final TextEditingController _controllerEmail = TextEditingController();
-  final TextEditingController _confirmEmailController =
-      TextEditingController();
-
+  final TextEditingController _confirmEmailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
 
   bool agree = false;
-
   DateTime _selectedDob = DateTime(2000, 1, 1);
 
-  // Danh sách domain email được chấp nhận. Thêm domain khác vào đây nếu cần.
   static const List<String> _allowedEmailDomains = [
     'gmail.com',
     'yahoo.com',
@@ -59,6 +48,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
     'hotmail.com',
     'live.com',
   ];
+
+  AuthGateway get _auth => widget.auth ?? Auth.instance;
 
   @override
   void initState() {
@@ -78,46 +69,33 @@ class _RegistrationPageState extends State<RegistrationPage> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _preferredNameController.dispose();
-
     _usernameController.dispose();
     _dobController.dispose();
     _phoneController.dispose();
-
     _controllerEmail.dispose();
     _confirmEmailController.dispose();
-
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-
     _privacyPolicyRecognizer.dispose();
     _termsOfServiceRecognizer.dispose();
-
     super.dispose();
   }
 
   void _goToLogin() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (_) => const LoginPage(),
-      ),
+      MaterialPageRoute(builder: (_) => const LoginPage()),
     );
   }
 
-  // ---- VALIDATION HELPERS ----------------------------------------------
-
   bool _isValidEmailDomain(String email) {
     final trimmed = email.trim().toLowerCase();
-
-    // Kiểm tra format email cơ bản trước (có @ và có phần domain).
     final basicEmailRegex = RegExp(r'^[\w\.\-\+]+@[\w\-]+(\.[\w\-]+)+$');
     if (!basicEmailRegex.hasMatch(trimmed)) return false;
-
     final domain = trimmed.split('@').last;
     return _allowedEmailDomains.contains(domain);
   }
 
-  /// Trả về null nếu password hợp lệ, hoặc thông báo lỗi tương ứng.
   String? _validatePassword(String password) {
     if (password.length < 8) {
       return 'Password must be at least 8 characters.';
@@ -128,17 +106,13 @@ class _RegistrationPageState extends State<RegistrationPage> {
       return 'Password must contain at least 1 uppercase letter.';
     }
 
-    final hasSpecialChar =
-        RegExp(r'''[!@#$%^&*(),.?":{}|<>_\-\[\]/\\;=+~`]''')
-            .hasMatch(password);
+    final hasSpecialChar = RegExp(r'''[!@#$%^&*(),.?":{}|<>_\-\[\]/\\;=+~`]''').hasMatch(password);
     if (!hasSpecialChar) {
       return 'Password must contain at least 1 special character.';
     }
 
     return null;
   }
-
-  // ---- DATE OF BIRTH PICKER (kiểu cuộn) ---------------------------------
 
   Future<void> _pickDob() async {
     DateTime tempPicked = _selectedDob;
@@ -229,8 +203,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
         AppTextField(
           controller: controller,
           hintText: hint,
-          obscureText: obscure,
           keyboardType: keyboardType,
+          obscureText: obscure,
           readOnly: readOnly,
           onTap: onTap,
         ),
@@ -238,107 +212,55 @@ class _RegistrationPageState extends State<RegistrationPage> {
     );
   }
 
-  //displays error message
-  Widget _errorMessage() {
-    final message = errorMessage;
-    if (message == null || message.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Text(
-      message,
-      style: GoogleFonts.itim(
-        color: Colors.red.shade800,
-        fontSize: 15,
-      ),
-    );
-  }
-
-  Future<void> createUser() async {
-    if (_isSubmitting) {
-      return;
-    }
-
-    //remove unwanted spaces
+  Future<void> _submit() async {
     final firstName = _firstNameController.text.trim();
     final lastName = _lastNameController.text.trim();
     final preferredName = _preferredNameController.text.trim();
     final username = _usernameController.text.trim();
     final dob = _dobController.text.trim();
     final phone = _phoneController.text.trim();
-    final email = _controllerEmail.text.trim();
-    final confirmEmail = _confirmEmailController.text.trim();
-    final password = _passwordController.text.trim();
-    final confirmPassword = _confirmPasswordController.text.trim();
-
-    //ensure all fields are filled
-
-    if (preferredName.isEmpty) {
-      setState(() {
-        errorMessage = 'Preferred name is required';
-      });
-      return;
-    }
-
-    if (username.isEmpty) {
-      setState(() {
-        errorMessage = 'Username is required';
-      });
-      return;
-    }
+    final email = _controllerEmail.text.trim().toLowerCase();
+    final confirmEmail = _confirmEmailController.text.trim().toLowerCase();
+    final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
 
     if (firstName.isEmpty ||
         lastName.isEmpty ||
+        preferredName.isEmpty ||
+        username.isEmpty ||
+        dob.isEmpty ||
+        phone.isEmpty ||
         email.isEmpty ||
         confirmEmail.isEmpty ||
         password.isEmpty ||
-        confirmPassword.isEmpty ||
-        dob.isEmpty ||
-        phone.isEmpty) {
-      setState(() {
-        errorMessage = 'Please fill in all fields';
-      });
+        confirmPassword.isEmpty) {
+      setState(() => errorMessage = 'Please fill in all fields.');
       return;
     }
 
-    //ensures email uses an accepted domain (gmail.com, yahoo.com, icloud.com, ...)
+    if (email != confirmEmail) {
+      setState(() => errorMessage = 'Emails do not match.');
+      return;
+    }
+
     if (!_isValidEmailDomain(email)) {
-      setState(() {
-        errorMessage =
-            'Please use a valid email (e.g. @gmail.com, @yahoo.com, @icloud.com)';
-      });
+      setState(() => errorMessage = 'Email domain is not allowed.');
       return;
     }
 
-    if (email.toLowerCase() != confirmEmail.toLowerCase()) {
-      setState(() {
-        errorMessage = 'Email addresses do not match';
-      });
-      return;
-    }
-
-    //ensures password meets strength requirements
     final passwordError = _validatePassword(password);
     if (passwordError != null) {
-      setState(() {
-        errorMessage = passwordError;
-      });
+      setState(() => errorMessage = passwordError);
       return;
     }
 
-    //ensures passwords match
     if (password != confirmPassword) {
-      setState(() {
-        errorMessage = 'Passwords do not match';
-      });
+      setState(() => errorMessage = 'Passwords do not match.');
       return;
     }
 
-    if (agree == false) {
-      setState(() {
-        errorMessage =
-            'You must agree to the Terms of Service and Privacy Policy';
-      });
+    if (!agree) {
+      setState(() => errorMessage = 'You must agree to the Terms of Service and Privacy Policy');
       return;
     }
 
@@ -348,37 +270,26 @@ class _RegistrationPageState extends State<RegistrationPage> {
     });
 
     try {
-      //create entry and store user info
-      await _authService.registerWithProfile(
+      await _auth.createUser(
         firstName: firstName,
         lastName: lastName,
-        preferredName: preferredName,
         username: username,
         email: email,
         password: password,
+        preferredName: preferredName,
         dateOfBirth: dob,
         phoneNumber: phone,
       );
-
-      if (!mounted) {
-        return;
-      }
-
-      //if error display error
-      Navigator.of(context).popUntil((route) => route.isFirst);
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        errorMessage = e.message;
-      });
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+      );
     } catch (e) {
-      setState(() {
-        errorMessage = e.toString();
-      });
+      if (!mounted) return;
+      setState(() => errorMessage = e.toString());
     } finally {
       if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
+        setState(() => _isSubmitting = false);
       }
     }
   }
@@ -386,194 +297,136 @@ class _RegistrationPageState extends State<RegistrationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.blush,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: AppColors.pine,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      backgroundColor: AppColors.shell,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenPadding,
-          ),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.lg, AppSpacing.md, AppSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Center(
-                child: AppStrokeText(
-                  'CREATE ACCOUNT',
-                  fontSize: 36,
+              IconButton(
+                icon: const Icon(Icons.arrow_back, color: AppColors.pine),
+                onPressed: _goToLogin,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Create Account',
+                style: GoogleFonts.itim(
+                  color: AppColors.pine,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
-              const SizedBox(height: AppSpacing.xl),
-              Row(
-                children: [
-                  Expanded(
-                    child: buildField(
-                      label: 'FIRST NAME:',
-                      controller: _firstNameController,
-                      hint: 'e.g Chloe',
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: buildField(
-                      label: 'LAST NAME:',
-                      controller: _lastNameController,
-                      hint: 'e.g Nguyen',
-                    ),
-                  ),
-                ],
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Join Fluentish and start exploring.',
+                style: AppTextStyles.body.copyWith(color: AppColors.textSoft),
               ),
               const SizedBox(height: AppSpacing.md),
               buildField(
-                label: 'PREFERRED NAME:',
+                label: 'First Name',
+                controller: _firstNameController,
+                hint: 'Enter first name',
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              buildField(
+                label: 'Last Name',
+                controller: _lastNameController,
+                hint: 'Enter last name',
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              buildField(
+                label: 'Preferred Name',
                 controller: _preferredNameController,
-                hint: 'e.g Chloe',
+                hint: 'Enter preferred name',
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.sm),
               buildField(
-                label: 'USERNAME:',
+                label: 'Username',
                 controller: _usernameController,
-                hint: 'e.g Chloe123',
+                hint: 'Enter username',
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.sm),
               buildField(
-                label: 'DATE OF BIRTH:',
+                label: 'Date of Birth',
                 controller: _dobController,
-                hint: 'DD/MM/YYYY',
+                hint: 'Select date',
                 readOnly: true,
                 onTap: _pickDob,
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.sm),
               buildField(
-                label: 'PHONE NUMBER:',
+                label: 'Phone Number',
                 controller: _phoneController,
-                hint: '0412345678',
+                hint: 'Enter phone number',
                 keyboardType: TextInputType.phone,
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.sm),
               buildField(
-                label: 'EMAIL:',
+                label: 'Email',
                 controller: _controllerEmail,
-                hint: 'example@gmail.com',
+                hint: 'Enter your email',
                 keyboardType: TextInputType.emailAddress,
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.sm),
               buildField(
-                label: 'CONFIRM EMAIL:',
+                label: 'Confirm Email',
                 controller: _confirmEmailController,
-                hint: 'example@gmail.com',
+                hint: 'Re-enter your email',
                 keyboardType: TextInputType.emailAddress,
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.sm),
               buildField(
-                label: 'PASSWORD:',
+                label: 'Password',
                 controller: _passwordController,
-                hint: 'Min 8 chars, 1 uppercase, 1 special char',
+                hint: 'Create a strong password',
                 obscure: true,
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.sm),
               buildField(
-                label: 'CONFIRM PASSWORD:',
+                label: 'Confirm Password',
                 controller: _confirmPasswordController,
-                hint: 'Re-enter password',
+                hint: 'Re-enter your password',
                 obscure: true,
               ),
               const SizedBox(height: AppSpacing.md),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Checkbox(
-                    value: agree,
-                    activeColor: AppColors.pine,
-                    onChanged: (value) {
-                      setState(() {
-                        agree = value ?? false;
-                      });
-                    },
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: RichText(
-                        text: TextSpan(
-                          style: AppTextStyles.body.copyWith(
-                            color: AppColors.pine,
-                            fontSize: 12,
-                          ),
-                          children: [
-                            const TextSpan(text: 'I agree to the '),
-                            TextSpan(
-                              text: 'Terms of Service',
-                              style: const TextStyle(
-                                decoration: TextDecoration.underline,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              recognizer: _termsOfServiceRecognizer,
-                            ),
-                            const TextSpan(text: ' and '),
-                            TextSpan(
-                              text: 'Privacy Policy',
-                              style: const TextStyle(
-                                decoration: TextDecoration.underline,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              recognizer: _privacyPolicyRecognizer,
-                            ),
-                            const TextSpan(
-                              text: ', and confirm I am 18 years or older.',
-                            ),
-                          ],
-                        ),
+              CheckboxListTile(
+                value: agree,
+                onChanged: (value) => setState(() => agree = value ?? false),
+                title: RichText(
+                  text: TextSpan(
+                    children: [
+                      const TextSpan(
+                        text: 'I agree to the ',
+                        style: TextStyle(color: AppColors.pine),
                       ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              _errorMessage(),
-              if (errorMessage != null && errorMessage!.isNotEmpty)
-                const SizedBox(height: AppSpacing.md),
-              AppButton(
-                label: _isSubmitting ? 'PLEASE WAIT...' : 'CREATE ACCOUNT',
-                backgroundColor: AppColors.pine,
-                foregroundColor: AppColors.blush,
-                onPressed: createUser,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Center(
-                child: GestureDetector(
-                  onTap: _goToLogin,
-                  child: RichText(
-                    text: TextSpan(
-                      style: AppTextStyles.body.copyWith(
-                        color: AppColors.pine,
+                      TextSpan(
+                        text: 'Terms of Service',
+                        style: const TextStyle(color: AppColors.pine, decoration: TextDecoration.underline),
+                        recognizer: _termsOfServiceRecognizer,
                       ),
-                      children: const [
-                        TextSpan(
-                          text: 'Already have an account? ',
-                        ),
-                        TextSpan(
-                          text: 'Log in',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ],
-                    ),
+                      const TextSpan(text: ' and ', style: TextStyle(color: AppColors.pine)),
+                      TextSpan(
+                        text: 'Privacy Policy',
+                        style: const TextStyle(color: AppColors.pine, decoration: TextDecoration.underline),
+                        recognizer: _privacyPolicyRecognizer,
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.xl),
+              if (errorMessage != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  errorMessage!,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ],
+              const SizedBox(height: AppSpacing.md),
+              AppButton(
+                label: _isSubmitting ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT',
+                onPressed: _isSubmitting ? null : _submit,
+              ),
             ],
           ),
         ),

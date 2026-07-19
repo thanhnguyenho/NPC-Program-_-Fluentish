@@ -40,9 +40,16 @@ class _SoundboardPageState extends State<SoundboardPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Align(
+              Align(
                 alignment: Alignment.topRight,
-                child: LanguageToggle(),
+                child: LanguageToggle(
+                  isVietnamese: isVietnamese,
+                  onToggle: () {
+                    setState(() {
+                      isVietnamese = !isVietnamese;
+                    });
+                  }
+                ),
               ),
 
               const SizedBox(height: 24),
@@ -74,7 +81,9 @@ class _SoundboardPageState extends State<SoundboardPage> {
                       english: word.english,
                       vietnamese: word.vietnamese,
                       category: word.category,
-                      audioPath: word.audioPath,
+                      englishAudio: word.englishAudio,
+                      vietnameseAudio: word.vietnameseAudio,
+                      isVietnamese: isVietnamese,
                       favourite: word.favourite,
                     );
                   },
