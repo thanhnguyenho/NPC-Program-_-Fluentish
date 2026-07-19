@@ -52,7 +52,9 @@ class _ProfilePageState extends State<ProfilePage> {
           final displayName = profile?.displayName.trim();
           final name = (displayName != null && displayName.isNotEmpty)
               ? displayName
-              : (email.contains('@') ? email.split('@').first : 'Fluentish user');
+              : (email.contains('@')
+                  ? email.split('@').first
+                  : 'Fluentish user');
           final avatarUrl = profile?.avatarUrl;
 
           return CustomScrollView(
@@ -60,7 +62,7 @@ class _ProfilePageState extends State<ProfilePage> {
               SliverAppBar(
                 pinned: true,
                 automaticallyImplyLeading: false,
-                expandedHeight: 360,
+                expandedHeight: 400,
                 backgroundColor: AppColors.pine,
                 elevation: 0,
                 flexibleSpace: FlexibleSpaceBar(
@@ -85,12 +87,15 @@ class _ProfilePageState extends State<ProfilePage> {
                         CircleAvatar(
                           radius: 62,
                           backgroundColor: AppColors.blush,
-                          backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
-                              ? NetworkImage(avatarUrl)
-                              : null,
+                          backgroundImage:
+                              avatarUrl != null && avatarUrl.isNotEmpty
+                                  ? NetworkImage(avatarUrl)
+                                  : null,
                           child: avatarUrl == null || avatarUrl.isEmpty
                               ? Text(
-                                  name.isNotEmpty ? name.substring(0, 1).toUpperCase() : '?',
+                                  name.isNotEmpty
+                                      ? name.substring(0, 1).toUpperCase()
+                                      : '?',
                                   style: AppTextStyles.title.copyWith(
                                     color: AppColors.pine,
                                     fontSize: 34,
@@ -116,7 +121,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         const SizedBox(height: AppSpacing.lg),
                         Container(
-                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.md),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(16),
@@ -185,7 +191,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         iconBg: AppColors.blush,
                         label: 'HISTORY',
                         onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const HistoryPage()),
+                          MaterialPageRoute(
+                              builder: (_) => const HistoryPage()),
                         ),
                       ),
                       _AccountTile(
@@ -209,7 +216,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         iconBg: AppColors.blush,
                         label: 'SETTINGS',
                         onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const SettingsPage()),
+                          MaterialPageRoute(
+                              builder: (_) => const SettingsPage()),
                         ),
                       ),
                       const SizedBox(height: AppSpacing.md),
@@ -222,7 +230,8 @@ class _ProfilePageState extends State<ProfilePage> {
                           await _auth.signOut();
                           if (!context.mounted) return;
                           Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (_) => const WelcomePage()),
+                            MaterialPageRoute(
+                                builder: (_) => const WelcomePage()),
                             (route) => false,
                           );
                         },

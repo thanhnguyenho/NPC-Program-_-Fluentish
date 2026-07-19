@@ -28,14 +28,16 @@ class _RegistrationPageState extends State<RegistrationPage> {
   bool isLogin = true;
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
-  final TextEditingController _preferredNameController = TextEditingController();
+  final TextEditingController _preferredNameController =
+      TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _controllerEmail = TextEditingController();
   final TextEditingController _confirmEmailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   bool agree = false;
   DateTime _selectedDob = DateTime(2000, 1, 1);
@@ -106,7 +108,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
       return 'Password must contain at least 1 uppercase letter.';
     }
 
-    final hasSpecialChar = RegExp(r'''[!@#$%^&*(),.?":{}|<>_\-\[\]/\\;=+~`]''').hasMatch(password);
+    final hasSpecialChar =
+        RegExp(r'''[!@#$%^&*(),.?":{}|<>_\-\[\]/\\;=+~`]''').hasMatch(password);
     if (!hasSpecialChar) {
       return 'Password must contain at least 1 special character.';
     }
@@ -260,7 +263,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
     }
 
     if (!agree) {
-      setState(() => errorMessage = 'You must agree to the Terms of Service and Privacy Policy');
+      setState(() => errorMessage =
+          'You must agree to the Terms of Service and Privacy Policy');
       return;
     }
 
@@ -300,7 +304,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
       backgroundColor: AppColors.shell,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.lg, AppSpacing.md, AppSpacing.xl),
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md, AppSpacing.lg, AppSpacing.md, AppSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -402,13 +407,19 @@ class _RegistrationPageState extends State<RegistrationPage> {
                       ),
                       TextSpan(
                         text: 'Terms of Service',
-                        style: const TextStyle(color: AppColors.pine, decoration: TextDecoration.underline),
+                        style: const TextStyle(
+                            color: AppColors.pine,
+                            decoration: TextDecoration.underline),
                         recognizer: _termsOfServiceRecognizer,
                       ),
-                      const TextSpan(text: ' and ', style: TextStyle(color: AppColors.pine)),
+                      const TextSpan(
+                          text: ' and ',
+                          style: TextStyle(color: AppColors.pine)),
                       TextSpan(
                         text: 'Privacy Policy',
-                        style: const TextStyle(color: AppColors.pine, decoration: TextDecoration.underline),
+                        style: const TextStyle(
+                            color: AppColors.pine,
+                            decoration: TextDecoration.underline),
                         recognizer: _privacyPolicyRecognizer,
                       ),
                     ],

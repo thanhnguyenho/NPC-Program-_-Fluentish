@@ -23,7 +23,7 @@ class WidgetTree extends StatelessWidget {
         }
         return snapshot.data == null
             ? const WelcomePage()
-            : const MainScaffold(initialIndex: 0);
+            : MainScaffold(initialIndex: 0, auth: auth);
       },
     );
   }
