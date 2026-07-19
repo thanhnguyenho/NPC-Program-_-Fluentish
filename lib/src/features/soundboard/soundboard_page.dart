@@ -78,6 +78,7 @@ class _SoundboardPageState extends State<SoundboardPage> {
                     final word = filteredWords[index];
 
                     return WordCard(
+                      id: word.id,
                       english: word.english,
                       vietnamese: word.vietnamese,
                       category: word.category,
