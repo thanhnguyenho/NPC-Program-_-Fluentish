@@ -12,6 +12,7 @@ class WordCard extends StatefulWidget {
   final String vietnameseAudio;
   final bool isVietnamese;
   final bool favourite;
+  final VoidCallback? onFavouriteChanged;
 
   const WordCard({
     super.key,
@@ -23,6 +24,7 @@ class WordCard extends StatefulWidget {
     required this.vietnameseAudio,
     required this.isVietnamese,
     this.favourite = false,
+    this.onFavouriteChanged,
   });
 
   @override
@@ -47,6 +49,17 @@ class _WordCardState extends State<WordCard> {
         _isPlaying = false;
       });
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant WordCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.favourite != widget.favourite) {
+      setState(() {
+        _isFavourite = widget.favourite;
+      });
+    }
   }
 
   Future<void> _playAudio() async {
@@ -79,26 +92,21 @@ class _WordCardState extends State<WordCard> {
 
   Future<void> _toggleFavourite() async {
     final user = FirebaseAuth.instance.currentUser;
-    debugPrint('Current user UID: $user?.uid');
 
     if (user == null) {
       debugPrint('User not logged in');
       return;
     }
 
-    final language = widget.isVietnamese
+    final languageId = widget.isVietnamese
         ? 'vietnamese'
         : 'english';
-    final favouriteId = widget.id;
-
-    debugPrint(
-    'Writing to users/${user.uid}/favouriteSoundboardBites/$favouriteId',
-  );
+    final favouriteId = '${widget.id}_$languageId';
 
     final favouriteReference = FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
-        .collection('favourites')
+        .collection('favouriteSoundboardBites')
         .doc(favouriteId);
 
     try {
@@ -123,6 +131,9 @@ class _WordCardState extends State<WordCard> {
       setState(() {
         _isFavourite = !_isFavourite;
       });
+
+      widget.onFavouriteChanged?.call();
+
     } catch (error) {
       debugPrint('Error toggling favourite: $error');
     }
