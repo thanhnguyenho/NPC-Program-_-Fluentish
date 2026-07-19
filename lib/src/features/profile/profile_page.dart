@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:fluentish/src/features/welcome/welcome_page.dart';
 import '../../shared/shared.dart';
 import '../friends/friends_page.dart';
 import '../history/history_page.dart';
