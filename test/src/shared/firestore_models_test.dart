@@ -30,6 +30,7 @@ void main() {
       'categoryLabel': 'Cafe',
       'iconKey': 'cafe',
       'sourceCategory': 'Coffee shop',
+      'shortDescription': 'A quiet neighbourhood cafe.',
       'sourceCategories': ['Coffee shop', 'Cafe'],
       'address': {
         'formatted': '1 Sample Street',
@@ -54,6 +55,7 @@ void main() {
     expect(location.geohash, 'w3gv');
     expect(location.address, '1 Sample Street');
     expect(location.website, 'https://example.com');
+    expect(location.shortDescription, 'A quiet neighbourhood cafe.');
     expect(location.rating, 4.5);
     expect(location.reviewCount, 12);
     expect(location.openingHours['monday'], '8 AM to 10 PM');

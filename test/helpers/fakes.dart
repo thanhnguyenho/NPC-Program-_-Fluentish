@@ -48,6 +48,7 @@ const sampleMapLocation = MapLocationRecord(
   categoryLabel: 'Cafe',
   iconKey: 'cafe',
   sourceCategory: 'Coffee shop',
+  shortDescription: 'A relaxed cafe for coffee and conversation.',
   sourceCategories: ['Coffee shop', 'Cafe'],
   address: '1 Sample Street, Ho Chi Minh City',
   neighborhood: 'District 1',
@@ -65,6 +66,100 @@ const sampleMapLocation = MapLocationRecord(
   googleMapsUrl: null,
   scrapedAt: null,
 );
+
+const sampleEntertainmentLocation = MapLocationRecord(
+  id: 'sample-cinema',
+  placeId: 'sample-cinema',
+  name: 'Sample Cinema',
+  point: GeoPoint(10.778, 106.702),
+  geohash: 'w3gv',
+  group: 'entertainment',
+  category: 'movie_theatre',
+  categoryLabel: 'Movie Theatre',
+  iconKey: 'movie_theatre',
+  sourceCategory: 'Cinema',
+  sourceCategories: ['Cinema'],
+  address: '2 Sample Street, Ho Chi Minh City',
+  neighborhood: 'District 1',
+  region: 'Ho Chi Minh City',
+  city: 'Ho Chi Minh City',
+  countryCode: 'VN',
+  phone: null,
+  website: null,
+  rating: 4.3,
+  reviewCount: 80,
+  price: null,
+  openingHours: {},
+  status: 'open',
+  isActive: true,
+  googleMapsUrl: null,
+  scrapedAt: null,
+);
+
+const sampleCultureLocation = MapLocationRecord(
+  id: 'sample-museum',
+  placeId: 'sample-museum',
+  name: 'Sample Museum',
+  point: GeoPoint(10.779, 106.699),
+  geohash: 'w3gv',
+  group: 'culture',
+  category: 'museum',
+  categoryLabel: 'Museum',
+  iconKey: 'museum',
+  sourceCategory: 'History museum',
+  sourceCategories: ['History museum', 'Museum'],
+  address: '3 Sample Street, Ho Chi Minh City',
+  neighborhood: 'District 1',
+  region: 'Ho Chi Minh City',
+  city: 'Ho Chi Minh City',
+  countryCode: 'VN',
+  phone: null,
+  website: null,
+  rating: 4.7,
+  reviewCount: 120,
+  price: null,
+  openingHours: {},
+  status: 'open',
+  isActive: true,
+  googleMapsUrl: null,
+  scrapedAt: null,
+);
+
+const sampleFarFoodLocation = MapLocationRecord(
+  id: 'far-restaurant',
+  placeId: 'far-restaurant',
+  name: 'Far Restaurant',
+  point: GeoPoint(10.785, 106.706),
+  geohash: 'w3gv',
+  group: 'food_drink',
+  category: 'restaurant',
+  categoryLabel: 'Restaurant',
+  iconKey: 'restaurant',
+  sourceCategory: 'Restaurant',
+  sourceCategories: ['Restaurant'],
+  address: 'Far Away, Ho Chi Minh City',
+  neighborhood: '',
+  region: 'Ho Chi Minh City',
+  city: 'Ho Chi Minh City',
+  countryCode: 'VN',
+  phone: null,
+  website: null,
+  rating: 4,
+  reviewCount: 10,
+  price: null,
+  openingHours: {},
+  status: 'open',
+  isActive: true,
+  googleMapsUrl: null,
+  scrapedAt: null,
+);
+
+const sampleMapLocations = [
+  sampleFarFoodLocation,
+  sampleMapLocation,
+  sampleEntertainmentLocation,
+  sampleCultureLocation,
+];
 
 const sampleFoodPlace = PlaceRecord(
   id: 'ben-thanh-market',
@@ -292,7 +387,7 @@ class FakeGuideDataSource implements GuideDataSource {
 class FakeLocationDataSource implements LocationDataSource {
   FakeLocationDataSource({
     this.sharing = false,
-    this.mapLocations = const [sampleMapLocation],
+    this.mapLocations = sampleMapLocations,
   });
 
   bool sharing;

@@ -18,6 +18,7 @@ void main() {
         home: FriendLocationPage(
           auth: FakeAuthGateway(),
           friendRepository: FakeFriendDataSource(),
+          guideRepository: FakeGuideDataSource(),
           locationRepository: FakeLocationDataSource(),
         ),
       ),
@@ -31,12 +32,12 @@ void main() {
     await pumpPage(tester);
 
     expect(find.text('Friends & Places'), findsOneWidget);
-    expect(find.text('1 friends · 1 places'), findsOneWidget);
+    expect(find.text('1 friends · 4 places'), findsOneWidget);
     expect(find.text('All'), findsOneWidget);
     expect(find.text('Friends'), findsOneWidget);
     expect(find.text('Places'), findsOneWidget);
     expect(find.text('Test Friend'), findsOneWidget);
-    expect(find.byIcon(Icons.restaurant), findsOneWidget);
+    expect(find.byIcon(Icons.restaurant), findsNWidgets(2));
     expect(find.byIcon(Icons.local_cafe), findsOneWidget);
     expect(find.text('OMW in 8 min.'), findsNothing);
     expect(find.text('Chat'), findsNothing);
@@ -56,5 +57,24 @@ void main() {
     expect(find.text('4.5 (12)'), findsOneWidget);
     expect(find.text('Opening hours'), findsOneWidget);
     expect(find.text('8 AM to 10 PM'), findsOneWidget);
+  });
+
+  testWidgets('route guide draws stops only after View Route', (tester) async {
+    await pumpPage(tester);
+
+    expect(find.text('2 stops'), findsNothing);
+    await tester.tap(find.byIcon(Icons.route));
+    await tester.pumpAndSettle();
+    expect(find.text('District 1 Walk'), findsWidgets);
+    expect(find.text('View Route'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('View Route'));
+    await tester.tap(find.text('View Route'));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('District 1 Walk'), findsWidgets);
+    expect(find.text('2 stops'), findsOneWidget);
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
   });
 }

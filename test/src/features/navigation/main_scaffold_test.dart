@@ -30,12 +30,15 @@ void main() {
       ),
     );
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
   }
 
   testWidgets('starts on the real Home screen', (tester) async {
     await pumpMainScaffold(tester);
     expect(find.byType(HomeScreen), findsOneWidget);
-    expect(find.text('Street Food Basics'), findsOneWidget);
+    expect(find.text('Sample Cafe'), findsOneWidget);
+    expect(find.text('Sample Cinema'), findsOneWidget);
+    expect(find.text('Sample Museum'), findsOneWidget);
   });
 
   testWidgets('Community tab opens OpenStreetMap without nested nav', (
@@ -47,8 +50,18 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.byType(FriendLocationPage), findsOneWidget);
-    expect(find.text('Friends & Guides'), findsOneWidget);
+    expect(find.text('Friends & Places'), findsOneWidget);
     expect(find.byType(AppBottomNav), findsOneWidget);
+  });
+
+  testWidgets('See all opens the Community map tab', (tester) async {
+    await pumpMainScaffold(tester);
+
+    await tester.tap(find.text('See all'));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.byType(FriendLocationPage), findsOneWidget);
+    expect(find.text('Friends & Places'), findsOneWidget);
   });
 
   testWidgets('Soundboard tab opens the real soundboard page', (tester) async {

@@ -243,6 +243,7 @@ class MapLocationRecord {
     required this.categoryLabel,
     required this.iconKey,
     required this.sourceCategory,
+    this.shortDescription = '',
     required this.sourceCategories,
     required this.address,
     required this.neighborhood,
@@ -288,6 +289,9 @@ class MapLocationRecord {
           (data['category'] as String?) ??
           'place',
       sourceCategory: data['sourceCategory'] as String? ?? '',
+      shortDescription: data['shortDescription'] as String? ??
+          data['description'] as String? ??
+          '',
       sourceCategories: _stringList(data['sourceCategories']),
       address: address['formatted'] as String? ?? '',
       neighborhood: address['neighborhood'] as String? ?? '',
@@ -320,6 +324,7 @@ class MapLocationRecord {
   final String categoryLabel;
   final String iconKey;
   final String sourceCategory;
+  final String shortDescription;
   final List<String> sourceCategories;
   final String address;
   final String neighborhood;

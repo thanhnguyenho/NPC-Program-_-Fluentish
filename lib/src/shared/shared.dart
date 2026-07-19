@@ -14,3 +14,4 @@ export 'widgets/app_card.dart';
 export 'widgets/app_text_field.dart';
 export 'widgets/app_text_label.dart';
 export 'widgets/app_stroke_text.dart';
+export 'widgets/map_location_visuals.dart';
