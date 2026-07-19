@@ -1,24 +1,34 @@
 import 'package:flutter/material.dart';
 
 import 'package:fluentish/src/features/forgot_password/forgot_password_page.dart';
-import 'package:fluentish/src/features/navigation/main_scaffold.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
 class LoginForm extends StatefulWidget {
-  const LoginForm({super.key});
+  const LoginForm({
+    super.key,
+    this.auth,
+  });
+
+  final AuthGateway? auth;
 
   @override
   State<LoginForm> createState() => _LoginFormState();
 }
 
 class _LoginFormState extends State<LoginForm> {
-  static const _demoUsername = 'admin';
-  static const _demoPassword = 'admin123';
+  late final AuthGateway _auth;
 
   final usernameController = TextEditingController();
   final passwordController = TextEditingController();
 
   bool obscurePassword = true;
+  bool isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _auth = widget.auth ?? Auth.instance;
+  }
 
   @override
   void dispose() {
@@ -27,28 +37,41 @@ class _LoginFormState extends State<LoginForm> {
     super.dispose();
   }
 
-  void _login() {
-    final isDemoAdmin =
-        usernameController.text.trim() == _demoUsername &&
-            passwordController.text == _demoPassword;
+  Future<void> _login() async {
+    if (isSubmitting) return;
 
-    if (!isDemoAdmin) {
+    setState(() {
+      isSubmitting = true;
+    });
+
+    try {
+      await _auth.signInWithEmailAndPassword(
+        usernameController.text.trim(),
+        passwordController.text,
+      );
+
+      if (!mounted) return;
+
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
-            content: Text('Invalid demo username or password'),
+          SnackBar(
+            content: Text(
+              e is StateError ? e.message : e.toString(),
+            ),
           ),
         );
-      return;
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSubmitting = false;
+        });
+      }
     }
-
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (_) => const MainScaffold(initialIndex: 0),
-      ),
-      (route) => false,
-    );
   }
 
   @override
@@ -56,22 +79,30 @@ class _LoginFormState extends State<LoginForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const AppTextLabel(text: 'Username'),
+        const AppTextLabel(text: 'Email'),
+
         const SizedBox(height: AppSpacing.xs),
+
         AppTextField(
           controller: usernameController,
-          hintText: 'Enter your username',
+          hintText: 'Enter your email',
         ),
+
         const SizedBox(height: AppSpacing.lg),
+
         const AppTextLabel(text: 'Password'),
+
         const SizedBox(height: AppSpacing.xs),
+
         AppTextField(
           controller: passwordController,
           hintText: 'Enter your password',
           obscureText: obscurePassword,
           suffixIcon: IconButton(
             icon: Icon(
-              obscurePassword ? Icons.visibility_off : Icons.visibility,
+              obscurePassword
+                  ? Icons.visibility_off
+                  : Icons.visibility,
               color: AppColors.pine,
             ),
             onPressed: () {
@@ -81,6 +112,7 @@ class _LoginFormState extends State<LoginForm> {
             },
           ),
         ),
+
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
@@ -102,10 +134,12 @@ class _LoginFormState extends State<LoginForm> {
             ),
           ),
         ),
+
         const SizedBox(height: AppSpacing.md),
+
         AppButton(
-          label: 'LOGIN',
-          onPressed: _login,
+          label: isSubmitting ? 'LOADING...' : 'LOGIN',
+          onPressed: isSubmitting ? null : _login,
         ),
       ],
     );
