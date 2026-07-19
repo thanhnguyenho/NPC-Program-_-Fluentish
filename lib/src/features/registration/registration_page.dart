@@ -10,10 +10,11 @@ import 'package:fluentish/src/features/privacy_policy/privacy_policy_sheet.dart'
 import 'package:fluentish/src/features/terms_of_service/terms_of_service_sheet.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
-
-
 class RegistrationPage extends StatefulWidget {
-  const RegistrationPage({super.key, this.auth});
+  const RegistrationPage({
+    super.key,
+    this.auth,
+  });
 
   final AuthGateway? auth;
 
@@ -25,9 +26,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
   late final TapGestureRecognizer _privacyPolicyRecognizer;
   late final TapGestureRecognizer _termsOfServiceRecognizer;
 
-  String? errorMessage;
-  bool _isSubmitting = false;
-  bool isLogin = true;
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _preferredNameController =
@@ -36,12 +34,17 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final TextEditingController _dobController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _controllerEmail = TextEditingController();
-  final TextEditingController _confirmEmailController = TextEditingController();
+  final TextEditingController _confirmEmailController =
+      TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
+  String? errorMessage;
+
+  bool _isSubmitting = false;
   bool agree = false;
+
   DateTime _selectedDob = DateTime(2000, 1, 1);
 
   static const List<String> _allowedEmailDomains = [
@@ -53,22 +56,22 @@ class _RegistrationPageState extends State<RegistrationPage> {
     'live.com',
   ];
 
-
+  AuthGateway get _auth => widget.auth ?? Auth.instance;
 
   @override
   void initState() {
     super.initState();
+
     _privacyPolicyRecognizer = TapGestureRecognizer()
       ..onTap = () {
         showPrivacyPolicySheet(context);
       };
+
     _termsOfServiceRecognizer = TapGestureRecognizer()
       ..onTap = () {
         showTermsOfServiceSheet(context);
       };
   }
-
-  AuthGateway get _auth => widget.auth ?? Auth.instance;
 
   @override
   void dispose() {
@@ -82,25 +85,37 @@ class _RegistrationPageState extends State<RegistrationPage> {
     _confirmEmailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+
     _privacyPolicyRecognizer.dispose();
     _termsOfServiceRecognizer.dispose();
+
     super.dispose();
   }
 
   void _goToLogin() {
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-      builder: (_) => LoginPage(auth: widget.auth),
-    ),
-  );
-}
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LoginPage(
+          auth: widget.auth,
+        ),
+      ),
+    );
+  }
 
   bool _isValidEmailDomain(String email) {
     final trimmed = email.trim().toLowerCase();
-    final basicEmailRegex = RegExp(r'^[\w\.\-\+]+@[\w\-]+(\.[\w\-]+)+$');
-    if (!basicEmailRegex.hasMatch(trimmed)) return false;
+
+    final basicEmailRegex = RegExp(
+      r'^[\w.\-+]+@[\w\-]+(\.[\w\-]+)+$',
+    );
+
+    if (!basicEmailRegex.hasMatch(trimmed)) {
+      return false;
+    }
+
     final domain = trimmed.split('@').last;
+
     return _allowedEmailDomains.contains(domain);
   }
 
@@ -110,12 +125,15 @@ class _RegistrationPageState extends State<RegistrationPage> {
     }
 
     final hasUppercase = RegExp(r'[A-Z]').hasMatch(password);
+
     if (!hasUppercase) {
       return 'Password must contain at least 1 uppercase letter.';
     }
 
-    final hasSpecialChar =
-        RegExp(r'''[!@#$%^&*(),.?":{}|<>_\-\[\]/\\;=+~`]''').hasMatch(password);
+    final hasSpecialChar = RegExp(
+      r'''[!@#$%^&*(),.?":{}|<>_\-\[\]/\\;=+~`]''',
+    ).hasMatch(password);
+
     if (!hasSpecialChar) {
       return 'Password must contain at least 1 special character.';
     }
@@ -126,11 +144,13 @@ class _RegistrationPageState extends State<RegistrationPage> {
   Future<void> _pickDob() async {
     DateTime tempPicked = _selectedDob;
 
-    await showModalBottomSheet(
+    await showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.blush,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(20),
+        ),
       ),
       builder: (context) {
         return SizedBox(
@@ -141,21 +161,27 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   TextButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
                     child: const Text(
                       'Cancel',
-                      style: TextStyle(color: AppColors.pine),
+                      style: TextStyle(
+                        color: AppColors.pine,
+                      ),
                     ),
                   ),
                   TextButton(
                     onPressed: () {
                       setState(() {
                         _selectedDob = tempPicked;
+
                         _dobController.text =
                             '${_selectedDob.day.toString().padLeft(2, '0')}/'
                             '${_selectedDob.month.toString().padLeft(2, '0')}/'
                             '${_selectedDob.year}';
                       });
+
                       Navigator.pop(context);
                     },
                     child: const Text(
@@ -208,7 +234,9 @@ class _RegistrationPageState extends State<RegistrationPage> {
             letterSpacing: 0.3,
           ),
         ),
-        const SizedBox(height: AppSpacing.xs),
+        const SizedBox(
+          height: AppSpacing.xs,
+        ),
         AppTextField(
           controller: controller,
           hintText: hint,
@@ -222,6 +250,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
   }
 
   Future<void> _submit() async {
+    if (_isSubmitting) {
+      return;
+    }
+
     final firstName = _firstNameController.text.trim();
     final lastName = _lastNameController.text.trim();
     final preferredName = _preferredNameController.text.trim();
@@ -229,7 +261,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
     final dob = _dobController.text.trim();
     final phone = _phoneController.text.trim();
     final email = _controllerEmail.text.trim().toLowerCase();
-    final confirmEmail = _confirmEmailController.text.trim().toLowerCase();
+    final confirmEmail =
+        _confirmEmailController.text.trim().toLowerCase();
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
@@ -243,34 +276,47 @@ class _RegistrationPageState extends State<RegistrationPage> {
         confirmEmail.isEmpty ||
         password.isEmpty ||
         confirmPassword.isEmpty) {
-      setState(() => errorMessage = 'Please fill in all fields.');
+      setState(() {
+        errorMessage = 'Please fill in all fields.';
+      });
       return;
     }
 
     if (email != confirmEmail) {
-      setState(() => errorMessage = 'Emails do not match.');
+      setState(() {
+        errorMessage = 'Emails do not match.';
+      });
       return;
     }
 
     if (!_isValidEmailDomain(email)) {
-      setState(() => errorMessage = 'Email domain is not allowed.');
+      setState(() {
+        errorMessage = 'Email domain is not allowed.';
+      });
       return;
     }
 
     final passwordError = _validatePassword(password);
+
     if (passwordError != null) {
-      setState(() => errorMessage = passwordError);
+      setState(() {
+        errorMessage = passwordError;
+      });
       return;
     }
 
     if (password != confirmPassword) {
-      setState(() => errorMessage = 'Passwords do not match.');
+      setState(() {
+        errorMessage = 'Passwords do not match.';
+      });
       return;
     }
 
     if (!agree) {
-      setState(() => errorMessage =
-          'You must agree to the Terms of Service and Privacy Policy');
+      setState(() {
+        errorMessage =
+            'You must agree to the Terms of Service and Privacy Policy';
+      });
       return;
     }
 
@@ -290,19 +336,31 @@ class _RegistrationPageState extends State<RegistrationPage> {
         dateOfBirth: dob,
         phoneNumber: phone,
       );
-      if (!mounted) return;
+
+      if (!mounted) {
+        return;
+      }
+
       Navigator.of(context).pushReplacement(
-       MaterialPageRoute(
-        builder: (_) => LoginPage(auth: widget.auth),
-  ),
-);
+        MaterialPageRoute(
+          builder: (_) => LoginPage(
+            auth: widget.auth,
+          ),
+        ),
       );
     } catch (e) {
-      if (!mounted) return;
-      setState(() => errorMessage = e.toString());
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        errorMessage = e is StateError ? e.message : e.toString();
+      });
     } finally {
       if (mounted) {
-        setState(() => _isSubmitting = false);
+        setState(() {
+          _isSubmitting = false;
+        });
       }
     }
   }
@@ -314,15 +372,24 @@ class _RegistrationPageState extends State<RegistrationPage> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md, AppSpacing.lg, AppSpacing.md, AppSpacing.xl),
+            AppSpacing.md,
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.xl,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back, color: AppColors.pine),
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: AppColors.pine,
+                ),
                 onPressed: _goToLogin,
               ),
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(
+                height: AppSpacing.sm,
+              ),
               Text(
                 'Create Account',
                 style: GoogleFonts.itim(
@@ -331,36 +398,50 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   fontWeight: FontWeight.w400,
                 ),
               ),
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(
+                height: AppSpacing.sm,
+              ),
               Text(
                 'Join Fluentish and start exploring.',
-                style: AppTextStyles.body.copyWith(color: AppColors.textSoft),
+                style: AppTextStyles.body.copyWith(
+                  color: AppColors.textSoft,
+                ),
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(
+                height: AppSpacing.md,
+              ),
               buildField(
                 label: 'First Name',
                 controller: _firstNameController,
                 hint: 'Enter first name',
               ),
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(
+                height: AppSpacing.sm,
+              ),
               buildField(
                 label: 'Last Name',
                 controller: _lastNameController,
                 hint: 'Enter last name',
               ),
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(
+                height: AppSpacing.sm,
+              ),
               buildField(
                 label: 'Preferred Name',
                 controller: _preferredNameController,
                 hint: 'Enter preferred name',
               ),
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(
+                height: AppSpacing.sm,
+              ),
               buildField(
                 label: 'Username',
                 controller: _usernameController,
                 hint: 'Enter username',
               ),
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(
+                height: AppSpacing.sm,
+              ),
               buildField(
                 label: 'Date of Birth',
                 controller: _dobController,
@@ -368,67 +449,90 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 readOnly: true,
                 onTap: _pickDob,
               ),
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(
+                height: AppSpacing.sm,
+              ),
               buildField(
                 label: 'Phone Number',
                 controller: _phoneController,
                 hint: 'Enter phone number',
                 keyboardType: TextInputType.phone,
               ),
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(
+                height: AppSpacing.sm,
+              ),
               buildField(
                 label: 'Email',
                 controller: _controllerEmail,
                 hint: 'Enter your email',
                 keyboardType: TextInputType.emailAddress,
               ),
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(
+                height: AppSpacing.sm,
+              ),
               buildField(
                 label: 'Confirm Email',
                 controller: _confirmEmailController,
                 hint: 'Re-enter your email',
                 keyboardType: TextInputType.emailAddress,
               ),
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(
+                height: AppSpacing.sm,
+              ),
               buildField(
                 label: 'Password',
                 controller: _passwordController,
                 hint: 'Create a strong password',
                 obscure: true,
               ),
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(
+                height: AppSpacing.sm,
+              ),
               buildField(
                 label: 'Confirm Password',
                 controller: _confirmPasswordController,
                 hint: 'Re-enter your password',
                 obscure: true,
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(
+                height: AppSpacing.md,
+              ),
               CheckboxListTile(
                 value: agree,
-                onChanged: (value) => setState(() => agree = value ?? false),
+                onChanged: (value) {
+                  setState(() {
+                    agree = value ?? false;
+                  });
+                },
                 title: RichText(
                   text: TextSpan(
                     children: [
                       const TextSpan(
                         text: 'I agree to the ',
-                        style: TextStyle(color: AppColors.pine),
+                        style: TextStyle(
+                          color: AppColors.pine,
+                        ),
                       ),
                       TextSpan(
                         text: 'Terms of Service',
                         style: const TextStyle(
-                            color: AppColors.pine,
-                            decoration: TextDecoration.underline),
+                          color: AppColors.pine,
+                          decoration: TextDecoration.underline,
+                        ),
                         recognizer: _termsOfServiceRecognizer,
                       ),
                       const TextSpan(
-                          text: ' and ',
-                          style: TextStyle(color: AppColors.pine)),
+                        text: ' and ',
+                        style: TextStyle(
+                          color: AppColors.pine,
+                        ),
+                      ),
                       TextSpan(
                         text: 'Privacy Policy',
                         style: const TextStyle(
-                            color: AppColors.pine,
-                            decoration: TextDecoration.underline),
+                          color: AppColors.pine,
+                          decoration: TextDecoration.underline,
+                        ),
                         recognizer: _privacyPolicyRecognizer,
                       ),
                     ],
@@ -436,15 +540,23 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 ),
               ),
               if (errorMessage != null) ...[
-                const SizedBox(height: AppSpacing.sm),
+                const SizedBox(
+                  height: AppSpacing.sm,
+                ),
                 Text(
                   errorMessage!,
-                  style: const TextStyle(color: Colors.red),
+                  style: const TextStyle(
+                    color: Colors.red,
+                  ),
                 ),
               ],
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(
+                height: AppSpacing.md,
+              ),
               AppButton(
-                label: _isSubmitting ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT',
+                label: _isSubmitting
+                    ? 'CREATING ACCOUNT...'
+                    : 'CREATE ACCOUNT',
                 onPressed: _isSubmitting ? null : _submit,
               ),
             ],
