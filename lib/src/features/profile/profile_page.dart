@@ -304,7 +304,6 @@ class _SectionLabel extends StatelessWidget {
 
 class _AccountTile extends StatelessWidget {
   const _AccountTile({
-    super.key,
     required this.icon,
     required this.iconBg,
     required this.label,
