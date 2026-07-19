@@ -13,6 +13,7 @@ class MainScaffold extends StatefulWidget {
     this.initialIndex = 0,
     this.auth,
     this.friendRepository,
+    this.favouriteRepository,
     this.guideRepository,
     this.locationRepository,
   });
@@ -20,6 +21,7 @@ class MainScaffold extends StatefulWidget {
   final int initialIndex;
   final AuthGateway? auth;
   final FriendDataSource? friendRepository;
+  final FavouriteDataSource? favouriteRepository;
   final GuideDataSource? guideRepository;
   final LocationDataSource? locationRepository;
 
@@ -29,6 +31,7 @@ class MainScaffold extends StatefulWidget {
 
 class _MainScaffoldState extends State<MainScaffold> {
   late int _currentIndex;
+  FavouritePhraseRecord? _selectedFavouritePhrase;
 
   @override
   void initState() {
@@ -41,12 +44,22 @@ class _MainScaffoldState extends State<MainScaffold> {
       case 0:
         return HomeScreen(
           onNavigateToMap: _openMap,
+          onNavigateToLanguage: _openLanguage,
+          onNavigateToSoundboard: _openSoundboard,
+          onOpenFavouritePhrase: _openFavouritePhrase,
           auth: widget.auth,
           friendRepository: widget.friendRepository,
+          favouriteRepository: widget.favouriteRepository,
           locationRepository: widget.locationRepository,
         );
       case 1:
-        return const LanguagePage();
+        return LanguagePage(
+          key: ValueKey(_selectedFavouritePhrase?.id),
+          initialSourceText: _selectedFavouritePhrase?.sourceText,
+          initialTranslatedText: _selectedFavouritePhrase?.translatedText,
+          initialSourceLanguage: _selectedFavouritePhrase?.sourceLanguage,
+          initialTargetLanguage: _selectedFavouritePhrase?.targetLanguage,
+        );
       case 2:
         return const SoundboardPage();
       case 3:
@@ -69,6 +82,22 @@ class _MainScaffoldState extends State<MainScaffold> {
     }
   }
 
+  void _openLanguage() {
+    setState(() {
+      _selectedFavouritePhrase = null;
+      _currentIndex = 1;
+    });
+  }
+
+  void _openFavouritePhrase(FavouritePhraseRecord phrase) {
+    setState(() {
+      _selectedFavouritePhrase = phrase;
+      _currentIndex = 1;
+    });
+  }
+
+  void _openSoundboard() => setState(() => _currentIndex = 2);
+
   void _openMap() => setState(() => _currentIndex = 3);
 
   @override
@@ -78,7 +107,10 @@ class _MainScaffoldState extends State<MainScaffold> {
       bottomNavigationBar: AppBottomNav(
         currentIndex: _currentIndex,
         onItemSelected: (index) {
-          setState(() => _currentIndex = index);
+          setState(() {
+            if (index == 1) _selectedFavouritePhrase = null;
+            _currentIndex = index;
+          });
         },
       ),
     );

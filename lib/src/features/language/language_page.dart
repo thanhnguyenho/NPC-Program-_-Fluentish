@@ -6,16 +6,43 @@ import 'package:fluentish/src/features/language/translator_engine.dart';
 import 'package:fluentish/src/features/common/smart_search_bar.dart';
 
 class LanguagePage extends StatelessWidget {
-  const LanguagePage({super.key});
+  const LanguagePage({
+    super.key,
+    this.initialSourceText,
+    this.initialTranslatedText,
+    this.initialSourceLanguage,
+    this.initialTargetLanguage,
+  });
+
+  final String? initialSourceText;
+  final String? initialTranslatedText;
+  final String? initialSourceLanguage;
+  final String? initialTargetLanguage;
 
   @override
   Widget build(BuildContext context) {
-    return const LanguageTranslatorScreen();
+    return LanguageTranslatorScreen(
+      initialSourceText: initialSourceText,
+      initialTranslatedText: initialTranslatedText,
+      initialSourceLanguage: initialSourceLanguage,
+      initialTargetLanguage: initialTargetLanguage,
+    );
   }
 }
 
 class LanguageTranslatorScreen extends StatefulWidget {
-  const LanguageTranslatorScreen({super.key});
+  const LanguageTranslatorScreen({
+    super.key,
+    this.initialSourceText,
+    this.initialTranslatedText,
+    this.initialSourceLanguage,
+    this.initialTargetLanguage,
+  });
+
+  final String? initialSourceText;
+  final String? initialTranslatedText;
+  final String? initialSourceLanguage;
+  final String? initialTargetLanguage;
 
   @override
   State<LanguageTranslatorScreen> createState() =>
@@ -26,12 +53,12 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _sourceController = TextEditingController();
 
-  String _sourceLang = 'English';
-  String _targetLang = 'Vietnamese';
-  String _translatedText = 'Xin chào';
+  late String _sourceLang;
+  late String _targetLang;
+  late String _translatedText;
 
-  bool _isSourceStarred = false;
-  bool _isTargetStarred = false;
+  late bool _isSourceStarred;
+  late bool _isTargetStarred;
 
   // Debounce timer: only record to history AFTER user stops typing for 800ms
   Timer? _historyDebounceTimer;
@@ -66,6 +93,34 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _applyInitialPhrase();
+  }
+
+  @override
+  void didUpdateWidget(covariant LanguageTranslatorScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialSourceText != widget.initialSourceText ||
+        oldWidget.initialTranslatedText != widget.initialTranslatedText ||
+        oldWidget.initialSourceLanguage != widget.initialSourceLanguage ||
+        oldWidget.initialTargetLanguage != widget.initialTargetLanguage) {
+      _applyInitialPhrase();
+    }
+  }
+
+  void _applyInitialPhrase() {
+    final hasInitialPhrase = widget.initialSourceText != null ||
+        widget.initialTranslatedText != null;
+    _sourceLang = widget.initialSourceLanguage ?? 'English';
+    _targetLang = widget.initialTargetLanguage ?? 'Vietnamese';
+    _translatedText = widget.initialTranslatedText ?? 'Xin chào';
+    _sourceController.text = widget.initialSourceText ?? '';
+    _isSourceStarred = hasInitialPhrase;
+    _isTargetStarred = hasInitialPhrase;
+  }
+
+  @override
   void dispose() {
     _historyDebounceTimer?.cancel();
     _searchController.dispose();
@@ -75,11 +130,26 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
 
   bool _looksLikeVietnamese(String text) {
     final lower = text.toLowerCase().trim();
-    const vnChars = 'ăâđêôơưáàảãạấầẩẫậéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ';
+    const vnChars =
+        'ăâđêôơưáàảãạấầẩẫậéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ';
     for (int i = 0; i < lower.length; i++) {
       if (vnChars.contains(lower[i])) return true;
     }
-    const vnPrefixes = ['xin ', 'xin', 'hôm nay', 'bạn', 'tôi', 'chúng ta', 'làm sao', 'cái này', 'ở đâu', 'ăn gì', 'bao nhiêu', 'chào', 'cảm ơn'];
+    const vnPrefixes = [
+      'xin ',
+      'xin',
+      'hôm nay',
+      'bạn',
+      'tôi',
+      'chúng ta',
+      'làm sao',
+      'cái này',
+      'ở đâu',
+      'ăn gì',
+      'bao nhiêu',
+      'chào',
+      'cảm ơn'
+    ];
     for (final w in vnPrefixes) {
       if (lower.startsWith(w) || lower.contains(' $w ')) return true;
     }
@@ -100,7 +170,8 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
     if (_looksLikeVietnamese(rawText)) {
       _sourceLang = 'Vietnamese';
       _targetLang = 'English';
-    } else if (rawText.toLowerCase().startsWith(RegExp(r'^(how |what |where |can you |may i |have you |hello|thanks|good|check )'))) {
+    } else if (rawText.toLowerCase().startsWith(RegExp(
+        r'^(how |what |where |can you |may i |have you |hello|thanks|good|check )'))) {
       _sourceLang = 'English';
       _targetLang = 'Vietnamese';
     }
@@ -661,6 +732,9 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                               children: [
                                 Expanded(
                                   child: TextField(
+                                    key: const ValueKey(
+                                      'language-source-input',
+                                    ),
                                     controller: _sourceController,
                                     onChanged: _onSourceTextChanged,
                                     maxLines: 4,
@@ -794,12 +868,21 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    _translatedText.isEmpty ? 'Here is your translation...' : _translatedText,
+                                    _translatedText.isEmpty
+                                        ? 'Here is your translation...'
+                                        : _translatedText,
+                                    key: const ValueKey(
+                                      'language-target-text',
+                                    ),
                                     style: TextStyle(
                                       fontSize: 18,
                                       height: 1.4,
-                                      fontWeight: _translatedText.isEmpty ? FontWeight.w400 : FontWeight.w600,
-                                      color: _translatedText.isEmpty ? Colors.black38 : const Color(0xFF3E4E31),
+                                      fontWeight: _translatedText.isEmpty
+                                          ? FontWeight.w400
+                                          : FontWeight.w600,
+                                      color: _translatedText.isEmpty
+                                          ? Colors.black38
+                                          : const Color(0xFF3E4E31),
                                     ),
                                   ),
                                 ),

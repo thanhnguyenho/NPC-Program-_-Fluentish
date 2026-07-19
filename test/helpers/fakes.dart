@@ -161,6 +161,26 @@ const sampleMapLocations = [
   sampleCultureLocation,
 ];
 
+const sampleFavouritePhrase = FavouritePhraseRecord(
+  id: 'phrase-how-are-you',
+  sourceText: 'How are you?',
+  translatedText: 'Bạn khỏe không?',
+  sourceLanguage: 'English',
+  targetLanguage: 'Vietnamese',
+  createdAt: null,
+);
+
+const sampleFavouriteSoundboard = FavouriteSoundboardRecord(
+  id: 'soundboard-hello',
+  english: 'Hello',
+  vietnamese: 'Xin chào',
+  category: 'Greetings',
+  englishAudio: 'audio/Hello - English.mp3',
+  vietnameseAudio: 'audio/Hello - Vietnamese.mp3',
+  preferredLanguage: 'Vietnamese',
+  createdAt: null,
+);
+
 const sampleFoodPlace = PlaceRecord(
   id: 'ben-thanh-market',
   name: 'Chợ Bến Thành',
@@ -382,6 +402,54 @@ class FakeGuideDataSource implements GuideDataSource {
     required String guideId,
     required bool saved,
   }) async {}
+}
+
+class FakeFavouriteDataSource implements FavouriteDataSource {
+  FakeFavouriteDataSource({
+    List<FavouritePhraseRecord> phrases = const [],
+    List<FavouriteSoundboardRecord> soundboardBites = const [],
+  })  : phrases = List.of(phrases),
+        soundboardBites = List.of(soundboardBites);
+
+  final List<FavouritePhraseRecord> phrases;
+  final List<FavouriteSoundboardRecord> soundboardBites;
+  final List<String> removedPhraseIds = [];
+  final List<String> removedSoundboardIds = [];
+  final StreamController<List<FavouritePhraseRecord>> _phraseChanges =
+      StreamController.broadcast();
+  final StreamController<List<FavouriteSoundboardRecord>> _soundboardChanges =
+      StreamController.broadcast();
+
+  @override
+  Stream<List<FavouritePhraseRecord>> watchFavouritePhrases(String uid) async* {
+    yield List.unmodifiable(phrases);
+    yield* _phraseChanges.stream;
+  }
+
+  @override
+  Stream<List<FavouriteSoundboardRecord>> watchFavouriteSoundboardBites(
+    String uid,
+  ) async* {
+    yield List.unmodifiable(soundboardBites);
+    yield* _soundboardChanges.stream;
+  }
+
+  @override
+  Future<void> removeFavouritePhrase(String uid, String favouriteId) async {
+    removedPhraseIds.add(favouriteId);
+    phrases.removeWhere((phrase) => phrase.id == favouriteId);
+    _phraseChanges.add(List.unmodifiable(phrases));
+  }
+
+  @override
+  Future<void> removeFavouriteSoundboardBite(
+    String uid,
+    String favouriteId,
+  ) async {
+    removedSoundboardIds.add(favouriteId);
+    soundboardBites.removeWhere((bite) => bite.id == favouriteId);
+    _soundboardChanges.add(List.unmodifiable(soundboardBites));
+  }
 }
 
 class FakeLocationDataSource implements LocationDataSource {

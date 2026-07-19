@@ -23,6 +23,7 @@ dependencies:
   mockito: ^5.7.0
   plugin_platform_interface: ^2.1.8
   url_launcher: ^6.3.2
+  flutter_tts: ^4.2.5
 
 dev_dependencies:
   flutter_test:

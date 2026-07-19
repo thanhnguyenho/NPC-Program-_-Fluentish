@@ -26,14 +26,25 @@ service cloud.firestore {
       match /savedGuides/{guideId} {
         allow read, write: if isOwner(uid);
       }
+
+      match /favouritePhrases/{favouriteId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /favouriteSoundboardBites/{favouriteId} {
+        allow read, write: if isOwner(uid);
+      }
     }
 
     match /publicProfiles/{uid} {
       allow read: if signedIn();
+
       allow create: if isOwner(uid)
           && request.resource.data.uid == request.auth.uid;
+
       allow update: if isOwner(uid)
           && request.resource.data.uid == resource.data.uid;
+
       allow delete: if isOwner(uid);
     }
 
@@ -41,11 +52,13 @@ service cloud.firestore {
       allow read: if signedIn()
           && (request.auth.uid == resource.data.senderId
               || request.auth.uid == resource.data.receiverId);
+
       allow create: if signedIn()
           && requestId == request.auth.uid + '_' + request.resource.data.receiverId
           && request.resource.data.senderId == request.auth.uid
           && request.resource.data.receiverId != request.auth.uid
           && request.resource.data.status == 'pending';
+
       allow update: if signedIn()
           && request.auth.uid == resource.data.receiverId
           && resource.data.status == 'pending'
@@ -54,27 +67,42 @@ service cloud.firestore {
           && request.resource.data.status in ['accepted', 'declined']
           && request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly(['status', 'respondedAt']);
+
       allow delete: if false;
     }
 
     match /friendships/{friendshipId} {
-      allow read: if signedIn() && request.auth.uid in resource.data.userIds;
+      allow read: if signedIn()
+          && request.auth.uid in resource.data.userIds;
+
       allow create: if signedIn()
           && request.auth.uid == getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.receiverId
           && request.resource.data.userIds.size() == 2
           && getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.status == 'accepted'
           && getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.senderId in request.resource.data.userIds
           && getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.receiverId in request.resource.data.userIds
-          && (friendshipId == getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.senderId + '_' + getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.receiverId
-              || friendshipId == getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.receiverId + '_' + getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.senderId);
+          && (
+            friendshipId == getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.senderId
+                + '_'
+                + getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.receiverId
+            ||
+            friendshipId == getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.receiverId
+                + '_'
+                + getAfter(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.senderId
+          );
+
       allow update: if false;
-      allow delete: if signedIn() && request.auth.uid in resource.data.userIds;
+
+      allow delete: if signedIn()
+          && request.auth.uid in resource.data.userIds;
     }
 
     match /locationSharing/{uid} {
       allow read: if isOwner(uid)
           || (signedIn() && friendshipExists(request.auth.uid, uid));
+
       allow delete: if isOwner(uid);
+
       allow create, update: if isOwner(uid)
           && request.resource.data.audience == 'friends';
     }
@@ -83,30 +111,43 @@ service cloud.firestore {
       allow create, update: if isOwner(uid)
           && request.resource.data.ownerId == request.auth.uid
           && request.resource.data.expiresAt > request.time
-          && request.resource.data.expiresAt <= request.time + duration.value(10, 'm');
-      allow read: if (signedIn()
-              && 'isActive' in resource.data
-              && resource.data.isActive == true)
+          && request.resource.data.expiresAt
+              <= request.time + duration.value(10, 'm');
+
+      allow read: if (
+            signedIn()
+            && 'isActive' in resource.data
+            && resource.data.isActive == true
+          )
           || isOwner(uid)
-          || (signedIn()
-              && friendshipExists(request.auth.uid, uid)
-              && sharingEnabled(uid)
-              && resource.data.expiresAt > request.time);
+          || (
+            signedIn()
+            && friendshipExists(request.auth.uid, uid)
+            && sharingEnabled(uid)
+            && resource.data.expiresAt > request.time
+          );
+
       allow delete: if isOwner(uid);
     }
 
     match /places/{placeId} {
-      allow read: if signedIn() && resource.data.isPublished == true;
+      allow read: if signedIn()
+          && resource.data.isPublished == true;
+
       allow write: if false;
     }
 
     match /guides/{guideId} {
-      allow read: if signedIn() && resource.data.isPublished == true;
+      allow read: if signedIn()
+          && resource.data.isPublished == true;
+
       allow write: if false;
 
       match /stops/{stopId} {
         allow read: if signedIn()
-            && get(/databases/$(database)/documents/guides/$(guideId)).data.isPublished == true;
+            && get(/databases/$(database)/documents/guides/$(guideId))
+                .data.isPublished == true;
+
         allow write: if false;
       }
     }
