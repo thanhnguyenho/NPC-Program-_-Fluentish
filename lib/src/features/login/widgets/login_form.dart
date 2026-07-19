@@ -46,8 +46,8 @@ class _LoginFormState extends State<LoginForm> {
 
     try {
       await _auth.signInWithEmailAndPassword(
-        usernameController.text.trim(),
-        passwordController.text,
+        email: usernameController.text.trim(),
+        password: passwordController.text,
       );
 
       if (!mounted) return;
