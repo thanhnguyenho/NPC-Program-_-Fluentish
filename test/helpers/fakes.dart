@@ -37,6 +37,35 @@ final sampleLocation = SharedLocation(
   expiresAt: DateTime.now().add(const Duration(minutes: 10)),
 );
 
+const sampleMapLocation = MapLocationRecord(
+  id: 'sample-cafe',
+  placeId: 'sample-cafe',
+  name: 'Sample Cafe',
+  point: GeoPoint(10.775, 106.701),
+  geohash: 'w3gv',
+  group: 'food_drink',
+  category: 'cafe',
+  categoryLabel: 'Cafe',
+  iconKey: 'cafe',
+  sourceCategory: 'Coffee shop',
+  sourceCategories: ['Coffee shop', 'Cafe'],
+  address: '1 Sample Street, Ho Chi Minh City',
+  neighborhood: 'District 1',
+  region: 'Ho Chi Minh City',
+  city: 'Ho Chi Minh City',
+  countryCode: 'VN',
+  phone: '+84123456789',
+  website: 'https://example.com',
+  rating: 4.5,
+  reviewCount: 12,
+  price: '₫50–100K',
+  openingHours: {'monday': '8 AM to 10 PM'},
+  status: 'open',
+  isActive: true,
+  googleMapsUrl: null,
+  scrapedAt: null,
+);
+
 const sampleFoodPlace = PlaceRecord(
   id: 'ben-thanh-market',
   name: 'Chợ Bến Thành',
@@ -261,9 +290,13 @@ class FakeGuideDataSource implements GuideDataSource {
 }
 
 class FakeLocationDataSource implements LocationDataSource {
-  FakeLocationDataSource({this.sharing = false});
+  FakeLocationDataSource({
+    this.sharing = false,
+    this.mapLocations = const [sampleMapLocation],
+  });
 
   bool sharing;
+  final List<MapLocationRecord> mapLocations;
 
   static final position = Position(
     longitude: 106.7009,
@@ -280,6 +313,10 @@ class FakeLocationDataSource implements LocationDataSource {
 
   @override
   Stream<bool> watchSharing(String uid) => Stream.value(sharing);
+
+  @override
+  Stream<List<MapLocationRecord>> watchMapLocations() =>
+      Stream.value(mapLocations);
 
   @override
   Future<void> setSharing(String uid, bool enabled) async {
