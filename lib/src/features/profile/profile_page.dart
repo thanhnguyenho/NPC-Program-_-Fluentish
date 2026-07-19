@@ -303,12 +303,15 @@ class _SectionLabel extends StatelessWidget {
 
 class _AccountTile extends StatelessWidget {
   const _AccountTile({
+    super.key,
     required this.icon,
+    required this.iconBg,
     required this.label,
     required this.onTap,
   });
 
   final IconData icon;
+  final Color iconBg;
   final String label;
   final VoidCallback onTap;
 
@@ -333,7 +336,10 @@ class _AccountTile extends StatelessWidget {
                   color: iconBg,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: AppColors.pine),
+                child: Icon(
+                  icon,
+                  color: AppColors.pine,
+                ),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -345,7 +351,10 @@ class _AccountTile extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(Icons.chevron_right, color: AppColors.pineMuted),
+              const Icon(
+                Icons.chevron_right,
+                color: AppColors.pineMuted,
+              ),
             ],
           ),
         ),
