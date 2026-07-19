@@ -1002,53 +1002,6 @@ class _MapLocationMarker extends StatelessWidget {
   }
 }
 
-//unused because we don't have a guide marker on the map anymore, but leaving it here in case we want to add it back in the future
-class _GuideMarker extends StatelessWidget {
-  const _GuideMarker({required this.place});
-
-  final PlaceRecord place;
-
-  IconData get icon => switch (place.category) {
-        'food' => Icons.restaurant,
-        'cafe' => Icons.local_cafe,
-        'route' => Icons.route,
-        _ => Icons.place,
-      };
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          height: 48,
-          width: 48,
-          decoration: BoxDecoration(
-            color: AppColors.pine,
-            border: Border.all(color: Colors.white, width: 3),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(24),
-              topRight: Radius.circular(24),
-              bottomLeft: Radius.circular(24),
-            ),
-            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
-          ),
-          child: Icon(icon, color: Colors.white),
-        ),
-        if (place.guideCount > 1)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-            decoration: BoxDecoration(
-              color: AppColors.blush,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text('${place.guideCount} guides',
-                style: const TextStyle(fontSize: 8)),
-          ),
-      ],
-    );
-  }
-}
-
 class _CurrentUserMarker extends StatelessWidget {
   const _CurrentUserMarker();
 
