@@ -88,11 +88,13 @@ class _RegistrationPageState extends State<RegistrationPage> {
   }
 
   void _goToLogin() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginPage()),
-    );
-  }
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (_) => LoginPage(auth: widget.auth),
+    ),
+  );
+}
 
   bool _isValidEmailDomain(String email) {
     final trimmed = email.trim().toLowerCase();
@@ -290,7 +292,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
       );
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginPage()),
+       MaterialPageRoute(
+        builder: (_) => LoginPage(auth: widget.auth),
+  ),
+);
       );
     } catch (e) {
       if (!mounted) return;
