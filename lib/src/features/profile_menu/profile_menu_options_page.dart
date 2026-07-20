@@ -1,6 +1,7 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -25,6 +26,7 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
   bool _saving = false;
   bool _uploadingAvatar = false;
   String? _avatarUrl;
+  String? _avatarBase64;
 
   @override
   void initState() {
@@ -72,8 +74,12 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
         _dob.text = (profile['dateOfBirth'] ?? '').toString();
         _phone.text = (profile['phoneNumber'] ?? '').toString();
         final avatar = (profile['avatarUrl'] ?? '').toString();
+        final avatarBase64 = (profile['avatarBase64'] ?? '').toString();
         if (avatar.isNotEmpty) {
           _avatarUrl = avatar;
+        }
+        if (avatarBase64.isNotEmpty) {
+          _avatarBase64 = avatarBase64;
         }
       }
     }
@@ -101,74 +107,46 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
     try {
       final image = await ImagePicker().pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1200,
-        maxHeight: 1200,
-        imageQuality: 85,
+        maxWidth: 256,
+        maxHeight: 256,
+        imageQuality: 70,
       );
       if (image == null) return;
 
       final bytes = await image.readAsBytes();
-      if (bytes.length > 5 * 1024 * 1024) {
+      if (bytes.length > 500 * 1024) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please choose an image under 5 MB.')),
+          const SnackBar(
+            content: Text('This photo could not be compressed below 500 KB.'),
+          ),
         );
         return;
       }
 
       if (mounted) setState(() => _uploadingAvatar = true);
 
-      final extension = image.name.split('.').last.toLowerCase();
-      final contentType = switch (extension) {
-        'png' => 'image/png',
-        'webp' => 'image/webp',
-        'heic' || 'heif' => 'image/heic',
-        _ => 'image/jpeg',
-      };
-      final reference =
-          FirebaseStorage.instance.ref().child('avatars/${user.uid}/profile');
-      await reference.putData(
-        bytes,
-        SettableMetadata(
-          contentType: contentType,
-          cacheControl: 'no-cache, max-age=0',
-        ),
-      );
-      final storageUrl = await reference.getDownloadURL();
-      final separator = storageUrl.contains('?') ? '&' : '?';
-      final downloadUrl =
-          '$storageUrl${separator}updated=${DateTime.now().millisecondsSinceEpoch}';
-
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
-        {'avatarUrl': downloadUrl},
+      final encodedAvatar = base64Encode(bytes);
+      final firestore = FirebaseFirestore.instance;
+      final batch = firestore.batch();
+      batch.set(
+        firestore.collection('users').doc(user.uid),
+        {'avatarBase64': encodedAvatar},
         SetOptions(merge: true),
       );
-      await FirebaseFirestore.instance
-          .collection('publicProfiles')
-          .doc(user.uid)
-          .set(
-        {'uid': user.uid, 'avatarUrl': downloadUrl},
+      batch.set(
+        firestore.collection('publicProfiles').doc(user.uid),
+        {'uid': user.uid, 'avatarBase64': encodedAvatar},
         SetOptions(merge: true),
       );
-      await user.updatePhotoURL(downloadUrl);
+      await batch.commit();
 
       if (!mounted) return;
       setState(() {
-        _avatarUrl = downloadUrl;
+        _avatarBase64 = encodedAvatar;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile photo updated.')),
-      );
-    } on FirebaseException catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            error.code == 'unauthorized'
-                ? 'Firebase Storage permission denied. Check storage rules.'
-                : 'Could not upload photo. Please try again.',
-          ),
-        ),
       );
     } catch (_) {
       if (!mounted) return;
@@ -209,6 +187,7 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
         'dateOfBirth': _dob.text.trim(),
         'phoneNumber': _phone.text.trim(),
         'avatarUrl': _avatarUrl,
+        'avatarBase64': _avatarBase64,
       }, SetOptions(merge: true));
 
       await FirebaseFirestore.instance
@@ -219,6 +198,7 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
         'username': _username.text.trim(),
         'usernameLower': _username.text.trim().toLowerCase(),
         'avatarUrl': _avatarUrl,
+        'avatarBase64': _avatarBase64,
       }, SetOptions(merge: true));
 
       if (!mounted) return;
@@ -245,6 +225,10 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final avatarImage = avatarImageProvider(
+      base64Data: _avatarBase64,
+      url: _avatarUrl,
+    );
     return Scaffold(
       backgroundColor: AppColors.shell,
       body: Column(
@@ -315,13 +299,10 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
                               CircleAvatar(
                                 radius: 55,
                                 backgroundColor: AppColors.cardSurface,
-                                backgroundImage:
-                                    _avatarUrl != null && _avatarUrl!.isNotEmpty
-                                        ? NetworkImage(_avatarUrl!)
-                                        : null,
+                                backgroundImage: avatarImage,
                                 child: _uploadingAvatar
                                     ? const CircularProgressIndicator()
-                                    : _avatarUrl == null || _avatarUrl!.isEmpty
+                                    : avatarImage == null
                                         ? const Icon(
                                             Icons.person,
                                             size: 56,

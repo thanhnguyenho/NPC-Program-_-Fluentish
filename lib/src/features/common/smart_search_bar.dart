@@ -185,6 +185,10 @@ class _SmartSearchBarState extends State<SmartSearchBar> {
               widget.onSubmitted?.call(val);
             },
             decoration: InputDecoration(
+              // The outer container owns the themed surface, border, and
+              // radius. Do not inherit the app-wide filled input background,
+              // otherwise it renders as a second bar during theme changes.
+              filled: false,
               hintText: widget.hintText,
               hintStyle: TextStyle(
                 color: colors.textSecondary,

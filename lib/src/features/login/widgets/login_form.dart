@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:fluentish/src/features/navigation/main_scaffold.dart';
 import 'package:fluentish/src/features/forgot_password/forgot_password_page.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
@@ -50,9 +50,23 @@ class _LoginFormState extends State<LoginForm> {
         password: passwordController.text,
       );
 
+      final uid = _auth.currentUserId;
+
+      if (uid == null) {
+        throw StateError('Authentication completed without a signed-in user.');
+      }
+
       if (!mounted) return;
 
-      Navigator.of(context).pop();
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => MainScaffold(
+            initialIndex: 0,
+            auth: _auth,
+          ),
+        ),
+        (route) => false,
+      );
     } catch (e) {
       if (!mounted) return;
 
@@ -80,29 +94,21 @@ class _LoginFormState extends State<LoginForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const AppTextLabel(text: 'Email'),
-
         const SizedBox(height: AppSpacing.xs),
-
         AppTextField(
           controller: usernameController,
           hintText: 'Enter your email',
         ),
-
         const SizedBox(height: AppSpacing.lg),
-
         const AppTextLabel(text: 'Password'),
-
         const SizedBox(height: AppSpacing.xs),
-
         AppTextField(
           controller: passwordController,
           hintText: 'Enter your password',
           obscureText: obscurePassword,
           suffixIcon: IconButton(
             icon: Icon(
-              obscurePassword
-                  ? Icons.visibility_off
-                  : Icons.visibility,
+              obscurePassword ? Icons.visibility_off : Icons.visibility,
               color: AppColors.pine,
             ),
             onPressed: () {
@@ -112,7 +118,6 @@ class _LoginFormState extends State<LoginForm> {
             },
           ),
         ),
-
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
@@ -134,9 +139,7 @@ class _LoginFormState extends State<LoginForm> {
             ),
           ),
         ),
-
         const SizedBox(height: AppSpacing.md),
-
         AppButton(
           label: isSubmitting ? 'LOADING...' : 'LOGIN',
           onPressed: isSubmitting ? null : _login,

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'package:fluentish/src/features/navigation/main_scaffold.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
 class LoginGoogleButton extends StatefulWidget {
-  const LoginGoogleButton({super.key, this.auth});
+  const LoginGoogleButton({
+    super.key,
+    this.auth,
+  });
 
   final AuthGateway? auth;
 
@@ -16,21 +20,51 @@ class _LoginGoogleButtonState extends State<LoginGoogleButton> {
 
   Future<void> _signIn() async {
     if (_isSubmitting) return;
-    setState(() => _isSubmitting = true);
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    final auth = widget.auth ?? Auth.instance;
+
     try {
-      await (widget.auth ?? Auth.instance).signInWithGoogle();
-      if (mounted) {
-        Navigator.of(context).popUntil((route) => route.isFirst);
+      await auth.signInWithGoogle();
+
+      if (auth.currentUserId == null) {
+        throw StateError(
+          'Google authentication completed without a signed-in user.',
+        );
       }
+
+      if (!mounted) return;
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => MainScaffold(
+            initialIndex: 0,
+            auth: auth,
+          ),
+        ),
+        (route) => false,
+      );
     } catch (error) {
       if (!mounted) return;
+
+      final message = error is StateError
+          ? error.message
+          : error.toString().replaceFirst('Bad state: ', '');
+
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(
-          content: Text(error.toString().replaceFirst('Bad state: ', '')),
-        ));
+        ..showSnackBar(
+          SnackBar(content: Text(message)),
+        );
     } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
 

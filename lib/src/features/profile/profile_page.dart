@@ -85,10 +85,14 @@ class _ProfilePageState extends State<ProfilePage> {
                   ? email.split('@').first
                   : 'Fluentish user');
           final profileAvatarUrl = profile?.avatarUrl?.trim();
-          final avatarUrl = _avatarOverrideUrl ??
+          final avatarUrl =
               (profileAvatarUrl != null && profileAvatarUrl.isNotEmpty
                   ? profileAvatarUrl
-                  : _firebaseAvatarUrl);
+                  : _avatarOverrideUrl ?? _firebaseAvatarUrl);
+          final avatarImage = avatarImageProvider(
+            base64Data: profile?.avatarBase64,
+            url: avatarUrl,
+          );
 
           return CustomScrollView(
             slivers: [
@@ -127,11 +131,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         CircleAvatar(
                           radius: 62,
                           backgroundColor: colors.accent,
-                          backgroundImage:
-                              avatarUrl != null && avatarUrl.isNotEmpty
-                                  ? NetworkImage(avatarUrl)
-                                  : null,
-                          child: avatarUrl == null || avatarUrl.isEmpty
+                          backgroundImage: avatarImage,
+                          child: avatarImage == null
                               ? Text(
                                   name.isNotEmpty
                                       ? name.substring(0, 1).toUpperCase()
