@@ -39,6 +39,8 @@
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Fluentish uses your location to show nearby friends on the map.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Fluentish needs access to your photo library so you can choose a profile picture.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -106,7 +106,8 @@ class _FriendsPageState extends State<FriendsPage> {
           actions: [
             TextButton(
               onPressed: () async {
-                final found = await _friends.searchProfiles(controller.text, uid);
+                final found =
+                    await _friends.searchProfiles(controller.text, uid);
                 setDialogState(() => results = found);
               },
               child: const Text('Search'),
@@ -139,43 +140,81 @@ class _FriendsPageState extends State<FriendsPage> {
   @override
   Widget build(BuildContext context) {
     final uid = _auth.currentUserId;
+    final colors = context.fluentishColors;
     if (uid == null) {
       return const Scaffold(body: Center(child: Text('Sign in first.')));
     }
     return Scaffold(
-      backgroundColor: AppColors.blush,
-      appBar: AppBar(
-        title: const Text('Friends'),
-        backgroundColor: AppColors.blush,
-        actions: [
-          IconButton(onPressed: _searchUsers, icon: const Icon(Icons.person_add)),
-        ],
-      ),
+      backgroundColor: colors.background,
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: SegmentedButton<int>(
-              segments: const [
-                ButtonSegment(value: 0, label: Text('Friends')),
-                ButtonSegment(value: 1, label: Text('Requests')),
-                ButtonSegment(value: 2, label: Text('Nearby')),
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: colors.header,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(15),
+                bottomRight: Radius.circular(15),
+              ),
+            ),
+            padding: const EdgeInsets.fromLTRB(
+              8,
+              50,
+              AppSpacing.sm,
+              AppSpacing.md,
+            ),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: Icon(Icons.arrow_back, color: colors.onHeader),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                Expanded(
+                  child: Text(
+                    'Friends',
+                    style: AppTextStyles.title.copyWith(
+                      color: colors.onHeader,
+                      fontSize: 22,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Add a friend',
+                  onPressed: _searchUsers,
+                  icon: Icon(Icons.person_add, color: colors.onHeader),
+                ),
               ],
-              selected: {_selectedTab},
-              onSelectionChanged: (selection) =>
-                  setState(() => _selectedTab = selection.first),
             ),
           ),
           Expanded(
-            child: switch (_selectedTab) {
-              0 => _FriendsList(uid: uid, repository: _friends),
-              1 => _RequestsList(uid: uid, repository: _friends),
-              _ => _NearbyList(
-                  uid: uid,
-                  repository: _friends,
-                  distanceLabel: _distanceLabel,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: SegmentedButton<int>(
+                    segments: const [
+                      ButtonSegment(value: 0, label: Text('Friends')),
+                      ButtonSegment(value: 1, label: Text('Requests')),
+                      ButtonSegment(value: 2, label: Text('Nearby')),
+                    ],
+                    selected: {_selectedTab},
+                    onSelectionChanged: (selection) =>
+                        setState(() => _selectedTab = selection.first),
+                  ),
                 ),
-            },
+                Expanded(
+                  child: switch (_selectedTab) {
+                    0 => _FriendsList(uid: uid, repository: _friends),
+                    1 => _RequestsList(uid: uid, repository: _friends),
+                    _ => _NearbyList(
+                        uid: uid,
+                        repository: _friends,
+                        distanceLabel: _distanceLabel,
+                      ),
+                  },
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -262,7 +301,8 @@ class _RequestsList extends StatelessWidget {
                         ? const CircleAvatar(child: Icon(Icons.person))
                         : _Avatar(profile: profile),
                     title: Text(profile?.displayName ?? 'Fluentish user'),
-                    subtitle: Text(profile == null ? '' : '@${profile.username}'),
+                    subtitle:
+                        Text(profile == null ? '' : '@${profile.username}'),
                     trailing: Wrap(
                       children: [
                         IconButton(

@@ -1,7 +1,8 @@
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:fluentish/src/shared/shared.dart';
 
 class WordCard extends StatefulWidget {
   final String id;
@@ -63,9 +64,8 @@ class _WordCardState extends State<WordCard> {
   }
 
   Future<void> _playAudio() async {
-    final audioPath = widget.isVietnamese
-        ? widget.vietnameseAudio
-        : widget.englishAudio;
+    final audioPath =
+        widget.isVietnamese ? widget.vietnameseAudio : widget.englishAudio;
 
     if (audioPath.isEmpty) return;
 
@@ -98,9 +98,7 @@ class _WordCardState extends State<WordCard> {
       return;
     }
 
-    final languageId = widget.isVietnamese
-        ? 'vietnamese'
-        : 'english';
+    final languageId = widget.isVietnamese ? 'vietnamese' : 'english';
     final favouriteId = '${widget.id}_$languageId';
 
     final favouriteReference = FirebaseFirestore.instance
@@ -119,9 +117,7 @@ class _WordCardState extends State<WordCard> {
           'category': widget.category,
           'englishAudio': widget.englishAudio,
           'vietnameseAudio': widget.vietnameseAudio,
-          'preferredLanguage': widget.isVietnamese
-              ? 'vietnamese'
-              : 'english',
+          'preferredLanguage': widget.isVietnamese ? 'vietnamese' : 'english',
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
@@ -133,7 +129,6 @@ class _WordCardState extends State<WordCard> {
       });
 
       widget.onFavouriteChanged?.call();
-
     } catch (error) {
       debugPrint('Error toggling favourite: $error');
     }
@@ -147,18 +142,17 @@ class _WordCardState extends State<WordCard> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return GestureDetector(
       onTap: _playAudio,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: _isPlaying
-              ? const Color(0xFF868F54)
-              : const Color(0xFFF8F5F1).withValues(alpha: 0.5),
+          color: _isPlaying ? const Color(0xFF868F54) : colors.surface,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.5),
+            color: colors.border,
             width: 2,
           ),
         ),
@@ -169,50 +163,39 @@ class _WordCardState extends State<WordCard> {
               children: [
                 Expanded(
                   child: Text(
-                    widget.isVietnamese
-                        ? widget.english
-                        : widget.vietnamese,
+                    widget.isVietnamese ? widget.english : widget.vietnamese,
                     style: TextStyle(
-                      color: _isPlaying
-                          ? Colors.white
-                          : const Color(0xFF3E4E31),
+                      color: _isPlaying ? Colors.white : colors.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
                 IconButton(
+                  tooltip: _isFavourite
+                      ? 'Remove from favourites'
+                      : 'Add to favourites',
                   onPressed: _toggleFavourite,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
                   icon: Icon(
-                    _isFavourite
-                        ? Icons.star
-                        : Icons.star_border,
+                    _isFavourite ? Icons.star : Icons.star_border,
                     color: _isFavourite
-                        ? const Color(0xFFFFF8AF)
+                        ? const Color(0xFFFFF8A6)
                         : _isPlaying
                             ? Colors.white
-                            : Colors.grey,
+                            : colors.textSecondary,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              widget.isVietnamese
-                  ? widget.vietnamese
-                  : widget.english,
+              widget.isVietnamese ? widget.vietnamese : widget.english,
               style: TextStyle(
-                color: _isPlaying
-                    ? Colors.white
-                    : const Color(0xFF3E4E31).withValues(alpha: 0.5),
+                color: _isPlaying ? Colors.white : colors.textSecondary,
                 fontSize: 16,
               ),
             ),
-
             const Spacer(),
-
             Align(
               alignment: Alignment.bottomRight,
               child: Container(
@@ -221,13 +204,11 @@ class _WordCardState extends State<WordCard> {
                 decoration: BoxDecoration(
                   color: _isPlaying
                       ? const Color(0xFF4E5A45)
-                      : const Color(0xFF3E4E31).withValues(alpha: 0.2),
+                      : colors.accent.withValues(alpha: 0.35),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  _isPlaying
-                      ? Icons.graphic_eq
-                      : Icons.volume_up,
+                  _isPlaying ? Icons.graphic_eq : Icons.volume_up,
                   color: Colors.white,
                   size: 24,
                 ),

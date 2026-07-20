@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluentish/src/shared/shared.dart';
 import 'widgets/language_toggle.dart';
 import 'widgets/category_filter.dart';
 import 'widgets/word_card.dart';
@@ -47,9 +48,7 @@ class _SoundboardPageState extends State<SoundboardPage> {
       }).toList();
     }
 
-    return words
-        .where((word) => word.category == selectedCategory)
-        .toList();
+    return words.where((word) => word.category == selectedCategory).toList();
   }
 
   Future<void> _loadFavourites() async {
@@ -80,8 +79,9 @@ class _SoundboardPageState extends State<SoundboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return ColoredBox(
-      color: const Color(0xFFEEDADA),
+      color: colors.background,
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -91,15 +91,13 @@ class _SoundboardPageState extends State<SoundboardPage> {
               Align(
                 alignment: Alignment.topRight,
                 child: LanguageToggle(
-                  isVietnamese: isVietnamese,
-                  onToggle: () {
-                    setState(() {
-                      isVietnamese = !isVietnamese;
-                    });
-                  }
-                ),
+                    isVietnamese: isVietnamese,
+                    onToggle: () {
+                      setState(() {
+                        isVietnamese = !isVietnamese;
+                      });
+                    }),
               ),
-
               const SizedBox(height: 24),
               CategoryFilter(
                 selectedCategory: selectedCategory,
@@ -109,14 +107,12 @@ class _SoundboardPageState extends State<SoundboardPage> {
                   });
                 },
               ),
-
               const SizedBox(height: 24),
               Expanded(
                 child: GridView.builder(
                   physics: const ClampingScrollPhysics(),
                   itemCount: filteredWords.length,
-                  gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     mainAxisSpacing: 16,
                     crossAxisSpacing: 16,
@@ -149,4 +145,3 @@ class _SoundboardPageState extends State<SoundboardPage> {
     );
   }
 }
-                  

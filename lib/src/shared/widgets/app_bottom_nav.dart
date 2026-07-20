@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
+import '../theme/fluentish_theme_colors.dart';
 
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
@@ -25,6 +25,7 @@ class AppBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final borderRadius = BorderRadius.circular(AppSpacing.bottomNavRadius);
+    final colors = context.fluentishColors;
 
     return SafeArea(
       top: false,
@@ -33,7 +34,7 @@ class AppBottomNav extends StatelessWidget {
         child: Material(
           borderRadius: borderRadius,
           clipBehavior: Clip.antiAlias,
-          color: AppColors.pine,
+          color: colors.header,
           child: Row(
             children: [
               for (var index = 0; index < items.length; index++)
@@ -75,6 +76,7 @@ class _BottomNavTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return InkWell(
       onTap: onTap,
       child: AnimatedOpacity(
@@ -84,14 +86,14 @@ class _BottomNavTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(item.icon, color: AppColors.blush, size: 24),
+            Icon(item.icon, color: colors.onHeader, size: 24),
             const SizedBox(height: AppSpacing.xxs),
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
                 item.label,
                 maxLines: 1,
-                style: AppTextStyles.navLabel,
+                style: AppTextStyles.navLabel.copyWith(color: colors.onHeader),
                 textAlign: TextAlign.center,
               ),
             ),

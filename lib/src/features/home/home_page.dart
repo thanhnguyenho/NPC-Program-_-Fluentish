@@ -82,6 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final uid = _auth.currentUserId;
+    final colors = context.fluentishColors;
     return SafeArea(
       bottom: false,
       child: SingleChildScrollView(
@@ -98,13 +99,18 @@ class _HomeScreenState extends State<HomeScreen> {
               stream: _auth.watchCurrentProfile(),
               builder: (context, snapshot) => Text(
                 'Welcome Back, ${snapshot.data?.displayName ?? 'Fluentish user'}!',
-                style: AppTextStyles.title.copyWith(fontSize: 34),
+                style: AppTextStyles.title.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 34,
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
               'Discover language guides and meet friends nearby.',
-              style: AppTextStyles.body.copyWith(color: AppColors.pineMuted),
+              style: AppTextStyles.body.copyWith(
+                color: colors.textSecondary,
+              ),
             ),
             const SizedBox(height: AppSpacing.xl),
             _SectionHeader(
@@ -118,7 +124,8 @@ class _HomeScreenState extends State<HomeScreen> {
               builder: (context, snapshot) {
                 final guides = (snapshot.data ?? const <GuideRecord>[])
                     .where((guide) =>
-                        guide.isMapVisible && guide.type != GuideType.collection)
+                        guide.isMapVisible &&
+                        guide.type != GuideType.collection)
                     .take(3)
                     .toList();
                 if (snapshot.connectionState == ConnectionState.waiting &&
@@ -141,7 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               guide.type == GuideType.route
                                   ? Icons.route
                                   : Icons.place,
-                              color: AppColors.pine,
+                              color: colors.textPrimary,
                             ),
                             title: Text(guide.title),
                             subtitle: Text(
@@ -205,7 +212,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                   friend.displayName,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: AppTextStyles.body.copyWith(fontSize: 11),
+                                  style: AppTextStyles.body.copyWith(
+                                    color: colors.textPrimary,
+                                    fontSize: 11,
+                                  ),
                                 ),
                               ],
                             ),
@@ -236,10 +246,17 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return Row(
       children: [
         Expanded(
-          child: Text(title, style: AppTextStyles.title.copyWith(fontSize: 24)),
+          child: Text(
+            title,
+            style: AppTextStyles.title.copyWith(
+              color: colors.textPrimary,
+              fontSize: 24,
+            ),
+          ),
         ),
         TextButton(onPressed: onTap, child: Text(action)),
       ],
@@ -254,9 +271,13 @@ class _EmptyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return AppCard(
       width: double.infinity,
-      child: Text(message, style: AppTextStyles.body),
+      child: Text(
+        message,
+        style: AppTextStyles.body.copyWith(color: colors.textSecondary),
+      ),
     );
   }
 }
@@ -269,9 +290,10 @@ class _HomeAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final url = profile.avatarUrl;
+    final colors = context.fluentishColors;
     return CircleAvatar(
       radius: 28,
-      backgroundColor: AppColors.shell,
+      backgroundColor: colors.surfaceStrong,
       backgroundImage: url != null && url.isNotEmpty ? NetworkImage(url) : null,
       child: url == null || url.isEmpty
           ? Text(profile.displayName.characters.first.toUpperCase())

@@ -35,8 +35,8 @@ class SettingsPage extends StatelessWidget {
       messenger.showSnackBar(
         const SnackBar(
           content: Text(
-            'Notifications permission was denied. You can enable it from '
-            'your browser/device settings and try again.',
+            'Notifications could not be enabled. Check your device permission '
+            'and Firebase Messaging configuration, then try again.',
           ),
         ),
       );
@@ -96,9 +96,10 @@ class SettingsPage extends StatelessWidget {
 
   Future<void> _pickThemeMode(BuildContext context) async {
     final settings = SettingsController.instance;
+    final colors = context.fluentishColors;
     final selected = await showModalBottomSheet<ThemeMode>(
       context: context,
-      backgroundColor: AppColors.blush,
+      backgroundColor: colors.surfaceStrong,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -111,14 +112,16 @@ class SettingsPage extends StatelessWidget {
                 RadioListTile<ThemeMode>(
                   value: mode,
                   groupValue: settings.themeMode,
-                  activeColor: AppColors.pine,
+                  activeColor: colors.accent,
                   title: Text(
                     switch (mode) {
                       ThemeMode.light => 'Light',
                       ThemeMode.dark => 'Dark',
                       ThemeMode.system => 'System Default',
                     },
-                    style: AppTextStyles.body.copyWith(color: AppColors.pine),
+                    style: AppTextStyles.body.copyWith(
+                      color: colors.textPrimary,
+                    ),
                   ),
                   onChanged: (value) => Navigator.pop(context, value),
                 ),
@@ -135,9 +138,10 @@ class SettingsPage extends StatelessWidget {
 
   Future<void> _pickTextSize(BuildContext context) async {
     final settings = SettingsController.instance;
+    final colors = context.fluentishColors;
     final selected = await showModalBottomSheet<AppTextSize>(
       context: context,
-      backgroundColor: AppColors.blush,
+      backgroundColor: colors.surfaceStrong,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -150,11 +154,11 @@ class SettingsPage extends StatelessWidget {
                 RadioListTile<AppTextSize>(
                   value: size,
                   groupValue: settings.textSize,
-                  activeColor: AppColors.pine,
+                  activeColor: colors.accent,
                   title: Text(
                     size.label,
                     style: AppTextStyles.body.copyWith(
-                      color: AppColors.pine,
+                      color: colors.textPrimary,
                       fontSize: 14 * size.scale,
                     ),
                   ),
@@ -177,9 +181,10 @@ class SettingsPage extends StatelessWidget {
     required ValueChanged<String> onPicked,
   }) async {
     const options = ['English', 'Vietnamese'];
+    final colors = context.fluentishColors;
     final selected = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: AppColors.blush,
+      backgroundColor: colors.surfaceStrong,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -192,10 +197,12 @@ class SettingsPage extends StatelessWidget {
                 RadioListTile<String>(
                   value: option,
                   groupValue: current,
-                  activeColor: AppColors.pine,
+                  activeColor: colors.accent,
                   title: Text(
                     option,
-                    style: AppTextStyles.body.copyWith(color: AppColors.pine),
+                    style: AppTextStyles.body.copyWith(
+                      color: colors.textPrimary,
+                    ),
                   ),
                   onChanged: (value) => Navigator.pop(context, value),
                 ),
@@ -260,16 +267,17 @@ class SettingsPage extends StatelessWidget {
       listenable: SettingsController.instance,
       builder: (context, _) {
         final settings = SettingsController.instance;
+        final colors = context.fluentishColors;
 
         return Scaffold(
-          backgroundColor: AppColors.shell,
+          backgroundColor: colors.background,
           body: Column(
             children: [
               Container(
                 width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: AppColors.pine,
-                  borderRadius: BorderRadius.only(
+                decoration: BoxDecoration(
+                  color: colors.header,
+                  borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(30),
                     bottomRight: Radius.circular(30),
                   ),
@@ -283,9 +291,9 @@ class SettingsPage extends StatelessWidget {
                 child: Row(
                   children: [
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.arrow_back,
-                        color: AppColors.blush,
+                        color: colors.onHeader,
                       ),
                       onPressed: () => Navigator.pop(context),
                     ),
@@ -293,7 +301,7 @@ class SettingsPage extends StatelessWidget {
                       child: Text(
                         'Settings',
                         style: AppTextStyles.title.copyWith(
-                          color: AppColors.blush,
+                          color: colors.onHeader,
                           fontSize: 22,
                         ),
                       ),
@@ -472,6 +480,7 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return Padding(
       padding: const EdgeInsets.only(
         left: AppSpacing.xs,
@@ -480,7 +489,7 @@ class _SectionLabel extends StatelessWidget {
       child: Text(
         text,
         style: AppTextStyles.body.copyWith(
-          color: AppColors.textMuted,
+          color: colors.textSecondary,
           fontSize: 12,
           fontWeight: FontWeight.bold,
           letterSpacing: 1,
@@ -499,12 +508,13 @@ class _SettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(
-          color: AppColors.cardBorder,
+          color: colors.border,
         ),
       ),
       child: Column(
@@ -512,10 +522,10 @@ class _SettingsGroup extends StatelessWidget {
           for (int i = 0; i < children.length; i++) ...[
             children[i],
             if (i != children.length - 1)
-              const Divider(
+              Divider(
                 height: 1,
                 indent: 52,
-                color: AppColors.cardBorder,
+                color: colors.border,
               ),
           ],
         ],
@@ -543,6 +553,7 @@ class _NavRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: onTap,
@@ -556,14 +567,14 @@ class _NavRow extends StatelessWidget {
             Icon(
               icon,
               size: 20,
-              color: iconColor ?? AppColors.ink,
+              color: iconColor ?? colors.textPrimary,
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
                 label,
                 style: AppTextStyles.body.copyWith(
-                  color: labelColor ?? AppColors.ink,
+                  color: labelColor ?? colors.textPrimary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -572,15 +583,15 @@ class _NavRow extends StatelessWidget {
               Text(
                 trailing!,
                 style: AppTextStyles.body.copyWith(
-                  color: AppColors.textMuted,
+                  color: colors.textSecondary,
                   fontSize: 13,
                 ),
               ),
             const SizedBox(width: 4),
-            const Icon(
+            Icon(
               Icons.chevron_right,
               size: 18,
-              color: AppColors.textMuted,
+              color: colors.textSecondary,
             ),
           ],
         ),
@@ -604,6 +615,7 @@ class _SwitchRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
@@ -614,14 +626,14 @@ class _SwitchRow extends StatelessWidget {
           Icon(
             icon,
             size: 20,
-            color: AppColors.ink,
+            color: colors.textPrimary,
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
               label,
               style: AppTextStyles.body.copyWith(
-                color: AppColors.ink,
+                color: colors.textPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -629,7 +641,7 @@ class _SwitchRow extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: AppColors.pine,
+            activeThumbColor: colors.accent,
           ),
         ],
       ),
