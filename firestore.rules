@@ -26,6 +26,14 @@ service cloud.firestore {
       match /savedGuides/{guideId} {
         allow read, write: if isOwner(uid);
       }
+
+      match /history/{historyId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /favouriteSoundboardBites/{favouriteId} {
+        allow read, write: if isOwner(uid);
+      }
     }
 
     match /publicProfiles/{uid} {

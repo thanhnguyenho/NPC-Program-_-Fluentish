@@ -276,7 +276,7 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
                     color: AppColors.blush,
                   ),
                   onPressed: () {
-                    Navigator.pop(context);
+                    Navigator.pop(context, _avatarUrl);
                   },
                 ),
                 Expanded(

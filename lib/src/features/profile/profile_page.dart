@@ -30,6 +30,7 @@ class _ProfilePageState extends State<ProfilePage> {
   late final AuthGateway _auth;
   late final FriendDataSource _friends;
   late final GuideDataSource _guides;
+  String? _avatarOverrideUrl;
 
   String? get _firebaseAvatarUrl {
     try {
@@ -45,6 +46,24 @@ class _ProfilePageState extends State<ProfilePage> {
     _auth = widget.auth ?? Auth.instance;
     _friends = widget.friendRepository ?? FriendRepository();
     _guides = widget.guideRepository ?? GuideRepository();
+  }
+
+  Future<void> _openDetails() async {
+    final updatedAvatarUrl = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const ProfileMenuOptionsPage()),
+    );
+    if (!mounted) return;
+
+    try {
+      await FirebaseAuth.instance.currentUser?.reload();
+    } catch (_) {}
+    if (!mounted) return;
+
+    setState(() {
+      final value = updatedAvatarUrl?.trim();
+      _avatarOverrideUrl =
+          value != null && value.isNotEmpty ? value : _firebaseAvatarUrl;
+    });
   }
 
   @override
@@ -66,10 +85,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   ? email.split('@').first
                   : 'Fluentish user');
           final profileAvatarUrl = profile?.avatarUrl?.trim();
-          final avatarUrl =
-              profileAvatarUrl != null && profileAvatarUrl.isNotEmpty
+          final avatarUrl = _avatarOverrideUrl ??
+              (profileAvatarUrl != null && profileAvatarUrl.isNotEmpty
                   ? profileAvatarUrl
-                  : _firebaseAvatarUrl;
+                  : _firebaseAvatarUrl);
 
           return CustomScrollView(
             slivers: [
@@ -195,11 +214,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         icon: Icons.person_outline,
                         iconBg: AppColors.blush,
                         label: 'MY DETAILS',
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const ProfileMenuOptionsPage(),
-                          ),
-                        ),
+                        onTap: _openDetails,
                       ),
                       _AccountTile(
                         icon: Icons.history,

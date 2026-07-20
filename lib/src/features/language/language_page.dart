@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:fluentish/src/features/language/translator_engine.dart';
@@ -256,7 +258,44 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
           'time': 'Just now',
         });
       });
+      unawaited(_persistHistory(source, target));
     }
+  }
+
+  Future<void> _persistHistory(String source, String target) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final id = _historyDocumentId(
+        '$source|$target|$_sourceLang|$_targetLang',
+      );
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('history')
+          .doc(id)
+          .set({
+        'term': source,
+        'translation': target,
+        'source': source,
+        'target': target,
+        'sourceLanguage': _sourceLang,
+        'targetLanguage': _targetLang,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (error) {
+      debugPrint('Could not save translation history: $error');
+    }
+  }
+
+  String _historyDocumentId(String value) {
+    var hash = 0x811c9dc5;
+    for (final codeUnit in value.toLowerCase().codeUnits) {
+      hash ^= codeUnit;
+      hash = (hash * 0x01000193) & 0x7fffffff;
+    }
+    return hash.toRadixString(16);
   }
 
   void _swapLanguages() {

@@ -62,16 +62,21 @@ class DefaultFirebaseOptions {
     messagingSenderId: '794059461770',
     projectId: 'fluentish-9d857',
     storageBucket: 'fluentish-9d857.firebasestorage.app',
+    androidClientId: '794059461770-kro4qirb7v7vu1uuuf6fub4gqmukdf79.apps.googleusercontent.com',
+    iosClientId: '794059461770-qi09d3mq0g07902ae1dter4j2361i06l.apps.googleusercontent.com',
     iosBundleId: 'com.example.fluentish',
   );
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyCcdFWjIqjHq3giXxWbePA8pkcs1Il5iXE',
-    appId: '1:794059461770:ios:1052b6fcfa43f3c372c973',
+    appId: '1:794059461770:ios:380bff24bce5fc4e72c973',
     messagingSenderId: '794059461770',
     projectId: 'fluentish-9d857',
     storageBucket: 'fluentish-9d857.firebasestorage.app',
-    iosBundleId: 'com.example.fluentish',
+    androidClientId: '794059461770-kro4qirb7v7vu1uuuf6fub4gqmukdf79.apps.googleusercontent.com',
+    iosClientId: '794059461770-fg6nio9d19k1iace2esnsrtp3j6qjo5b.apps.googleusercontent.com',
+    iosBundleId: 'com.fluentish.app',
   );
+
   static const FirebaseOptions windows = FirebaseOptions(
     apiKey: 'AIzaSyCStCUCI64x6JJQykCT1vNvDMeHjx-mdi8',
     appId: '1:794059461770:web:b59c51ef0533bf5672c973',
