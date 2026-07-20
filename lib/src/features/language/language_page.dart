@@ -6,16 +6,20 @@ import 'package:fluentish/src/features/language/translator_engine.dart';
 import 'package:fluentish/src/features/common/smart_search_bar.dart';
 
 class LanguagePage extends StatelessWidget {
-  const LanguagePage({super.key});
+  const LanguagePage({super.key, this.initialQuery});
+
+  final String? initialQuery;
 
   @override
   Widget build(BuildContext context) {
-    return const LanguageTranslatorScreen();
+    return LanguageTranslatorScreen(initialQuery: initialQuery);
   }
 }
 
 class LanguageTranslatorScreen extends StatefulWidget {
-  const LanguageTranslatorScreen({super.key});
+  const LanguageTranslatorScreen({super.key, this.initialQuery});
+
+  final String? initialQuery;
 
   @override
   State<LanguageTranslatorScreen> createState() =>
@@ -64,6 +68,15 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
       'time': 'Yesterday'
     },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
+      _sourceController.text = widget.initialQuery!;
+      _onSourceTextChanged(widget.initialQuery!);
+    }
+  }
 
   @override
   void dispose() {

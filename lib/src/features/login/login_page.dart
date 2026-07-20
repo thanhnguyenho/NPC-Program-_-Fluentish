@@ -9,7 +9,12 @@ import 'widgets/login_header.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
 class LoginPage extends StatelessWidget {
-  const LoginPage({super.key});
+  const LoginPage({
+    super.key,
+    this.auth,
+  });
+
+  final AuthGateway? auth;
 
   @override
   Widget build(BuildContext context) {
@@ -19,14 +24,14 @@ class LoginPage extends StatelessWidget {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
-            children: const [
-              LoginHeader(),
-              SizedBox(height: AppSpacing.xxl),
-              LoginForm(),
-              SizedBox(height: AppSpacing.xl),
-              LoginGoogleButton(),
-              SizedBox(height: AppSpacing.lg),
-              LoginFooter(),
+            children: [
+              const LoginHeader(),
+              const SizedBox(height: AppSpacing.xxl),
+              LoginForm(auth: auth),
+              const SizedBox(height: AppSpacing.xl),
+              LoginGoogleButton(auth: auth),
+              const SizedBox(height: AppSpacing.lg),
+              const LoginFooter(),
             ],
           ),
         ),

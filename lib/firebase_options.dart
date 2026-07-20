@@ -56,7 +56,6 @@ class DefaultFirebaseOptions {
     projectId: 'fluentish-9d857',
     storageBucket: 'fluentish-9d857.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCcdFWjIqjHq3giXxWbePA8pkcs1Il5iXE',
     appId: '1:794059461770:ios:1052b6fcfa43f3c372c973',
@@ -65,16 +64,14 @@ class DefaultFirebaseOptions {
     storageBucket: 'fluentish-9d857.firebasestorage.app',
     iosBundleId: 'com.example.fluentish',
   );
-
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyCcdFWjIqjHq3giXxWbePA8pkcs1Il5iXE',
-    appId: '1:794059461770:ios:380bff24bce5fc4e72c973',
+    appId: '1:794059461770:ios:1052b6fcfa43f3c372c973',
     messagingSenderId: '794059461770',
     projectId: 'fluentish-9d857',
     storageBucket: 'fluentish-9d857.firebasestorage.app',
-    iosBundleId: 'com.fluentish.app',
+    iosBundleId: 'com.example.fluentish',
   );
-
   static const FirebaseOptions windows = FirebaseOptions(
     apiKey: 'AIzaSyCStCUCI64x6JJQykCT1vNvDMeHjx-mdi8',
     appId: '1:794059461770:web:b59c51ef0533bf5672c973',
