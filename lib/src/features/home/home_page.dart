@@ -654,7 +654,7 @@ class _FavouritePhrasesSection extends StatelessWidget {
                 icon: Icons.translate,
                 message: 'No favourite phrases yet. Add phrases from the '
                     'Language screen to see them here.',
-                action: 'Go to Language',
+                action: 'Browse phrases',
                 onTap: onBrowse,
               ),
             ],
