@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
+import '../theme/fluentish_theme_colors.dart';
 
 enum AppButtonVariant {
   filled,
@@ -26,9 +26,9 @@ class AppButton extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.expand = true,
+    this.foregroundColor,
   })  : variant = AppButtonVariant.outlined,
-        backgroundColor = null,
-        foregroundColor = null;
+        backgroundColor = null;
 
   final bool expand;
   final IconData? icon;
@@ -42,6 +42,7 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     final child = _ButtonChild(
       label: label,
       icon: icon,
@@ -54,8 +55,8 @@ class AppButton extends StatelessWidget {
         AppButtonVariant.filled => ElevatedButton(
             onPressed: onPressed,
             style: ElevatedButton.styleFrom(
-              backgroundColor: backgroundColor ?? AppColors.blush,
-              foregroundColor: foregroundColor ?? AppColors.pineMuted,
+              backgroundColor: backgroundColor ?? colors.accent,
+              foregroundColor: foregroundColor ?? colors.textPrimary,
               textStyle: AppTextStyles.button,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
@@ -66,9 +67,9 @@ class AppButton extends StatelessWidget {
         AppButtonVariant.outlined => OutlinedButton(
             onPressed: onPressed,
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.blush,
-              side: const BorderSide(
-                color: AppColors.blush,
+              foregroundColor: foregroundColor ?? colors.textPrimary,
+              side: BorderSide(
+                color: foregroundColor ?? colors.border,
               ),
               textStyle: AppTextStyles.button,
               shape: RoundedRectangleBorder(

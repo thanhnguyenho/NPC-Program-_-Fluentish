@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluentish/src/shared/shared.dart';
 
 /// Reusable Smart Search Bar with YouTube/Google-style Auto-complete Suggestions.
 /// Matches prefix/substring against a rich practical conversational dictionary.
@@ -146,6 +147,7 @@ class _SmartSearchBarState extends State<SmartSearchBar> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -153,12 +155,12 @@ class _SmartSearchBarState extends State<SmartSearchBar> {
         // Main Search Input Card
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfaceStrong,
             borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: const Color(0xFF3E4E31).withAlpha(40), width: 1.2),
+            border: Border.all(color: colors.border, width: 1.2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(15),
+                color: colors.shadow,
                 blurRadius: 12,
                 offset: const Offset(0, 3),
               ),
@@ -167,10 +169,10 @@ class _SmartSearchBarState extends State<SmartSearchBar> {
           child: TextField(
             controller: widget.controller,
             focusNode: _focusNode,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF2E3825),
+              color: colors.textPrimary,
             ),
             onChanged: (val) {
               _filterSuggestions(val);
@@ -183,20 +185,32 @@ class _SmartSearchBarState extends State<SmartSearchBar> {
               widget.onSubmitted?.call(val);
             },
             decoration: InputDecoration(
+              // The outer container owns the themed surface, border, and
+              // radius. Do not inherit the app-wide filled input background,
+              // otherwise it renders as a second bar during theme changes.
+              filled: false,
               hintText: widget.hintText,
               hintStyle: TextStyle(
-                color: Colors.grey.shade500,
+                color: colors.textSecondary,
                 fontSize: 14.5,
                 fontWeight: FontWeight.w400,
               ),
-              prefixIcon: const Padding(
-                padding: EdgeInsets.only(left: 16, right: 10),
-                child: Icon(Icons.search_rounded, color: Color(0xFF3E4E31), size: 22),
+              prefixIcon: Padding(
+                padding: const EdgeInsets.only(left: 16, right: 10),
+                child: Icon(
+                  Icons.search_rounded,
+                  color: colors.textPrimary,
+                  size: 22,
+                ),
               ),
               prefixIconConstraints: const BoxConstraints(minWidth: 46),
               suffixIcon: widget.controller.text.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(Icons.clear_rounded, size: 19, color: Colors.grey),
+                      icon: Icon(
+                        Icons.clear_rounded,
+                        size: 19,
+                        color: colors.textSecondary,
+                      ),
                       onPressed: () {
                         widget.controller.clear();
                         _filterSuggestions('');
@@ -220,11 +234,11 @@ class _SmartSearchBarState extends State<SmartSearchBar> {
           Container(
             margin: const EdgeInsets.only(top: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFF2C3130),
+              color: colors.surfaceStrong,
               borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withAlpha(45),
+                  color: colors.shadow,
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
@@ -254,26 +268,26 @@ class _SmartSearchBarState extends State<SmartSearchBar> {
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.search_rounded,
                               size: 18,
-                              color: Colors.white70,
+                              color: colors.textSecondary,
                             ),
                             const SizedBox(width: 14),
                             Expanded(
                               child: Text(
                                 suggestion,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14.5,
-                                  color: Colors.white,
+                                  color: colors.textPrimary,
                                   fontWeight: FontWeight.w400,
                                 ),
                               ),
                             ),
-                            const Icon(
+                            Icon(
                               Icons.north_west_rounded,
                               size: 15,
-                              color: Colors.white38,
+                              color: colors.textSecondary,
                             ),
                           ],
                         ),

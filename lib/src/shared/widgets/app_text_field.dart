@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
+import '../theme/fluentish_theme_colors.dart';
 
 class AppTextField extends StatelessWidget {
   const AppTextField({
@@ -26,6 +26,7 @@ class AppTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
@@ -33,15 +34,15 @@ class AppTextField extends StatelessWidget {
       readOnly: readOnly,
       onTap: onTap,
       style: AppTextStyles.body.copyWith(
-        color: AppColors.pine,
+        color: colors.textPrimary,
       ),
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: AppTextStyles.body.copyWith(
-          color: Colors.grey,
+          color: colors.textSecondary,
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: colors.surfaceStrong,
         suffixIcon: suffixIcon,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
@@ -57,8 +58,8 @@ class AppTextField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(
-            color: AppColors.pine,
+          borderSide: BorderSide(
+            color: colors.accent,
             width: 2,
           ),
         ),

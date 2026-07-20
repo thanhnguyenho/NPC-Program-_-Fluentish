@@ -4,6 +4,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' as ll;
 
+import '../../services/settings_controller.dart';
 import '../../shared/shared.dart';
 import '../community/community_page.dart';
 import '../friend_location/friend_location_page.dart';
@@ -122,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late final FriendDataSource _friends;
   late final FavouriteDataSource _favourites;
   late final LocationDataSource _locations;
-  late Future<Position> _positionFuture;
+  Future<Position>? _positionFuture;
   AudioPlayer? _audioPlayer;
   FlutterTts? _flutterTts;
   String? _playingFavouriteId;
@@ -135,7 +136,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _friends = widget.friendRepository ?? FriendRepository();
     _favourites = widget.favouriteRepository ?? FavouriteRepository();
     _locations = widget.locationRepository ?? LocationRepository();
-    _positionFuture = _locations.currentPosition();
+    if (SettingsController.instance.nearbyRecommendation) {
+      _positionFuture = _locations.currentPosition();
+    }
   }
 
   @override
@@ -352,6 +355,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final uid = _auth.currentUserId;
+    final colors = context.fluentishColors;
+    final showNearby = SettingsController.instance.nearbyRecommendation;
+    if (showNearby) {
+      _positionFuture ??= _locations.currentPosition();
+    }
     return SafeArea(
       bottom: false,
       child: SingleChildScrollView(
@@ -368,7 +376,10 @@ class _HomeScreenState extends State<HomeScreen> {
               stream: _auth.watchCurrentProfile(),
               builder: (context, snapshot) => Text(
                 'Welcome Back, ${snapshot.data?.displayName ?? 'Fluentish user'}!',
-                style: AppTextStyles.title.copyWith(fontSize: 34),
+                style: AppTextStyles.title.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 34,
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.xs),
@@ -377,19 +388,21 @@ class _HomeScreenState extends State<HomeScreen> {
               style: AppTextStyles.body.copyWith(color: AppColors.pineMuted),
             ),
             const SizedBox(height: AppSpacing.xl),
-            _SectionHeader(
-              title: 'Nearby Recommendations',
-              action: 'See all',
-              onTap: widget.onNavigateToMap,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _NearbyRecommendations(
-              positionFuture: _positionFuture,
-              locations: _locations,
-              onRetryPosition: _retryPosition,
-              onOpenDirections: _openDirections,
-            ),
-            const SizedBox(height: AppSpacing.lg),
+            if (showNearby) ...[
+              _SectionHeader(
+                title: 'Nearby Recommendations',
+                action: 'See all',
+                onTap: widget.onNavigateToMap,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _NearbyRecommendations(
+                positionFuture: _positionFuture!,
+                locations: _locations,
+                onRetryPosition: _retryPosition,
+                onOpenDirections: _openDirections,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
             _SectionHeader(
               title: 'Favourite Phrases',
               action: 'Browse',
@@ -1059,10 +1072,17 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return Row(
       children: [
         Expanded(
-          child: Text(title, style: AppTextStyles.title.copyWith(fontSize: 24)),
+          child: Text(
+            title,
+            style: AppTextStyles.title.copyWith(
+              color: colors.textPrimary,
+              fontSize: 24,
+            ),
+          ),
         ),
         TextButton(onPressed: onTap, child: Text(action)),
       ],
@@ -1077,9 +1097,13 @@ class _EmptyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return AppCard(
       width: double.infinity,
-      child: Text(message, style: AppTextStyles.body),
+      child: Text(
+        message,
+        style: AppTextStyles.body.copyWith(color: colors.textSecondary),
+      ),
     );
   }
 }
@@ -1091,12 +1115,16 @@ class _HomeAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final url = profile.avatarUrl;
+    final image = avatarImageProvider(
+      base64Data: profile.avatarBase64,
+      url: profile.avatarUrl,
+    );
+    final colors = context.fluentishColors;
     return CircleAvatar(
       radius: 28,
-      backgroundColor: AppColors.shell,
-      backgroundImage: url != null && url.isNotEmpty ? NetworkImage(url) : null,
-      child: url == null || url.isEmpty
+      backgroundColor: colors.surfaceStrong,
+      backgroundImage: image,
+      child: image == null
           ? Text(profile.displayName.characters.first.toUpperCase())
           : null,
     );

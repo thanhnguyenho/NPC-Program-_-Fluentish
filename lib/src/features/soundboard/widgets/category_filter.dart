@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:fluentish/src/shared/shared.dart';
 
 class CategoryFilter extends StatelessWidget {
   final String selectedCategory;
@@ -13,6 +14,7 @@ class CategoryFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     final categories = [
       {'icon': Icons.mic_none, 'label': 'All Words'},
       {'icon': Icons.star_border, 'label': 'Favourites'},
@@ -35,8 +37,7 @@ class CategoryFilter extends StatelessWidget {
         itemBuilder: (context, index) {
           final category = categories[index];
 
-          final bool selected =
-          category['label'] == selectedCategory;
+          final bool selected = category['label'] == selectedCategory;
 
           return GestureDetector(
             onTap: () {
@@ -48,23 +49,21 @@ class CategoryFilter extends StatelessWidget {
                 vertical: 10,
               ),
               decoration: BoxDecoration(
-                color: selected
-                  ? const Color(0xFF4E5A45)
-                  : const Color(0xFF868F54),
+                color: selected ? colors.header : colors.accent,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
                 children: [
                   Icon(
                     category['icon'] as IconData,
-                    color: Colors.white,
+                    color: selected ? colors.onHeader : colors.textPrimary,
                     size: 18,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     category['label'] as String,
                     style: GoogleFonts.itim(
-                      color: Colors.white,
+                      color: selected ? colors.onHeader : colors.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),

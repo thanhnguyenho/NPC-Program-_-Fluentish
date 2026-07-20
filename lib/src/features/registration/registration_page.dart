@@ -34,8 +34,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final TextEditingController _dobController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _controllerEmail = TextEditingController();
-  final TextEditingController _confirmEmailController =
-      TextEditingController();
+  final TextEditingController _confirmEmailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
@@ -261,8 +260,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
     final dob = _dobController.text.trim();
     final phone = _phoneController.text.trim();
     final email = _controllerEmail.text.trim().toLowerCase();
-    final confirmEmail =
-        _confirmEmailController.text.trim().toLowerCase();
+    final confirmEmail = _confirmEmailController.text.trim().toLowerCase();
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
@@ -554,9 +552,9 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 height: AppSpacing.md,
               ),
               AppButton(
-                label: _isSubmitting
-                    ? 'CREATING ACCOUNT...'
-                    : 'CREATE ACCOUNT',
+                label: _isSubmitting ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT',
+                backgroundColor: AppColors.pine,
+                foregroundColor: AppColors.blush,
                 onPressed: _isSubmitting ? null : _submit,
               ),
             ],

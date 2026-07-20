@@ -22,21 +22,51 @@ class SettingsPage extends StatelessWidget {
     final messenger = ScaffoldMessenger.of(context);
 
     if (!enabled) {
+      await settings.setFriendUpdates(false);
       await settings.setPushNotifications(false);
       await PushNotificationService().unregister();
       return;
     }
 
-    final granted =
+    final result =
         await PushNotificationService().requestPermissionAndRegister();
-    await settings.setPushNotifications(granted);
+    await settings.setPushNotifications(result.enabled);
 
-    if (!granted) {
+    if (result.simulated) {
       messenger.showSnackBar(
         const SnackBar(
           content: Text(
-            'Notifications permission was denied. You can enable it from '
-            'your browser/device settings and try again.',
+            '🔔 Demo notification: Push Notifications enabled. This works '
+            'inside the app only.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _toggleFriendUpdates(
+    BuildContext context,
+    bool enabled,
+  ) async {
+    final settings = SettingsController.instance;
+    if (!enabled) {
+      await settings.setFriendUpdates(false);
+      return;
+    }
+
+    if (!settings.pushNotifications) {
+      final result =
+          await PushNotificationService().requestPermissionAndRegister();
+      await settings.setPushNotifications(result.enabled);
+    }
+
+    await settings.setFriendUpdates(true);
+    if (context.mounted && PushNotificationService.isDemoMode) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            '👥 Demo notification: Friend Updates enabled. New friend '
+            'activity will be simulated while the app is open.',
           ),
         ),
       );
@@ -96,9 +126,10 @@ class SettingsPage extends StatelessWidget {
 
   Future<void> _pickThemeMode(BuildContext context) async {
     final settings = SettingsController.instance;
+    final colors = context.fluentishColors;
     final selected = await showModalBottomSheet<ThemeMode>(
       context: context,
-      backgroundColor: AppColors.blush,
+      backgroundColor: colors.surfaceStrong,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -111,14 +142,16 @@ class SettingsPage extends StatelessWidget {
                 RadioListTile<ThemeMode>(
                   value: mode,
                   groupValue: settings.themeMode,
-                  activeColor: AppColors.pine,
+                  activeColor: colors.accent,
                   title: Text(
                     switch (mode) {
                       ThemeMode.light => 'Light',
                       ThemeMode.dark => 'Dark',
                       ThemeMode.system => 'System Default',
                     },
-                    style: AppTextStyles.body.copyWith(color: AppColors.pine),
+                    style: AppTextStyles.body.copyWith(
+                      color: colors.textPrimary,
+                    ),
                   ),
                   onChanged: (value) => Navigator.pop(context, value),
                 ),
@@ -135,9 +168,10 @@ class SettingsPage extends StatelessWidget {
 
   Future<void> _pickTextSize(BuildContext context) async {
     final settings = SettingsController.instance;
+    final colors = context.fluentishColors;
     final selected = await showModalBottomSheet<AppTextSize>(
       context: context,
-      backgroundColor: AppColors.blush,
+      backgroundColor: colors.surfaceStrong,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -150,11 +184,11 @@ class SettingsPage extends StatelessWidget {
                 RadioListTile<AppTextSize>(
                   value: size,
                   groupValue: settings.textSize,
-                  activeColor: AppColors.pine,
+                  activeColor: colors.accent,
                   title: Text(
                     size.label,
                     style: AppTextStyles.body.copyWith(
-                      color: AppColors.pine,
+                      color: colors.textPrimary,
                       fontSize: 14 * size.scale,
                     ),
                   ),
@@ -177,9 +211,10 @@ class SettingsPage extends StatelessWidget {
     required ValueChanged<String> onPicked,
   }) async {
     const options = ['English', 'Vietnamese'];
+    final colors = context.fluentishColors;
     final selected = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: AppColors.blush,
+      backgroundColor: colors.surfaceStrong,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -192,10 +227,12 @@ class SettingsPage extends StatelessWidget {
                 RadioListTile<String>(
                   value: option,
                   groupValue: current,
-                  activeColor: AppColors.pine,
+                  activeColor: colors.accent,
                   title: Text(
                     option,
-                    style: AppTextStyles.body.copyWith(color: AppColors.pine),
+                    style: AppTextStyles.body.copyWith(
+                      color: colors.textPrimary,
+                    ),
                   ),
                   onChanged: (value) => Navigator.pop(context, value),
                 ),
@@ -260,16 +297,17 @@ class SettingsPage extends StatelessWidget {
       listenable: SettingsController.instance,
       builder: (context, _) {
         final settings = SettingsController.instance;
+        final colors = context.fluentishColors;
 
         return Scaffold(
-          backgroundColor: AppColors.shell,
+          backgroundColor: colors.background,
           body: Column(
             children: [
               Container(
                 width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: AppColors.pine,
-                  borderRadius: BorderRadius.only(
+                decoration: BoxDecoration(
+                  color: colors.header,
+                  borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(30),
                     bottomRight: Radius.circular(30),
                   ),
@@ -283,9 +321,9 @@ class SettingsPage extends StatelessWidget {
                 child: Row(
                   children: [
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.arrow_back,
-                        color: AppColors.blush,
+                        color: colors.onHeader,
                       ),
                       onPressed: () => Navigator.pop(context),
                     ),
@@ -293,7 +331,7 @@ class SettingsPage extends StatelessWidget {
                       child: Text(
                         'Settings',
                         style: AppTextStyles.title.copyWith(
-                          color: AppColors.blush,
+                          color: colors.onHeader,
                           fontSize: 22,
                         ),
                       ),
@@ -380,7 +418,8 @@ class SettingsPage extends StatelessWidget {
                           icon: Icons.people_outline,
                           label: 'Friend Updates',
                           value: settings.friendUpdates,
-                          onChanged: settings.setFriendUpdates,
+                          onChanged: (value) =>
+                              _toggleFriendUpdates(context, value),
                         ),
                         _SwitchRow(
                           icon: Icons.near_me_outlined,
@@ -472,6 +511,7 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return Padding(
       padding: const EdgeInsets.only(
         left: AppSpacing.xs,
@@ -480,7 +520,7 @@ class _SectionLabel extends StatelessWidget {
       child: Text(
         text,
         style: AppTextStyles.body.copyWith(
-          color: AppColors.textMuted,
+          color: colors.textSecondary,
           fontSize: 12,
           fontWeight: FontWeight.bold,
           letterSpacing: 1,
@@ -499,12 +539,13 @@ class _SettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(
-          color: AppColors.cardBorder,
+          color: colors.border,
         ),
       ),
       child: Column(
@@ -512,10 +553,10 @@ class _SettingsGroup extends StatelessWidget {
           for (int i = 0; i < children.length; i++) ...[
             children[i],
             if (i != children.length - 1)
-              const Divider(
+              Divider(
                 height: 1,
                 indent: 52,
-                color: AppColors.cardBorder,
+                color: colors.border,
               ),
           ],
         ],
@@ -543,6 +584,7 @@ class _NavRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: onTap,
@@ -556,14 +598,14 @@ class _NavRow extends StatelessWidget {
             Icon(
               icon,
               size: 20,
-              color: iconColor ?? AppColors.ink,
+              color: iconColor ?? colors.textPrimary,
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
                 label,
                 style: AppTextStyles.body.copyWith(
-                  color: labelColor ?? AppColors.ink,
+                  color: labelColor ?? colors.textPrimary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -572,15 +614,15 @@ class _NavRow extends StatelessWidget {
               Text(
                 trailing!,
                 style: AppTextStyles.body.copyWith(
-                  color: AppColors.textMuted,
+                  color: colors.textSecondary,
                   fontSize: 13,
                 ),
               ),
             const SizedBox(width: 4),
-            const Icon(
+            Icon(
               Icons.chevron_right,
               size: 18,
-              color: AppColors.textMuted,
+              color: colors.textSecondary,
             ),
           ],
         ),
@@ -604,34 +646,38 @@ class _SwitchRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xxs,
-      ),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 20,
-            color: AppColors.ink,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Text(
-              label,
-              style: AppTextStyles.body.copyWith(
-                color: AppColors.ink,
-                fontWeight: FontWeight.w600,
+    final colors = context.fluentishColors;
+    return InkWell(
+      onTap: () => onChanged(!value),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xxs,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: colors.textPrimary,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Text(
+                label,
+                style: AppTextStyles.body.copyWith(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: AppColors.pine,
-          ),
-        ],
+            Switch(
+              value: value,
+              onChanged: onChanged,
+              activeThumbColor: colors.accent,
+            ),
+          ],
+        ),
       ),
     );
   }

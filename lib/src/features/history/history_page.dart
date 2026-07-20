@@ -80,7 +80,8 @@ class _HistoryPageState extends State<HistoryPage> {
               term: (data['term'] ?? data['source'] ?? '').toString(),
               translation:
                   (data['translation'] ?? data['target'] ?? '').toString(),
-              date: timestamp is Timestamp ? timestamp.toDate() : DateTime(1970),
+              date:
+                  timestamp is Timestamp ? timestamp.toDate() : DateTime(1970),
             );
           })
           .where((entry) => entry.term.isNotEmpty)
@@ -134,13 +135,20 @@ class _HistoryPageState extends State<HistoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return Scaffold(
-      backgroundColor: AppColors.shell,
+      backgroundColor: colors.background,
       body: Column(
         children: [
           Container(
             width: double.infinity,
-            color: AppColors.pine,
+            decoration: BoxDecoration(
+              color: colors.header,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(15),
+                bottomRight: Radius.circular(15),
+              ),
+            ),
             padding: const EdgeInsets.fromLTRB(
               4,
               50,
@@ -150,22 +158,22 @@ class _HistoryPageState extends State<HistoryPage> {
             child: Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_back, color: AppColors.blush),
+                  icon: Icon(Icons.arrow_back, color: colors.onHeader),
                   onPressed: () => Navigator.pop(context),
                 ),
                 Expanded(
                   child: Text(
                     'History',
                     style: AppTextStyles.title.copyWith(
-                      color: AppColors.blush,
+                      color: colors.onHeader,
                       fontSize: 22,
                     ),
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.delete_outline,
-                    color: AppColors.blush,
+                    color: colors.onHeader,
                   ),
                   tooltip: 'Clear history',
                   onPressed: _confirmClearHistory,
@@ -186,7 +194,8 @@ class _HistoryPageState extends State<HistoryPage> {
               style: const TextStyle(color: AppColors.ink),
               decoration: InputDecoration(
                 hintText: 'Search history...',
-                prefixIcon: const Icon(Icons.search, color: AppColors.textMuted),
+                prefixIcon:
+                    const Icon(Icons.search, color: AppColors.textMuted),
                 filled: true,
                 fillColor: AppColors.cardSurface,
                 contentPadding:
@@ -247,11 +256,9 @@ class _HistoryPageState extends State<HistoryPage> {
                         ),
                         child: Column(
                           children: [
-                            for (
-                              var index = 0;
-                              index < grouped[dateGroup]!.length;
-                              index++
-                            ) ...[
+                            for (var index = 0;
+                                index < grouped[dateGroup]!.length;
+                                index++) ...[
                               _HistoryTile(
                                 entry: grouped[dateGroup]![index],
                               ),

@@ -79,8 +79,10 @@ void main() {
       'username': 'lan',
       'usernameLower': 'lan',
       'avatarUrl': 'https://example.com/lan.jpg',
+      'avatarBase64': 'dGVzdA==',
       'lastSeenAt': Timestamp.fromDate(now),
     });
+    expect(profile.avatarBase64, 'dGVzdA==');
     final request = FriendRequestRecord.fromMap('request-1', {
       'senderId': 'user-1',
       'receiverId': 'user-2',

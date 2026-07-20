@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:fluentish/src/features/welcome/welcome_page.dart';
 import '../../shared/shared.dart';
@@ -29,6 +30,15 @@ class _ProfilePageState extends State<ProfilePage> {
   late final AuthGateway _auth;
   late final FriendDataSource _friends;
   late final GuideDataSource _guides;
+  String? _avatarOverrideUrl;
+
+  String? get _firebaseAvatarUrl {
+    try {
+      return FirebaseAuth.instance.currentUser?.photoURL?.trim();
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   void initState() {
@@ -38,12 +48,31 @@ class _ProfilePageState extends State<ProfilePage> {
     _guides = widget.guideRepository ?? GuideRepository();
   }
 
+  Future<void> _openDetails() async {
+    final updatedAvatarUrl = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const ProfileMenuOptionsPage()),
+    );
+    if (!mounted) return;
+
+    try {
+      await FirebaseAuth.instance.currentUser?.reload();
+    } catch (_) {}
+    if (!mounted) return;
+
+    setState(() {
+      final value = updatedAvatarUrl?.trim();
+      _avatarOverrideUrl =
+          value != null && value.isNotEmpty ? value : _firebaseAvatarUrl;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = _auth.currentUserId;
+    final colors = context.fluentishColors;
 
     return Scaffold(
-      backgroundColor: AppColors.shell,
+      backgroundColor: colors.background,
       body: StreamBuilder<PublicProfile?>(
         stream: _auth.watchCurrentProfile(),
         builder: (context, profileSnapshot) {
@@ -55,7 +84,15 @@ class _ProfilePageState extends State<ProfilePage> {
               : (email.contains('@')
                   ? email.split('@').first
                   : 'Fluentish user');
-          final avatarUrl = profile?.avatarUrl;
+          final profileAvatarUrl = profile?.avatarUrl?.trim();
+          final avatarUrl =
+              (profileAvatarUrl != null && profileAvatarUrl.isNotEmpty
+                  ? profileAvatarUrl
+                  : _avatarOverrideUrl ?? _firebaseAvatarUrl);
+          final avatarImage = avatarImageProvider(
+            base64Data: profile?.avatarBase64,
+            url: avatarUrl,
+          );
 
           return CustomScrollView(
             slivers: [
@@ -63,16 +100,23 @@ class _ProfilePageState extends State<ProfilePage> {
                 pinned: true,
                 automaticallyImplyLeading: false,
                 expandedHeight: 400,
-                backgroundColor: AppColors.pine,
+                backgroundColor: colors.header,
                 elevation: 0,
+                clipBehavior: Clip.antiAlias,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(15),
+                    bottomRight: Radius.circular(15),
+                  ),
+                ),
                 flexibleSpace: FlexibleSpaceBar(
                   collapseMode: CollapseMode.pin,
                   background: Container(
-                    decoration: const BoxDecoration(
-                      color: AppColors.pine,
-                      borderRadius: BorderRadius.only(
-                        bottomLeft: Radius.circular(28),
-                        bottomRight: Radius.circular(28),
+                    decoration: BoxDecoration(
+                      color: colors.header,
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(15),
+                        bottomRight: Radius.circular(15),
                       ),
                     ),
                     padding: const EdgeInsets.fromLTRB(
@@ -86,18 +130,15 @@ class _ProfilePageState extends State<ProfilePage> {
                       children: [
                         CircleAvatar(
                           radius: 62,
-                          backgroundColor: AppColors.blush,
-                          backgroundImage:
-                              avatarUrl != null && avatarUrl.isNotEmpty
-                                  ? NetworkImage(avatarUrl)
-                                  : null,
-                          child: avatarUrl == null || avatarUrl.isEmpty
+                          backgroundColor: colors.accent,
+                          backgroundImage: avatarImage,
+                          child: avatarImage == null
                               ? Text(
                                   name.isNotEmpty
                                       ? name.substring(0, 1).toUpperCase()
                                       : '?',
                                   style: AppTextStyles.title.copyWith(
-                                    color: AppColors.pine,
+                                    color: colors.header,
                                     fontSize: 34,
                                   ),
                                 )
@@ -107,7 +148,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         Text(
                           name,
                           style: AppTextStyles.title.copyWith(
-                            color: AppColors.blush,
+                            color: colors.onHeader,
                             fontSize: 20,
                           ),
                         ),
@@ -115,7 +156,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         Text(
                           email,
                           style: AppTextStyles.body.copyWith(
-                            color: AppColors.blush.withValues(alpha: 0.75),
+                            color: colors.onHeader.withValues(alpha: 0.75),
                             fontSize: 13,
                           ),
                         ),
@@ -174,17 +215,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         icon: Icons.person_outline,
                         iconBg: AppColors.blush,
                         label: 'MY DETAILS',
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const ProfileMenuOptionsPage(),
-                          ),
-                        ),
-                      ),
-                      _AccountTile(
-                        icon: Icons.star_border,
-                        iconBg: AppColors.blush,
-                        label: 'FAVOURITE LIST',
-                        onTap: () {},
+                        onTap: _openDetails,
                       ),
                       _AccountTile(
                         icon: Icons.history,
@@ -285,6 +316,7 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Align(
@@ -292,7 +324,7 @@ class _SectionLabel extends StatelessWidget {
         child: Text(
           label,
           style: AppTextStyles.body.copyWith(
-            color: AppColors.pineMuted,
+            color: colors.textSecondary,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
           ),
@@ -317,6 +349,7 @@ class _AccountTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: InkWell(
@@ -325,7 +358,7 @@ class _AccountTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfaceStrong,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
@@ -338,7 +371,7 @@ class _AccountTile extends StatelessWidget {
                 ),
                 child: Icon(
                   icon,
-                  color: AppColors.pine,
+                  color: colors.header,
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -346,14 +379,14 @@ class _AccountTile extends StatelessWidget {
                 child: Text(
                   label,
                   style: AppTextStyles.body.copyWith(
-                    color: AppColors.pine,
+                    color: colors.textPrimary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right,
-                color: AppColors.pineMuted,
+                color: colors.textSecondary,
               ),
             ],
           ),
