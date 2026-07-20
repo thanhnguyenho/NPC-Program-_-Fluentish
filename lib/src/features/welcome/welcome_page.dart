@@ -40,6 +40,7 @@ class WelcomePage extends StatelessWidget {
               const SizedBox(height: AppSpacing.md),
               AppButton.outlined(
                 label: 'CREATE ACCOUNT',
+                foregroundColor: AppColors.blush,
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(

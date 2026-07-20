@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:fluentish/src/shared/shared.dart';
 
@@ -9,8 +12,7 @@ class ProfileMenuOptionsPage extends StatefulWidget {
   const ProfileMenuOptionsPage({super.key});
 
   @override
-  State<ProfileMenuOptionsPage> createState() =>
-      _ProfileMenuOptionsPageState();
+  State<ProfileMenuOptionsPage> createState() => _ProfileMenuOptionsPageState();
 }
 
 class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
@@ -22,7 +24,9 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
   bool _dirty = false;
   bool _loading = true;
   bool _saving = false;
+  bool _uploadingAvatar = false;
   String? _avatarUrl;
+  String? _avatarBase64;
 
   @override
   void initState() {
@@ -51,10 +55,8 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
           .collection('publicProfiles')
           .doc(uid)
           .get();
-      final privateDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .get();
+      final privateDoc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
       final publicProfile = publicDoc.data();
       final privateProfile = privateDoc.data();
@@ -67,12 +69,17 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
       }
 
       if (profile.isNotEmpty) {
-        _username.text = (profile['username'] ?? profile['displayName'] ?? '').toString();
+        _username.text =
+            (profile['username'] ?? profile['displayName'] ?? '').toString();
         _dob.text = (profile['dateOfBirth'] ?? '').toString();
         _phone.text = (profile['phoneNumber'] ?? '').toString();
         final avatar = (profile['avatarUrl'] ?? '').toString();
+        final avatarBase64 = (profile['avatarBase64'] ?? '').toString();
         if (avatar.isNotEmpty) {
           _avatarUrl = avatar;
+        }
+        if (avatarBase64.isNotEmpty) {
+          _avatarBase64 = avatarBase64;
         }
       }
     }
@@ -94,51 +101,61 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
   }
 
   Future<void> _changeAvatar() async {
-    final controller = TextEditingController(text: _avatarUrl ?? '');
-    final result = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Update photo URL'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(hintText: 'https://example.com/avatar.jpg'),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-
-    if (result == null || result.isEmpty) return;
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null || _uploadingAvatar) return;
 
     try {
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
-        {'avatarUrl': result},
+      final image = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 256,
+        maxHeight: 256,
+        imageQuality: 70,
+      );
+      if (image == null) return;
+
+      final bytes = await image.readAsBytes();
+      if (bytes.length > 500 * 1024) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('This photo could not be compressed below 500 KB.'),
+          ),
+        );
+        return;
+      }
+
+      if (mounted) setState(() => _uploadingAvatar = true);
+
+      final encodedAvatar = base64Encode(bytes);
+      final firestore = FirebaseFirestore.instance;
+      final batch = firestore.batch();
+      batch.set(
+        firestore.collection('users').doc(user.uid),
+        {'avatarBase64': encodedAvatar},
         SetOptions(merge: true),
       );
-      await FirebaseFirestore.instance.collection('publicProfiles').doc(user.uid).set(
-        {'avatarUrl': result},
+      batch.set(
+        firestore.collection('publicProfiles').doc(user.uid),
+        {'uid': user.uid, 'avatarBase64': encodedAvatar},
         SetOptions(merge: true),
       );
+      await batch.commit();
+
       if (!mounted) return;
       setState(() {
-        _avatarUrl = result;
-        _dirty = true;
+        _avatarBase64 = encodedAvatar;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Photo updated.')),
+        const SnackBar(content: Text('Profile photo updated.')),
       );
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not update photo: $e')),
+        const SnackBar(
+            content: Text('Could not upload photo. Please try again.')),
       );
+    } finally {
+      if (mounted) setState(() => _uploadingAvatar = false);
     }
   }
 
@@ -170,13 +187,18 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
         'dateOfBirth': _dob.text.trim(),
         'phoneNumber': _phone.text.trim(),
         'avatarUrl': _avatarUrl,
+        'avatarBase64': _avatarBase64,
       }, SetOptions(merge: true));
 
-      await FirebaseFirestore.instance.collection('publicProfiles').doc(user.uid).set({
+      await FirebaseFirestore.instance
+          .collection('publicProfiles')
+          .doc(user.uid)
+          .set({
         'displayName': _username.text.trim(),
         'username': _username.text.trim(),
         'usernameLower': _username.text.trim().toLowerCase(),
         'avatarUrl': _avatarUrl,
+        'avatarBase64': _avatarBase64,
       }, SetOptions(merge: true));
 
       if (!mounted) return;
@@ -203,6 +225,10 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final avatarImage = avatarImageProvider(
+      base64Data: _avatarBase64,
+      url: _avatarUrl,
+    );
     return Scaffold(
       backgroundColor: AppColors.shell,
       body: Column(
@@ -234,10 +260,9 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
                     color: AppColors.blush,
                   ),
                   onPressed: () {
-                    Navigator.pop(context);
+                    Navigator.pop(context, _avatarUrl);
                   },
                 ),
-
                 Expanded(
                   child: Text(
                     "My Details",
@@ -262,106 +287,106 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     child: Column(
                       children: [
-                  //----------------------------------------
-                  // Avatar
-                  //----------------------------------------
+                        //----------------------------------------
+                        // Avatar
+                        //----------------------------------------
 
-                  GestureDetector(
-                    onTap: _changeAvatar,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        CircleAvatar(
-                          radius: 55,
-                          backgroundColor: AppColors.cardSurface,
-                          backgroundImage: _avatarUrl != null && _avatarUrl!.isNotEmpty
-                              ? NetworkImage(_avatarUrl!)
-                              : null,
-                          child: _avatarUrl == null || _avatarUrl!.isEmpty
-                              ? const Icon(
-                                  Icons.person,
-                                  size: 56,
-                                  color: AppColors.pine,
-                                )
-                              : null,
-                        ),
-                        Positioned(
-                          right: -2,
-                          bottom: -2,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: const BoxDecoration(
-                              color: AppColors.blush,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.edit,
-                              size: 18,
-                              color: AppColors.pine,
-                            ),
+                        GestureDetector(
+                          onTap: _uploadingAvatar ? null : _changeAvatar,
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              CircleAvatar(
+                                radius: 55,
+                                backgroundColor: AppColors.cardSurface,
+                                backgroundImage: avatarImage,
+                                child: _uploadingAvatar
+                                    ? const CircularProgressIndicator()
+                                    : avatarImage == null
+                                        ? const Icon(
+                                            Icons.person,
+                                            size: 56,
+                                            color: AppColors.pine,
+                                          )
+                                        : null,
+                              ),
+                              Positioned(
+                                right: -2,
+                                bottom: -2,
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.blush,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.edit,
+                                    size: 18,
+                                    color: AppColors.pine,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        TextButton(
+                          onPressed: _uploadingAvatar ? null : _changeAvatar,
+                          child: Text(
+                            _uploadingAvatar ? 'Uploading...' : 'Choose Photo',
+                            style: const TextStyle(color: AppColors.pine),
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        //----------------------------------------
+                        // Fields
+                        //----------------------------------------
+
+                        _DetailField(
+                          label: "Username",
+                          controller: _username,
+                          icon: Icons.person_outline,
+                        ),
+
+                        _DetailField(
+                          label: "Date of Birth",
+                          controller: _dob,
+                          icon: Icons.cake_outlined,
+                        ),
+
+                        _DetailField(
+                          label: "Phone Number",
+                          controller: _phone,
+                          icon: Icons.phone_outlined,
+                          keyboardType: TextInputType.phone,
+                        ),
+
+                        _DetailField(
+                          label: "Email",
+                          controller: _email,
+                          icon: Icons.email_outlined,
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        //----------------------------------------
+                        // Save Button
+                        //----------------------------------------
+
+                        AppButton(
+                          label: _saving ? 'SAVING...' : 'SAVE CHANGES',
+                          backgroundColor: AppColors.pine,
+                          foregroundColor: AppColors.blush,
+                          onPressed: (_dirty && !_saving) ? _save : null,
                         ),
                       ],
                     ),
                   ),
-
-                  const SizedBox(height: 10),
-
-                  TextButton(
-                    onPressed: _changeAvatar,
-                    child: const Text(
-                      'Change Photo',
-                      style: TextStyle(color: AppColors.pine),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  //----------------------------------------
-                  // Fields
-                  //----------------------------------------
-
-                  _DetailField(
-                    label: "Username",
-                    controller: _username,
-                    icon: Icons.person_outline,
-                  ),
-
-                  _DetailField(
-                    label: "Date of Birth",
-                    controller: _dob,
-                    icon: Icons.cake_outlined,
-                  ),
-
-                  _DetailField(
-                    label: "Phone Number",
-                    controller: _phone,
-                    icon: Icons.phone_outlined,
-                    keyboardType: TextInputType.phone,
-                  ),
-
-                  _DetailField(
-                    label: "Email",
-                    controller: _email,
-                    icon: Icons.email_outlined,
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  //----------------------------------------
-                  // Save Button
-                  //----------------------------------------
-
-                  AppButton(
-                    label: _saving ? 'SAVING...' : 'SAVE CHANGES',
-                    backgroundColor: AppColors.pine,
-                    foregroundColor: AppColors.blush,
-                    onPressed: (_dirty && !_saving) ? _save : null,
-                  ),
-                ],
-              ),
-            ),
           ),
         ],
       ),
@@ -397,9 +422,7 @@ class _DetailField extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-
           const SizedBox(height: 6),
-
           TextField(
             controller: controller,
             keyboardType: keyboardType,
@@ -411,14 +434,12 @@ class _DetailField extends StatelessWidget {
               ),
               filled: true,
               fillColor: AppColors.cardSurface,
-
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(
                   AppSpacing.buttonRadius,
                 ),
                 borderSide: BorderSide.none,
               ),
-
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(
                   AppSpacing.buttonRadius,
@@ -428,14 +449,12 @@ class _DetailField extends StatelessWidget {
                   width: 2,
                 ),
               ),
-
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(
                   AppSpacing.buttonRadius,
                 ),
                 borderSide: BorderSide.none,
               ),
-
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.md,
                 vertical: AppSpacing.sm,

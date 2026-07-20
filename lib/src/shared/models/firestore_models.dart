@@ -73,6 +73,7 @@ class PublicProfile {
     required this.username,
     required this.usernameLower,
     this.avatarUrl,
+    this.avatarBase64,
     this.lastSeenAt,
   });
 
@@ -96,6 +97,7 @@ class PublicProfile {
       usernameLower: data['usernameLower'] as String? ??
           (data['username'] as String? ?? '').toLowerCase(),
       avatarUrl: data['avatarUrl'] as String?,
+      avatarBase64: data['avatarBase64'] as String?,
       lastSeenAt: firestoreDateTime(data['lastSeenAt']),
     );
   }
@@ -105,6 +107,7 @@ class PublicProfile {
   final String username;
   final String usernameLower;
   final String? avatarUrl;
+  final String? avatarBase64;
   final DateTime? lastSeenAt;
 
   bool get isOnline {
@@ -119,6 +122,7 @@ class PublicProfile {
         'username': username,
         'usernameLower': usernameLower,
         'avatarUrl': avatarUrl,
+        'avatarBase64': avatarBase64,
         'lastSeenAt':
             lastSeenAt == null ? null : Timestamp.fromDate(lastSeenAt!),
       };

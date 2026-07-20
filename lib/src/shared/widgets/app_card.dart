@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import '../theme/fluentish_theme_colors.dart';
 
 class AppCard extends StatelessWidget {
   const AppCard({
@@ -24,22 +24,23 @@ class AppCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final borderRadius = BorderRadius.circular(AppSpacing.cardRadius);
+    final colors = context.fluentishColors;
 
     return Container(
       height: height,
       margin: margin,
       width: width,
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.cardBorder),
+        border: Border.all(color: colors.border),
         borderRadius: borderRadius,
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
             blurRadius: 14,
-            color: AppColors.shadow,
-            offset: Offset(0, 5),
+            color: colors.shadow,
+            offset: const Offset(0, 5),
           ),
         ],
-        color: AppColors.cardSurface,
+        color: colors.surface,
       ),
       child: ClipRRect(
         borderRadius: borderRadius,

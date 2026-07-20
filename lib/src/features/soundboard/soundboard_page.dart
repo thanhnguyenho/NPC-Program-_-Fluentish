@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluentish/src/shared/shared.dart';
 import 'widgets/language_toggle.dart';
 import 'widgets/category_filter.dart';
 import 'widgets/word_card.dart';
@@ -7,7 +8,6 @@ import 'models/soundboard_word.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:fluentish/src/shared/theme/app_text_styles.dart';
 
 class SoundboardPage extends StatefulWidget {
   const SoundboardPage({super.key});
@@ -40,7 +40,6 @@ class _SoundboardPageState extends State<SoundboardPage> {
     }
 
     if (selectedCategory == 'Favourites') {
-
       final languageId = isVietnamese ? 'vietnamese' : 'english';
 
       return words.where((word) {
@@ -48,9 +47,7 @@ class _SoundboardPageState extends State<SoundboardPage> {
       }).toList();
     }
 
-    return words
-        .where((word) => word.category == selectedCategory)
-        .toList();
+    return words.where((word) => word.category == selectedCategory).toList();
   }
 
   Future<void> _loadFavourites() async {
@@ -60,17 +57,17 @@ class _SoundboardPageState extends State<SoundboardPage> {
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-    
+
       if (user == null) return;
 
       final snapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('favouriteSoundboardBites')
-        .get();
+          .collection('users')
+          .doc(user.uid)
+          .collection('favouriteSoundboardBites')
+          .get();
 
       if (!mounted) return;
-      
+
       setState(() {
         favouriteIds = snapshot.docs.map((doc) => doc.id).toSet();
       });
@@ -81,8 +78,9 @@ class _SoundboardPageState extends State<SoundboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return ColoredBox(
-      color: const Color(0xFFEEDADA),
+      color: colors.background,
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -109,7 +107,6 @@ class _SoundboardPageState extends State<SoundboardPage> {
                   ),
                 ],
               ),
-
               const SizedBox(height: 24),
               CategoryFilter(
                 selectedCategory: selectedCategory,
@@ -119,14 +116,12 @@ class _SoundboardPageState extends State<SoundboardPage> {
                   });
                 },
               ),
-
               const SizedBox(height: 24),
               Expanded(
                 child: GridView.builder(
                   physics: const ClampingScrollPhysics(),
                   itemCount: filteredWords.length,
-                  gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     mainAxisSpacing: 16,
                     crossAxisSpacing: 16,
@@ -159,4 +154,3 @@ class _SoundboardPageState extends State<SoundboardPage> {
     );
   }
 }
-                  

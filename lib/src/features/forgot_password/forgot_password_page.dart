@@ -1,9 +1,7 @@
-// ignore_for_file: prefer_const_constructors, unused_import
-
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-// import 'package:fluentish/src/features/login/login_page.dart';
-import 'package:fluentish/src/features/resend_email/resend_email_page.dart';
+import 'package:fluentish/src/services/auth_service.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
@@ -15,36 +13,55 @@ class ForgotPasswordPage extends StatefulWidget {
 
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final emailController = TextEditingController();
-  final phoneController = TextEditingController();
+  bool _isSending = false;
+  bool _emailSent = false;
 
   @override
   void dispose() {
     emailController.dispose();
-    phoneController.dispose();
     super.dispose();
   }
 
-  void _submit() {
-    if (emailController.text.trim().isEmpty ||
-        phoneController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please enter your email and phone number.',
-          ),
-        ),
-      );
+  Future<void> _submit() async {
+    if (_isSending) return;
+    final email = emailController.text.trim().toLowerCase();
+    final isValidEmail = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email);
+    if (!isValidEmail) {
+      _showMessage('Please enter a valid email address.');
       return;
     }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ResendEmailPage(
-          username: emailController.text.trim(),
-        ),
-      ),
-    );
+    setState(() => _isSending = true);
+    try {
+      await AuthService().resetPassword(email);
+      if (!mounted) return;
+      setState(() => _emailSent = true);
+      _showMessage('Password reset email sent to $email.');
+    } on FirebaseAuthException catch (error) {
+      if (!mounted) return;
+      _showMessage(_messageFor(error.code));
+    } catch (_) {
+      if (!mounted) return;
+      _showMessage('Could not send the reset email. Please try again.');
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  String _messageFor(String code) => switch (code) {
+        'invalid-email' => 'Please enter a valid email address.',
+        'user-not-found' => 'No account was found for this email address.',
+        'too-many-requests' =>
+          'Too many requests. Please wait a moment and try again.',
+        'network-request-failed' =>
+          'Check your internet connection and try again.',
+        _ => 'Could not send the reset email. Please try again.',
+      };
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   Widget buildField({
@@ -69,15 +86,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.fluentishColors;
     return Scaffold(
-      backgroundColor: AppColors.blush,
+      backgroundColor: colors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new,
-            color: AppColors.pine,
+            color: colors.textPrimary,
           ),
           onPressed: () => Navigator.pop(context),
         ),
@@ -90,13 +108,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           child: Column(
             children: [
               const SizedBox(height: 10),
-
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Expanded(
+                  const Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.only(left: 8),
+                      padding: EdgeInsets.only(left: 8),
                       child: AppStrokeText(
                         'FORGOT\nPASSWORD',
                         fontSize: 35,
@@ -110,34 +127,44 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   ),
                 ],
               ),
-
               const SizedBox(height: AppSpacing.xl),
-
               buildField(
                 label: 'EMAIL:',
                 controller: emailController,
                 hint: 'Enter your email',
                 keyboardType: TextInputType.emailAddress,
               ),
-
-              const SizedBox(height: AppSpacing.lg),
-
-              buildField(
-                label: 'PHONE NUMBER:',
-                controller: phoneController,
-                hint: 'Enter your phone number',
-                keyboardType: TextInputType.phone,
-              ),
-
+              if (_emailSent) ...[
+                const SizedBox(height: AppSpacing.lg),
+                AppCard(
+                  child: Row(
+                    children: [
+                      Icon(Icons.mark_email_read_outlined,
+                          color: colors.textPrimary),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          'Check your inbox and spam folder, then open the link to set a new password.',
+                          style: AppTextStyles.body.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 40),
-
               AppButton(
-                label: 'SUBMIT',
+                label: _isSending
+                    ? 'SENDING...'
+                    : _emailSent
+                        ? 'SEND AGAIN'
+                        : 'SEND RESET EMAIL',
                 backgroundColor: AppColors.pine,
                 foregroundColor: AppColors.blush,
-                onPressed: _submit,
+                onPressed: _isSending ? null : _submit,
               ),
-
               const SizedBox(height: AppSpacing.xxl),
             ],
           ),
