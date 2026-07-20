@@ -8,7 +8,6 @@ import 'models/soundboard_word.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:fluentish/src/shared/theme/app_text_styles.dart';
 
 class SoundboardPage extends StatefulWidget {
   const SoundboardPage({super.key});
@@ -41,7 +40,6 @@ class _SoundboardPageState extends State<SoundboardPage> {
     }
 
     if (selectedCategory == 'Favourites') {
-
       final languageId = isVietnamese ? 'vietnamese' : 'english';
 
       return words.where((word) {
@@ -59,17 +57,17 @@ class _SoundboardPageState extends State<SoundboardPage> {
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-    
+
       if (user == null) return;
 
       final snapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('favouriteSoundboardBites')
-        .get();
+          .collection('users')
+          .doc(user.uid)
+          .collection('favouriteSoundboardBites')
+          .get();
 
       if (!mounted) return;
-      
+
       setState(() {
         favouriteIds = snapshot.docs.map((doc) => doc.id).toSet();
       });
