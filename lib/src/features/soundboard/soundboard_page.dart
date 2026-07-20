@@ -6,6 +6,7 @@ import 'data/words.dart';
 import 'models/soundboard_word.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 class SoundboardPage extends StatefulWidget {
   const SoundboardPage({super.key});
@@ -52,6 +53,10 @@ class _SoundboardPageState extends State<SoundboardPage> {
   }
 
   Future<void> _loadFavourites() async {
+    if (Firebase.apps.isEmpty) {
+      return;
+    }
+
     try {
       final user = FirebaseAuth.instance.currentUser;
     
