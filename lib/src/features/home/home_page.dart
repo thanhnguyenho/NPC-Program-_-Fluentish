@@ -41,9 +41,9 @@ class _HomePageState extends State<HomePage> {
       1 => LanguagePage(
           key: ValueKey(_selectedFavouritePhrase?.id),
           initialSourceText: _selectedFavouritePhrase?.sourceText,
-          initialTranslatedText: _selectedFavouritePhrase?.translatedText,
-          initialSourceLanguage: _selectedFavouritePhrase?.sourceLanguage,
-          initialTargetLanguage: _selectedFavouritePhrase?.targetLanguage,
+          initialTargetText: _selectedFavouritePhrase?.translatedText,
+          initialSourceLang: _selectedFavouritePhrase?.sourceLanguage,
+          initialTargetLang: _selectedFavouritePhrase?.targetLanguage,
         ),
       2 => const SoundboardPage(),
       3 => const CommunityPage(),

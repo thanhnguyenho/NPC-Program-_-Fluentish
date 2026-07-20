@@ -56,9 +56,9 @@ class _MainScaffoldState extends State<MainScaffold> {
         return LanguagePage(
           key: ValueKey(_selectedFavouritePhrase?.id),
           initialSourceText: _selectedFavouritePhrase?.sourceText,
-          initialTranslatedText: _selectedFavouritePhrase?.translatedText,
-          initialSourceLanguage: _selectedFavouritePhrase?.sourceLanguage,
-          initialTargetLanguage: _selectedFavouritePhrase?.targetLanguage,
+          initialTargetText: _selectedFavouritePhrase?.translatedText,
+          initialSourceLang: _selectedFavouritePhrase?.sourceLanguage,
+          initialTargetLang: _selectedFavouritePhrase?.targetLanguage,
         );
       case 2:
         return const SoundboardPage();
