@@ -24,6 +24,12 @@ class _SoundboardPageState extends State<SoundboardPage> {
   void initState() {
     super.initState();
     _loadFavourites();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadFavourites();
+      }
+    });
   }
 
   List<SoundboardWord> get filteredWords {
