@@ -7,6 +7,7 @@ import 'models/soundboard_word.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:fluentish/src/shared/theme/app_text_styles.dart';
 
 class SoundboardPage extends StatefulWidget {
   const SoundboardPage({super.key});
@@ -88,16 +89,25 @@ class _SoundboardPageState extends State<SoundboardPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: LanguageToggle(
-                  isVietnamese: isVietnamese,
-                  onToggle: () {
-                    setState(() {
-                      isVietnamese = !isVietnamese;
-                    });
-                  }
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Soundboard',
+                    style: AppTextStyles.title.copyWith(
+                      fontSize: 34,
+                    ),
+                  ),
+                  LanguageToggle(
+                    isVietnamese: isVietnamese,
+                    onToggle: () {
+                      setState(() {
+                        isVietnamese = !isVietnamese;
+                      });
+                    },
+                  ),
+                ],
               ),
 
               const SizedBox(height: 24),
