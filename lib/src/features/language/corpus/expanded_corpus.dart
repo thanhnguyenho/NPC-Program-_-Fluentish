@@ -1,4 +1,3 @@
-import 'dart:collection';
 
 /// Expanded offline corpus covering Topics 1 to 5:
 /// 1. Greetings & Social Conversation

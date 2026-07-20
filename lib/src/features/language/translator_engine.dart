@@ -1111,7 +1111,6 @@ class TranslatorEngine {
 
   // Google Gemini API keys (base64 encoded to protect against automated secret scanning while preserving fast-path access)
   static String _decodeApiKey() => utf8.decode(base64Decode(_geminiApiKeysEncoded[_currentApiKeyIndex]));
-  static String _decodeKey(String b64) => utf8.decode(base64Decode(b64));
 
   static final List<String> _geminiApiKeysEncoded = [
     'QUl6YVN5Q0MzbFA4TDhPQUQ3NEJGUDJDT0FJLWlseFppQWxJUDRv',

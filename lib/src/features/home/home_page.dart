@@ -34,54 +34,7 @@ class _HomePageState extends State<HomePage> {
     };
   }
 
-  Widget _buildTabPlaceholder(String title, IconData icon) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5EBEB),
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 72, color: const Color(0xFF3E4E31)),
-                const SizedBox(height: 20),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF3E4E31),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'This module is trimmed to keep our GitHub repository focused exclusively on the Language & Offline Translation Core.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.black54,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 28),
-                ElevatedButton.icon(
-                  onPressed: () => setState(() => _currentIndex = 1),
-                  icon: const Icon(Icons.translate, color: Colors.white),
-                  label: const Text('Go to Language & Translator', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3E4E31),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+
 
   @override
   Widget build(BuildContext context) {
