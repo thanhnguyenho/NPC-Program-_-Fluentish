@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -10,11 +11,19 @@ class _HistoryEntry {
     required this.term,
     required this.translation,
     required this.date,
+    this.type = 'translation',
+    this.audioPath = '',
+    this.category = '',
   });
 
   final String term;
   final String translation;
   final DateTime date;
+  final String type;
+  final String audioPath;
+  final String category;
+
+  bool get isSoundboard => type == 'soundboard' && audioPath.isNotEmpty;
 }
 
 /// Shows the signed-in user's past lookups, grouped by day.
@@ -27,11 +36,14 @@ class HistoryPage extends StatefulWidget {
 
 class _HistoryPageState extends State<HistoryPage> {
   final _searchController = TextEditingController();
+  final _audioPlayer = AudioPlayer();
   String _query = '';
+  String? _playingAudioPath;
 
   @override
   void dispose() {
     _searchController.dispose();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -82,6 +94,9 @@ class _HistoryPageState extends State<HistoryPage> {
                   (data['translation'] ?? data['target'] ?? '').toString(),
               date:
                   timestamp is Timestamp ? timestamp.toDate() : DateTime(1970),
+              type: (data['type'] ?? 'translation').toString(),
+              audioPath: (data['audioPath'] ?? '').toString(),
+              category: (data['category'] ?? '').toString(),
             );
           })
           .where((entry) => entry.term.isNotEmpty)
@@ -89,6 +104,28 @@ class _HistoryPageState extends State<HistoryPage> {
         ..sort((a, b) => b.date.compareTo(a.date));
       return entries;
     });
+  }
+
+  Future<void> _openEntry(_HistoryEntry entry) async {
+    if (!entry.isSoundboard) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => LanguagePage(initialQuery: entry.term),
+        ),
+      );
+      return;
+    }
+
+    try {
+      await _audioPlayer.stop();
+      if (mounted) setState(() => _playingAudioPath = entry.audioPath);
+      await _audioPlayer.play(AssetSource(entry.audioPath));
+      await _audioPlayer.onPlayerComplete.first;
+    } catch (error) {
+      debugPrint('Could not replay soundboard history: $error');
+    } finally {
+      if (mounted) setState(() => _playingAudioPath = null);
+    }
   }
 
   Future<void> _clearHistory() async {
@@ -261,6 +298,10 @@ class _HistoryPageState extends State<HistoryPage> {
                                 index++) ...[
                               _HistoryTile(
                                 entry: grouped[dateGroup]![index],
+                                isPlaying: _playingAudioPath ==
+                                    grouped[dateGroup]![index].audioPath,
+                                onTap: () =>
+                                    _openEntry(grouped[dateGroup]![index]),
                               ),
                               if (index != grouped[dateGroup]!.length - 1)
                                 const Divider(
@@ -285,20 +326,20 @@ class _HistoryPageState extends State<HistoryPage> {
 }
 
 class _HistoryTile extends StatelessWidget {
-  const _HistoryTile({required this.entry});
+  const _HistoryTile({
+    required this.entry,
+    required this.isPlaying,
+    required this.onTap,
+  });
 
   final _HistoryEntry entry;
+  final bool isPlaying;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => LanguagePage(initialQuery: entry.term),
-          ),
-        );
-      },
+      onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.sm,
@@ -312,8 +353,10 @@ class _HistoryTile extends StatelessWidget {
                 color: AppColors.shell,
                 borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
               ),
-              child: const Icon(
-                Icons.translate_outlined,
+              child: Icon(
+                entry.isSoundboard
+                    ? (isPlaying ? Icons.graphic_eq : Icons.volume_up_outlined)
+                    : Icons.translate_outlined,
                 size: 18,
                 color: AppColors.ink,
               ),
@@ -334,11 +377,19 @@ class _HistoryTile extends StatelessWidget {
                     entry.translation,
                     style: AppTextStyles.body.copyWith(fontSize: 12.5),
                   ),
+                  if (entry.isSoundboard && entry.category.isNotEmpty)
+                    Text(
+                      'Soundboard · ${entry.category}',
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.textMuted,
+                        fontSize: 11.5,
+                      ),
+                    ),
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right,
+            Icon(
+              entry.isSoundboard ? Icons.play_arrow : Icons.chevron_right,
               size: 18,
               color: AppColors.textMuted,
             ),

@@ -79,6 +79,8 @@ class _WordCardState extends State<WordCard> {
       await _audioPlayer.play(
         AssetSource(audioPath),
       );
+
+      await _recordHistory(audioPath);
     } catch (error) {
       if (!mounted) return;
 
@@ -87,6 +89,33 @@ class _WordCardState extends State<WordCard> {
       });
 
       debugPrint('Error playing audio: $error');
+    }
+  }
+
+  Future<void> _recordHistory(String audioPath) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final isVietnamese = widget.isVietnamese;
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('history')
+          .add({
+        'type': 'soundboard',
+        'term': isVietnamese ? widget.english : widget.vietnamese,
+        'translation': isVietnamese ? widget.vietnamese : widget.english,
+        'english': widget.english,
+        'vietnamese': widget.vietnamese,
+        'category': widget.category,
+        'audioPath': audioPath,
+        'preferredLanguage': isVietnamese ? 'vietnamese' : 'english',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (error) {
+      // Audio playback should still work when history cannot be synced.
+      debugPrint('Could not save soundboard history: $error');
     }
   }
 
