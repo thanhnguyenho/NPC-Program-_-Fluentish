@@ -67,7 +67,6 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
   String _targetLang = 'Vietnamese';
   String _translatedText = '';
 
-  bool _isSourceStarred = false;
   bool _isTargetStarred = false;
   String? _spellingCorrectionSuggestion;
   bool _isTranslating = false;
@@ -149,10 +148,9 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
     }
 
     // Khi người dùng gõ câu mới hoặc chỉnh sửa, lập tức reset ngôi sao về trạng thái chưa lưu (☆)
-    if (_isTargetStarred || _isSourceStarred) {
+    if (_isTargetStarred) {
       setState(() {
         _isTargetStarred = false;
-        _isSourceStarred = false;
       });
     }
 
@@ -312,9 +310,7 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
       _sourceController.text = _translatedText;
       _translatedText = tempText;
 
-      final tempStar = _isSourceStarred;
-      _isSourceStarred = _isTargetStarred;
-      _isTargetStarred = tempStar;
+      _isTargetStarred = false;
     });
     SettingsController.instance.setLanguagePair(_sourceLang, _targetLang);
   }
@@ -324,7 +320,6 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
     setState(() {
       _sourceController.clear();
       _translatedText = '';
-      _isSourceStarred = false;
       _isTargetStarred = false;
       _spellingCorrectionSuggestion = null;
     });
@@ -969,35 +964,6 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                                               ),
                                             ),
                                           ),
-                                        const SizedBox(width: 8),
-                                        GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              _isSourceStarred =
-                                                  !_isSourceStarred;
-                                            });
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              SnackBar(
-                                                content: Text(_isSourceStarred
-                                                    ? '⭐ Starred source: "${_sourceController.text}"'
-                                                    : 'Unstarred source phrase'),
-                                                duration:
-                                                    const Duration(seconds: 1),
-                                                backgroundColor: primaryGreen,
-                                              ),
-                                            );
-                                          },
-                                          child: Icon(
-                                            _isSourceStarred
-                                                ? Icons.star
-                                                : Icons.star_border,
-                                            color: _isSourceStarred
-                                                ? Colors.amber
-                                                : colors.textPrimary,
-                                            size: 26,
-                                          ),
-                                        ),
                                       ],
                                     ),
                                   ],
