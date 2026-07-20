@@ -65,13 +65,21 @@ class Auth implements AuthGateway {
     required String email,
     required String password,
   }) async {
-    final credential = await _firebaseAuth.signInWithEmailAndPassword(
-      email: email.trim(),
-      password: password,
-    );
-    final user = credential.user;
-    if (user == null) throw StateError('Firebase did not return the account.');
-    await _ensureUserDocuments(user);
+    try {
+      debugPrint('AuthService: Attempting signInWithEmailAndPassword for ${email.trim()}...');
+      final credential = await _firebaseAuth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+      final user = credential.user;
+      if (user == null) throw StateError('Firebase did not return the account.');
+      debugPrint('AuthService: signInWithEmailAndPassword succeeded for uid ${user.uid}. Ensuring user documents...');
+      await _ensureUserDocuments(user);
+      debugPrint('AuthService: _ensureUserDocuments completed.');
+    } catch (e, stackTrace) {
+      debugPrint('AuthService.signInWithEmailAndPassword ERROR: $e\n$stackTrace');
+      rethrow;
+    }
   }
 
   @override
@@ -108,55 +116,63 @@ class Auth implements AuthGateway {
   }
 
   Future<void> _ensureUserDocuments(User user) async {
-    final privateReference = _firestore.collection('users').doc(user.uid);
-    final publicReference =
-        _firestore.collection('publicProfiles').doc(user.uid);
-    final sharingReference =
-        _firestore.collection('locationSharing').doc(user.uid);
-    final snapshots = await Future.wait([
-      privateReference.get(),
-      publicReference.get(),
-      sharingReference.get(),
-    ]);
-    final privateExists = snapshots[0].exists;
-    final publicExists = snapshots[1].exists;
-    final sharingExists = snapshots[2].exists;
-    final batch = _firestore.batch();
+    try {
+      debugPrint('AuthService: Fetching firestore snapshots for ${user.uid}...');
+      final privateReference = _firestore.collection('users').doc(user.uid);
+      final publicReference =
+          _firestore.collection('publicProfiles').doc(user.uid);
+      final sharingReference =
+          _firestore.collection('locationSharing').doc(user.uid);
+      final snapshots = await Future.wait([
+        privateReference.get(),
+        publicReference.get(),
+        sharingReference.get(),
+      ]);
+      final privateExists = snapshots[0].exists;
+      final publicExists = snapshots[1].exists;
+      final sharingExists = snapshots[2].exists;
+      final batch = _firestore.batch();
 
-    if (!privateExists) {
-      batch.set(privateReference, {
-        'uid': user.uid,
-        'email': user.email?.trim().toLowerCase() ?? '',
-        'phoneNumber': user.phoneNumber ?? '',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      if (!privateExists) {
+        batch.set(privateReference, {
+          'uid': user.uid,
+          'email': user.email?.trim().toLowerCase() ?? '',
+          'phoneNumber': user.phoneNumber ?? '',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+      if (publicExists) {
+        batch.set(
+            publicReference,
+            {
+              'lastSeenAt': FieldValue.serverTimestamp(),
+            },
+            SetOptions(merge: true));
+      } else {
+        final username = _defaultUsername(user);
+        batch.set(publicReference, {
+          'uid': user.uid,
+          'displayName': _defaultDisplayName(user),
+          'username': username,
+          'usernameLower': username.toLowerCase(),
+          'avatarUrl': user.photoURL,
+          'lastSeenAt': FieldValue.serverTimestamp(),
+        });
+      }
+      if (!sharingExists) {
+        batch.set(sharingReference, {
+          'enabled': false,
+          'audience': 'friends',
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+      debugPrint('AuthService: Committing batch writes for ${user.uid}...');
+      await batch.commit();
+      debugPrint('AuthService: Batch commit successful.');
+    } catch (e, stackTrace) {
+      debugPrint('AuthService._ensureUserDocuments ERROR: $e\n$stackTrace');
+      rethrow;
     }
-    if (publicExists) {
-      batch.set(
-          publicReference,
-          {
-            'lastSeenAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true));
-    } else {
-      final username = _defaultUsername(user);
-      batch.set(publicReference, {
-        'uid': user.uid,
-        'displayName': _defaultDisplayName(user),
-        'username': username,
-        'usernameLower': username.toLowerCase(),
-        'avatarUrl': user.photoURL,
-        'lastSeenAt': FieldValue.serverTimestamp(),
-      });
-    }
-    if (!sharingExists) {
-      batch.set(sharingReference, {
-        'enabled': false,
-        'audience': 'friends',
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    }
-    await batch.commit();
   }
 
   String _defaultDisplayName(User user) {

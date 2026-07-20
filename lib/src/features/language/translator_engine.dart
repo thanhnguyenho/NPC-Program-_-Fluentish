@@ -136,6 +136,18 @@ class TranslatorEngine {
     'đồn cảnh sát': 'Police station',
     'beach': 'Bãi biển',
     'bãi biển': 'Beach',
+    'we like fish': 'Chúng ta thích ăn cá',
+    'chúng ta thích ăn cá': 'We like fish',
+    'we like eating fish': 'Chúng ta thích ăn cá',
+    'why dont we go for a walk': 'Tại sao chúng ta không đi dạo nhỉ?',
+    'why don\'t we go for a walk': 'Tại sao chúng ta không đi dạo nhỉ?',
+    'tại sao chúng ta không đi dạo nhỉ': 'Why don\'t we go for a walk?',
+    'go for a walk': 'Đi dạo',
+    'đi dạo': 'Go for a walk',
+    'fish': 'Cá',
+    'cá': 'Fish',
+    'eating': 'Ăn',
+    'ăn': 'Eat / Eating',
     'museum': 'Bảo tàng',
     'bảo tàng': 'Museum',
     'park': 'Công viên',
@@ -1222,6 +1234,13 @@ class TranslatorEngine {
       return _capitalize(fastOffline);
     }
 
+    // Fast check inside translateSync local progressive grammar/dictionary engine
+    final syncRes = translateSync(text, sourceLang, targetLang);
+    if (syncRes.isNotEmpty &&
+        syncRes.toLowerCase() != text.trim().toLowerCase()) {
+      return _capitalize(syncRes);
+    }
+
     final completer = Completer<String>();
 
     void tryComplete(Future<String> future) {
@@ -1571,6 +1590,7 @@ class TranslatorEngine {
 
       final translatedWords = <String>[];
       bool anyTranslated = false;
+      var untranslatedCount = 0;
       for (int i = 0; i < words.length; i++) {
         final w = words[i];
         if (w.isEmpty) continue;
@@ -1600,6 +1620,7 @@ class TranslatorEngine {
           translatedWords.add(primary);
           anyTranslated = true;
         } else {
+          untranslatedCount++;
           var wordToAdd = w;
           if (translatedWords.isNotEmpty || isSubclause) {
             wordToAdd = _isProperNoun(wordToAdd) ? wordToAdd : wordToAdd.toLowerCase();
@@ -1608,8 +1629,13 @@ class TranslatorEngine {
         }
       }
 
-      if (anyTranslated || words.length == 1) {
-        // Step 4B: Reorder & Format Question/Modal Structures from English to Vietnamese so we NEVER produce word salad like "What can Chúng tôi Ăn Hôm nay"
+      // Chỉ trả về bản dịch ghép từ (word-by-word) nếu dịch được hết, hoặc chỉ sót tối đa 1 từ trên câu dài,
+      // tuyệt đối tránh tạo ra "râu ông nọ cắm cằm bà kia" kiểu nửa Anh nửa Việt (VD: "Tại sao dont chúng ta đi for a đi bộ").
+      final canReturnWordByWord = (words.length == 1 && anyTranslated) ||
+          (words.length == 2 && anyTranslated && untranslatedCount == 0) ||
+          (words.length > 2 && anyTranslated && untranslatedCount == 0);
+
+      if (canReturnWordByWord) {
         if (targetLang == 'Vietnamese' && words.length > 1) {
           final first = words.first;
           if (first == 'what' || first == 'where' || first == 'when' || first == 'how' || first == 'why' || first == 'who' || first == 'can' || first == 'should' || first == 'will' || first == 'do') {
@@ -1779,25 +1805,29 @@ class TranslatorEngine {
 
     // If no manual typo matched, check each word and fix unknown words via Levenshtein
     final cleanedInput = cleanLower.replaceAll(
-        RegExp(r'[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ\s]'), ' ');
-    final inputWords = cleanedInput.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
-    
+        RegExp(
+            r'[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ\s]'),
+        ' ');
+    final inputWords = cleanedInput
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .toList();
+
     final known = _getKnownWords();
     bool anyWordFixed = false;
     final correctedWords = <String>[];
-    
+
     for (final w in inputWords) {
       final isNumber = int.tryParse(w) != null;
-      if (isNumber || known.contains(w) || w.length <= 1) {
+      if (isNumber || known.contains(w) || w.length <= 4) {
         correctedWords.add(w);
         continue;
       }
-      // Word not recognized → find closest known word by Levenshtein distance
+      // Word not recognized → only correct if edit distance is exactly 1 (to avoid replacing valid unknown words like 'drive' -> 'driver')
       String bestWord = w;
-      int bestDist = 3; // max edit distance allowed
+      int bestDist = 2; // only allow distance 1
       for (final kw in known) {
-        // Only compare words of similar length (optimization)
-        if ((kw.length - w.length).abs() > 2) continue;
+        if ((kw.length - w.length).abs() > 1) continue;
         final dist = _editDistance(w, kw);
         if (dist < bestDist) {
           bestDist = dist;
@@ -1809,12 +1839,12 @@ class TranslatorEngine {
       }
       correctedWords.add(bestWord);
     }
-    
+
     if (anyWordFixed) {
       return correctedWords.join(' ');
     }
 
-    // Check VSM Cosine Similarity for closest sentence/phrase match (range [0.74, 0.99])
+    // Check VSM Cosine Similarity for closest sentence/phrase match (range [0.88, 0.99])
     final queryVector = _vectorize(cleanLower);
     double maxSim = 0.0;
     String bestCandidate = '';
@@ -1824,8 +1854,11 @@ class TranslatorEngine {
       final candidate = pair[srcKey]!;
       final corpusVector = _vectorize(candidate);
       final sim = _cosineSimilarity(queryVector, corpusVector);
-      if (sim > maxSim && sim >= 0.74 && sim < 0.99 && candidate.toLowerCase() != cleanLower) {
-        if (!candidate.toLowerCase().startsWith(cleanLower) || sim >= 0.84) {
+      if (sim > maxSim &&
+          sim >= 0.88 &&
+          sim < 0.99 &&
+          candidate.toLowerCase() != cleanLower) {
+        if (!candidate.toLowerCase().startsWith(cleanLower) || sim >= 0.92) {
           maxSim = sim;
           bestCandidate = candidate;
         }
@@ -1836,15 +1869,18 @@ class TranslatorEngine {
       final candidate = item[srcKey]!;
       final corpusVector = _vectorize(candidate);
       final sim = _cosineSimilarity(queryVector, corpusVector);
-      if (sim > maxSim && sim >= 0.74 && sim < 0.99 && candidate.toLowerCase() != cleanLower) {
-        if (!candidate.toLowerCase().startsWith(cleanLower) || sim >= 0.84) {
+      if (sim > maxSim &&
+          sim >= 0.88 &&
+          sim < 0.99 &&
+          candidate.toLowerCase() != cleanLower) {
+        if (!candidate.toLowerCase().startsWith(cleanLower) || sim >= 0.92) {
           maxSim = sim;
           bestCandidate = candidate;
         }
       }
     }
 
-    if (maxSim >= 0.74 && bestCandidate.isNotEmpty) {
+    if (maxSim >= 0.88 && bestCandidate.isNotEmpty) {
       return bestCandidate;
     }
 

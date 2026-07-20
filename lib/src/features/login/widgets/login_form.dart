@@ -53,7 +53,11 @@ class _LoginFormState extends State<LoginForm> {
       if (!mounted) return;
 
       Navigator.of(context).pop();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('=== LOGIN FORM ERROR ===');
+      debugPrint('$e');
+      debugPrint('$stackTrace');
+      debugPrint('========================');
       if (!mounted) return;
 
       ScaffoldMessenger.of(context)

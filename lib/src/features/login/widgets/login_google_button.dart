@@ -22,7 +22,11 @@ class _LoginGoogleButtonState extends State<LoginGoogleButton> {
       if (mounted) {
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
-    } catch (error) {
+    } catch (error, stackTrace) {
+      debugPrint('=== GOOGLE LOGIN ERROR ===');
+      debugPrint('$error');
+      debugPrint('$stackTrace');
+      debugPrint('==========================');
       if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()

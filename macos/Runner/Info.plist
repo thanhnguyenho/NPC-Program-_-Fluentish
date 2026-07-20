@@ -39,5 +39,11 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSLocationUsageDescription</key>
+	<string>Fluentish needs location access to find local places and friends nearby.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Fluentish needs location access while in use to find local places and friends nearby.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Fluentish needs location access to find local places and friends nearby.</string>
 </dict>
 </plist>
