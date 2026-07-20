@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:fluentish/src/features/friend_location/friend_location_page.dart';
-import 'package:fluentish/src/features/guides_review/guides_review_page.dart';
 import 'package:fluentish/src/features/home/home_page.dart';
 import 'package:fluentish/src/features/language/language_page.dart';
 import 'package:fluentish/src/features/profile/profile_page.dart';
@@ -14,6 +13,7 @@ class MainScaffold extends StatefulWidget {
     this.initialIndex = 0,
     this.auth,
     this.friendRepository,
+    this.favouriteRepository,
     this.guideRepository,
     this.locationRepository,
   });
@@ -21,6 +21,7 @@ class MainScaffold extends StatefulWidget {
   final int initialIndex;
   final AuthGateway? auth;
   final FriendDataSource? friendRepository;
+  final FavouriteDataSource? favouriteRepository;
   final GuideDataSource? guideRepository;
   final LocationDataSource? locationRepository;
 
@@ -30,7 +31,7 @@ class MainScaffold extends StatefulWidget {
 
 class _MainScaffoldState extends State<MainScaffold> {
   late int _currentIndex;
-  String? _focusedPlaceId;
+  FavouritePhraseRecord? _selectedFavouritePhrase;
 
   @override
   void initState() {
@@ -42,20 +43,28 @@ class _MainScaffoldState extends State<MainScaffold> {
     switch (index) {
       case 0:
         return HomeScreen(
-          onNavigateToGuides: _openGuides,
+          onNavigateToMap: _openMap,
+          onNavigateToLanguage: _openLanguage,
+          onNavigateToSoundboard: _openSoundboard,
+          onOpenFavouritePhrase: _openFavouritePhrase,
           auth: widget.auth,
           friendRepository: widget.friendRepository,
-          guideRepository: widget.guideRepository,
+          favouriteRepository: widget.favouriteRepository,
+          locationRepository: widget.locationRepository,
         );
       case 1:
-        return const LanguagePage();
+        return LanguagePage(
+          key: ValueKey(_selectedFavouritePhrase?.id),
+          initialSourceText: _selectedFavouritePhrase?.sourceText,
+          initialTargetText: _selectedFavouritePhrase?.translatedText,
+          initialSourceLang: _selectedFavouritePhrase?.sourceLanguage,
+          initialTargetLang: _selectedFavouritePhrase?.targetLanguage,
+        );
       case 2:
         return const SoundboardPage();
       case 3:
         return FriendLocationPage(
-          key: ValueKey(_focusedPlaceId),
           showBottomNavigation: false,
-          initialPlaceId: _focusedPlaceId,
           auth: widget.auth,
           friendRepository: widget.friendRepository,
           guideRepository: widget.guideRepository,
@@ -73,26 +82,23 @@ class _MainScaffoldState extends State<MainScaffold> {
     }
   }
 
-  void _openGuides() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => GuidesPage(
-          onShowPlaceOnMap: _showPlaceOnMap,
-          auth: widget.auth,
-          repository: widget.guideRepository,
-          locationRepository: widget.locationRepository,
-        ),
-      ),
-    );
-  }
-
-  void _showPlaceOnMap(String placeId) {
-    if (!mounted) return;
+  void _openLanguage() {
     setState(() {
-      _focusedPlaceId = placeId;
-      _currentIndex = 3;
+      _selectedFavouritePhrase = null;
+      _currentIndex = 1;
     });
   }
+
+  void _openFavouritePhrase(FavouritePhraseRecord phrase) {
+    setState(() {
+      _selectedFavouritePhrase = phrase;
+      _currentIndex = 1;
+    });
+  }
+
+  void _openSoundboard() => setState(() => _currentIndex = 2);
+
+  void _openMap() => setState(() => _currentIndex = 3);
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +107,10 @@ class _MainScaffoldState extends State<MainScaffold> {
       bottomNavigationBar: AppBottomNav(
         currentIndex: _currentIndex,
         onItemSelected: (index) {
-          setState(() => _currentIndex = index);
+          setState(() {
+            if (index == 1) _selectedFavouritePhrase = null;
+            _currentIndex = index;
+          });
         },
       ),
     );

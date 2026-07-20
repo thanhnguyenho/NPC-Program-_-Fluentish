@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 DateTime? firestoreDateTime(Object? value) {
   if (value is Timestamp) return value.toDate();
   if (value is DateTime) return value;
+  if (value is String) return DateTime.tryParse(value);
   return null;
 }
 
@@ -13,15 +14,26 @@ GeoPoint? firestoreGeoPoint(Object? value) {
   if (value is Map<String, dynamic>) {
     final point = value['geopoint'];
     if (point is GeoPoint) return point;
+    final latitude = value['lat'] as num?;
+    final longitude = value['lng'] as num?;
+    if (latitude != null && longitude != null) {
+      return GeoPoint(latitude.toDouble(), longitude.toDouble());
+    }
   }
   if (value is Map) {
     final point = value['geopoint'];
     if (point is GeoPoint) return point;
+    final latitude = value['lat'];
+    final longitude = value['lng'];
+    if (latitude is num && longitude is num) {
+      return GeoPoint(latitude.toDouble(), longitude.toDouble());
+    }
   }
   return null;
 }
 
 String firestoreGeohash(Object? value) {
+  if (value is String) return value;
   if (value is Map<String, dynamic>) {
     return value['geohash'] as String? ?? '';
   }
@@ -217,6 +229,141 @@ class FriendMapEntry {
 
   final PublicProfile profile;
   final SharedLocation location;
+}
+
+class MapLocationRecord {
+  const MapLocationRecord({
+    required this.id,
+    required this.placeId,
+    required this.name,
+    required this.point,
+    required this.geohash,
+    required this.group,
+    required this.category,
+    required this.categoryLabel,
+    required this.iconKey,
+    required this.sourceCategory,
+    this.shortDescription = '',
+    required this.sourceCategories,
+    required this.address,
+    required this.neighborhood,
+    required this.region,
+    required this.city,
+    required this.countryCode,
+    required this.phone,
+    required this.website,
+    required this.rating,
+    required this.reviewCount,
+    required this.price,
+    required this.openingHours,
+    required this.status,
+    required this.isActive,
+    required this.googleMapsUrl,
+    required this.scrapedAt,
+  });
+
+  factory MapLocationRecord.fromDocument(
+    DocumentSnapshot<Map<String, dynamic>> document,
+  ) =>
+      MapLocationRecord.fromMap(document.id, document.data());
+
+  factory MapLocationRecord.fromMap(
+    String id,
+    Map<String, dynamic>? value,
+  ) {
+    final data = value ?? const <String, dynamic>{};
+    final address = _stringKeyedMap(data['address']);
+    final contact = _stringKeyedMap(data['contact']);
+    final rating = _stringKeyedMap(data['rating']);
+    final hours = _stringKeyedMap(data['openingHours']);
+    return MapLocationRecord(
+      id: id,
+      placeId: data['placeId'] as String? ?? id,
+      name: data['name'] as String? ?? 'Unknown place',
+      point: firestoreGeoPoint(data['location']) ?? const GeoPoint(0, 0),
+      geohash: firestoreGeohash(data['geohash']),
+      group: data['group'] as String? ?? '',
+      category: data['category'] as String? ?? 'place',
+      categoryLabel: data['categoryLabel'] as String? ?? 'Place',
+      iconKey: (data['iconKey'] as String?) ??
+          (data['category'] as String?) ??
+          'place',
+      sourceCategory: data['sourceCategory'] as String? ?? '',
+      shortDescription: data['shortDescription'] as String? ??
+          data['description'] as String? ??
+          '',
+      sourceCategories: _stringList(data['sourceCategories']),
+      address: address['formatted'] as String? ?? '',
+      neighborhood: address['neighborhood'] as String? ?? '',
+      region: address['region'] as String? ?? '',
+      city: address['city'] as String? ?? '',
+      countryCode: address['countryCode'] as String? ?? '',
+      phone: contact['phone'] as String?,
+      website: contact['website'] as String?,
+      rating: (rating['score'] as num?)?.toDouble(),
+      reviewCount: (rating['reviewCount'] as num?)?.toInt() ?? 0,
+      price: data['price'] as String?,
+      openingHours: Map<String, String>.unmodifiable({
+        for (final entry in hours.entries)
+          if (entry.value is String) entry.key: entry.value as String,
+      }),
+      status: data['status'] as String? ?? '',
+      isActive: data['isActive'] as bool? ?? false,
+      googleMapsUrl: data['googleMapsUrl'] as String?,
+      scrapedAt: firestoreDateTime(data['scrapedAt']),
+    );
+  }
+
+  final String id;
+  final String placeId;
+  final String name;
+  final GeoPoint point;
+  final String geohash;
+  final String group;
+  final String category;
+  final String categoryLabel;
+  final String iconKey;
+  final String sourceCategory;
+  final String shortDescription;
+  final List<String> sourceCategories;
+  final String address;
+  final String neighborhood;
+  final String region;
+  final String city;
+  final String countryCode;
+  final String? phone;
+  final String? website;
+  final double? rating;
+  final int reviewCount;
+  final String? price;
+  final Map<String, String> openingHours;
+  final String status;
+  final bool isActive;
+  final String? googleMapsUrl;
+  final DateTime? scrapedAt;
+
+  bool get hasValidPoint =>
+      point.latitude >= -90 &&
+      point.latitude <= 90 &&
+      point.longitude >= -180 &&
+      point.longitude <= 180 &&
+      (point.latitude != 0 || point.longitude != 0);
+}
+
+Map<String, dynamic> _stringKeyedMap(Object? value) {
+  if (value is Map<String, dynamic>) return value;
+  if (value is Map) {
+    return {
+      for (final entry in value.entries)
+        if (entry.key is String) entry.key as String: entry.value,
+    };
+  }
+  return const {};
+}
+
+List<String> _stringList(Object? value) {
+  if (value is! Iterable) return const [];
+  return List<String>.unmodifiable(value.whereType<String>());
 }
 
 enum GuideType { place, route, collection }

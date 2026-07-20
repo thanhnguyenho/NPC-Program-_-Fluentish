@@ -37,6 +37,150 @@ final sampleLocation = SharedLocation(
   expiresAt: DateTime.now().add(const Duration(minutes: 10)),
 );
 
+const sampleMapLocation = MapLocationRecord(
+  id: 'sample-cafe',
+  placeId: 'sample-cafe',
+  name: 'Sample Cafe',
+  point: GeoPoint(10.775, 106.701),
+  geohash: 'w3gv',
+  group: 'food_drink',
+  category: 'cafe',
+  categoryLabel: 'Cafe',
+  iconKey: 'cafe',
+  sourceCategory: 'Coffee shop',
+  shortDescription: 'A relaxed cafe for coffee and conversation.',
+  sourceCategories: ['Coffee shop', 'Cafe'],
+  address: '1 Sample Street, Ho Chi Minh City',
+  neighborhood: 'District 1',
+  region: 'Ho Chi Minh City',
+  city: 'Ho Chi Minh City',
+  countryCode: 'VN',
+  phone: '+84123456789',
+  website: 'https://example.com',
+  rating: 4.5,
+  reviewCount: 12,
+  price: '₫50–100K',
+  openingHours: {'monday': '8 AM to 10 PM'},
+  status: 'open',
+  isActive: true,
+  googleMapsUrl: null,
+  scrapedAt: null,
+);
+
+const sampleEntertainmentLocation = MapLocationRecord(
+  id: 'sample-cinema',
+  placeId: 'sample-cinema',
+  name: 'Sample Cinema',
+  point: GeoPoint(10.778, 106.702),
+  geohash: 'w3gv',
+  group: 'entertainment',
+  category: 'movie_theatre',
+  categoryLabel: 'Movie Theatre',
+  iconKey: 'movie_theatre',
+  sourceCategory: 'Cinema',
+  sourceCategories: ['Cinema'],
+  address: '2 Sample Street, Ho Chi Minh City',
+  neighborhood: 'District 1',
+  region: 'Ho Chi Minh City',
+  city: 'Ho Chi Minh City',
+  countryCode: 'VN',
+  phone: null,
+  website: null,
+  rating: 4.3,
+  reviewCount: 80,
+  price: null,
+  openingHours: {},
+  status: 'open',
+  isActive: true,
+  googleMapsUrl: null,
+  scrapedAt: null,
+);
+
+const sampleCultureLocation = MapLocationRecord(
+  id: 'sample-museum',
+  placeId: 'sample-museum',
+  name: 'Sample Museum',
+  point: GeoPoint(10.779, 106.699),
+  geohash: 'w3gv',
+  group: 'culture',
+  category: 'museum',
+  categoryLabel: 'Museum',
+  iconKey: 'museum',
+  sourceCategory: 'History museum',
+  sourceCategories: ['History museum', 'Museum'],
+  address: '3 Sample Street, Ho Chi Minh City',
+  neighborhood: 'District 1',
+  region: 'Ho Chi Minh City',
+  city: 'Ho Chi Minh City',
+  countryCode: 'VN',
+  phone: null,
+  website: null,
+  rating: 4.7,
+  reviewCount: 120,
+  price: null,
+  openingHours: {},
+  status: 'open',
+  isActive: true,
+  googleMapsUrl: null,
+  scrapedAt: null,
+);
+
+const sampleFarFoodLocation = MapLocationRecord(
+  id: 'far-restaurant',
+  placeId: 'far-restaurant',
+  name: 'Far Restaurant',
+  point: GeoPoint(10.785, 106.706),
+  geohash: 'w3gv',
+  group: 'food_drink',
+  category: 'restaurant',
+  categoryLabel: 'Restaurant',
+  iconKey: 'restaurant',
+  sourceCategory: 'Restaurant',
+  sourceCategories: ['Restaurant'],
+  address: 'Far Away, Ho Chi Minh City',
+  neighborhood: '',
+  region: 'Ho Chi Minh City',
+  city: 'Ho Chi Minh City',
+  countryCode: 'VN',
+  phone: null,
+  website: null,
+  rating: 4,
+  reviewCount: 10,
+  price: null,
+  openingHours: {},
+  status: 'open',
+  isActive: true,
+  googleMapsUrl: null,
+  scrapedAt: null,
+);
+
+const sampleMapLocations = [
+  sampleFarFoodLocation,
+  sampleMapLocation,
+  sampleEntertainmentLocation,
+  sampleCultureLocation,
+];
+
+const sampleFavouritePhrase = FavouritePhraseRecord(
+  id: 'phrase-how-are-you',
+  sourceText: 'How are you?',
+  translatedText: 'Bạn khỏe không?',
+  sourceLanguage: 'English',
+  targetLanguage: 'Vietnamese',
+  createdAt: null,
+);
+
+const sampleFavouriteSoundboard = FavouriteSoundboardRecord(
+  id: 'soundboard-hello',
+  english: 'Hello',
+  vietnamese: 'Xin chào',
+  category: 'Greetings',
+  englishAudio: 'audio/Hello - English.mp3',
+  vietnameseAudio: 'audio/Hello - Vietnamese.mp3',
+  preferredLanguage: 'Vietnamese',
+  createdAt: null,
+);
+
 const sampleFoodPlace = PlaceRecord(
   id: 'ben-thanh-market',
   name: 'Chợ Bến Thành',
@@ -260,10 +404,62 @@ class FakeGuideDataSource implements GuideDataSource {
   }) async {}
 }
 
+class FakeFavouriteDataSource implements FavouriteDataSource {
+  FakeFavouriteDataSource({
+    List<FavouritePhraseRecord> phrases = const [],
+    List<FavouriteSoundboardRecord> soundboardBites = const [],
+  })  : phrases = List.of(phrases),
+        soundboardBites = List.of(soundboardBites);
+
+  final List<FavouritePhraseRecord> phrases;
+  final List<FavouriteSoundboardRecord> soundboardBites;
+  final List<String> removedPhraseIds = [];
+  final List<String> removedSoundboardIds = [];
+  final StreamController<List<FavouritePhraseRecord>> _phraseChanges =
+      StreamController.broadcast();
+  final StreamController<List<FavouriteSoundboardRecord>> _soundboardChanges =
+      StreamController.broadcast();
+
+  @override
+  Stream<List<FavouritePhraseRecord>> watchFavouritePhrases(String uid) async* {
+    yield List.unmodifiable(phrases);
+    yield* _phraseChanges.stream;
+  }
+
+  @override
+  Stream<List<FavouriteSoundboardRecord>> watchFavouriteSoundboardBites(
+    String uid,
+  ) async* {
+    yield List.unmodifiable(soundboardBites);
+    yield* _soundboardChanges.stream;
+  }
+
+  @override
+  Future<void> removeFavouritePhrase(String uid, String favouriteId) async {
+    removedPhraseIds.add(favouriteId);
+    phrases.removeWhere((phrase) => phrase.id == favouriteId);
+    _phraseChanges.add(List.unmodifiable(phrases));
+  }
+
+  @override
+  Future<void> removeFavouriteSoundboardBite(
+    String uid,
+    String favouriteId,
+  ) async {
+    removedSoundboardIds.add(favouriteId);
+    soundboardBites.removeWhere((bite) => bite.id == favouriteId);
+    _soundboardChanges.add(List.unmodifiable(soundboardBites));
+  }
+}
+
 class FakeLocationDataSource implements LocationDataSource {
-  FakeLocationDataSource({this.sharing = false});
+  FakeLocationDataSource({
+    this.sharing = false,
+    this.mapLocations = sampleMapLocations,
+  });
 
   bool sharing;
+  final List<MapLocationRecord> mapLocations;
 
   static final position = Position(
     longitude: 106.7009,
@@ -280,6 +476,10 @@ class FakeLocationDataSource implements LocationDataSource {
 
   @override
   Stream<bool> watchSharing(String uid) => Stream.value(sharing);
+
+  @override
+  Stream<List<MapLocationRecord>> watchMapLocations() =>
+      Stream.value(mapLocations);
 
   @override
   Future<void> setSharing(String uid, bool enabled) async {

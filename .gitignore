@@ -29,3 +29,5 @@ linux/flutter/ephemeral/
 *service-account*.json
 firebase-admin-key*.json
 tool/firebase-seed/node_modules/
+/firestore_import
+/firestore_import

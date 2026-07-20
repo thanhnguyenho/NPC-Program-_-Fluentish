@@ -19,6 +19,50 @@ void main() {
     expect(firestoreGeohash(data), 'w3gv');
   });
 
+  test('imported map location fields parse from the scraper schema', () {
+    final location = MapLocationRecord.fromMap('document-id', {
+      'placeId': 'google-place-id',
+      'name': 'Sample Cafe',
+      'location': const GeoPoint(10.775, 106.701),
+      'geohash': 'w3gv',
+      'group': 'food_drink',
+      'category': 'cafe',
+      'categoryLabel': 'Cafe',
+      'iconKey': 'cafe',
+      'sourceCategory': 'Coffee shop',
+      'shortDescription': 'A quiet neighbourhood cafe.',
+      'sourceCategories': ['Coffee shop', 'Cafe'],
+      'address': {
+        'formatted': '1 Sample Street',
+        'neighborhood': 'District 1',
+        'city': 'Ho Chi Minh City',
+        'countryCode': 'VN',
+      },
+      'contact': {
+        'phone': '+84123456789',
+        'website': 'https://example.com',
+      },
+      'rating': {'score': 4.5, 'reviewCount': 12},
+      'price': '₫50–100K',
+      'openingHours': {'monday': '8 AM to 10 PM'},
+      'status': 'open',
+      'isActive': true,
+      'scrapedAt': '2026-07-19T04:19:14.321Z',
+    });
+
+    expect(location.placeId, 'google-place-id');
+    expect(location.point, const GeoPoint(10.775, 106.701));
+    expect(location.geohash, 'w3gv');
+    expect(location.address, '1 Sample Street');
+    expect(location.website, 'https://example.com');
+    expect(location.shortDescription, 'A quiet neighbourhood cafe.');
+    expect(location.rating, 4.5);
+    expect(location.reviewCount, 12);
+    expect(location.openingHours['monday'], '8 AM to 10 PM');
+    expect(location.scrapedAt, DateTime.parse('2026-07-19T04:19:14.321Z'));
+    expect(location.hasValidPoint, isTrue);
+  });
+
   test('friendship ids are deterministic', () {
     expect(
       FriendRepository.friendshipId('user-b', 'user-a'),
