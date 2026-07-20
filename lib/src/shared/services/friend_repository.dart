@@ -28,31 +28,68 @@ class FriendRepository implements FriendDataSource {
 
   @override
   Stream<List<PublicProfile>> watchFriends(String uid) {
-    return _firestore
+    final friendIds = _firestore
         .collection('friendships')
         .where('userIds', arrayContains: uid)
         .snapshots()
-        .asyncMap((snapshot) async {
-      final friendIds = snapshot.docs
-          .expand((document) => List<String>.from(document.data()['userIds']))
-          .where((friendUid) => friendUid != uid)
-          .toSet()
-          .toList();
-      if (friendIds.isEmpty) return const <PublicProfile>[];
+        .map(
+          (snapshot) => snapshot.docs
+              .expand(
+                (document) => List<String>.from(document.data()['userIds']),
+              )
+              .where((friendUid) => friendUid != uid)
+              .toSet()
+              .toList(),
+        );
+    return _switchLatest(friendIds, _watchProfiles);
+  }
 
-      final profiles = await Future.wait(
-        friendIds.map(
-          (friendUid) =>
-              _firestore.collection('publicProfiles').doc(friendUid).get(),
-        ),
-      );
-      final result = profiles
-          .where((document) => document.exists)
-          .map(PublicProfile.fromDocument)
-          .toList()
-        ..sort((a, b) => a.displayName.compareTo(b.displayName));
-      return result;
-    });
+  Stream<List<PublicProfile>> _watchProfiles(List<String> friendIds) {
+    if (friendIds.isEmpty) return Stream.value(const <PublicProfile>[]);
+
+    late final StreamController<List<PublicProfile>> controller;
+    final subscriptions =
+        <StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>>[];
+    final profiles = <String, PublicProfile>{};
+
+    void emit() {
+      if (controller.isClosed) return;
+      final result = profiles.values.toList()
+        ..sort(
+            (first, second) => first.displayName.compareTo(second.displayName));
+      controller.add(result);
+    }
+
+    controller = StreamController<List<PublicProfile>>(
+      onListen: () {
+        emit();
+        for (final friendId in friendIds) {
+          subscriptions.add(
+            _firestore
+                .collection('publicProfiles')
+                .doc(friendId)
+                .snapshots()
+                .listen(
+              (document) {
+                if (document.exists) {
+                  profiles[friendId] = PublicProfile.fromDocument(document);
+                } else {
+                  profiles.remove(friendId);
+                }
+                emit();
+              },
+              onError: controller.addError,
+            ),
+          );
+        }
+      },
+      onCancel: () async {
+        await Future.wait([
+          for (final subscription in subscriptions) subscription.cancel(),
+        ]);
+      },
+    );
+    return controller.stream;
   }
 
   @override
@@ -61,6 +98,7 @@ class FriendRepository implements FriendDataSource {
         .collection('friendRequests')
         .where('receiverId', isEqualTo: uid)
         .where('status', isEqualTo: 'pending')
+        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) =>
             snapshot.docs.map(FriendRequestRecord.fromDocument).toList());
@@ -190,22 +228,32 @@ class FriendRepository implements FriendDataSource {
     if (senderId == receiverId) return;
     final directId = '${senderId}_$receiverId';
     final reverseId = '${receiverId}_$senderId';
-    final friendship = await _firestore
-        .collection('friendships')
-        .doc(friendshipId(senderId, receiverId))
-        .get();
-    if (friendship.exists) return;
-    final reverse =
-        await _firestore.collection('friendRequests').doc(reverseId).get();
-    if (reverse.exists && reverse.data()?['status'] == 'pending') {
-      throw StateError('This user already sent you a friend request.');
-    }
-    await _firestore.collection('friendRequests').doc(directId).set({
-      'senderId': senderId,
-      'receiverId': receiverId,
-      'status': 'pending',
-      'createdAt': FieldValue.serverTimestamp(),
-      'respondedAt': null,
+    final requests = _firestore.collection('friendRequests');
+    final directReference = requests.doc(directId);
+    final reverseReference = requests.doc(reverseId);
+    await _firestore.runTransaction((transaction) async {
+      final direct = await transaction.get(directReference);
+      final reverse = await transaction.get(reverseReference);
+      final directStatus = direct.data()?['status'] as String?;
+      final reverseStatus = reverse.data()?['status'] as String?;
+
+      if (directStatus == 'accepted' || reverseStatus == 'accepted') {
+        throw StateError('You are already friends.');
+      }
+      if (directStatus == 'pending') {
+        throw StateError('Friend request already sent.');
+      }
+      if (reverseStatus == 'pending') {
+        throw StateError('This user already sent you a friend request.');
+      }
+
+      transaction.set(directReference, {
+        'senderId': senderId,
+        'receiverId': receiverId,
+        'status': 'pending',
+        'createdAt': FieldValue.serverTimestamp(),
+        'respondedAt': null,
+      });
     });
   }
 

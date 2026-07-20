@@ -27,6 +27,7 @@ class _FriendsPageState extends State<FriendsPage> {
   late final LocationDataSource _locations;
   int _selectedTab = 0;
   Position? _position;
+  bool _loadingPosition = false;
 
   @override
   void initState() {
@@ -34,14 +35,23 @@ class _FriendsPageState extends State<FriendsPage> {
     _auth = widget.auth ?? Auth.instance;
     _friends = widget.friendRepository ?? FriendRepository();
     _locations = widget.locationRepository ?? LocationRepository();
-    _loadPosition();
   }
 
   Future<void> _loadPosition() async {
+    if (_loadingPosition || _position != null) return;
+    _loadingPosition = true;
     try {
       final position = await _locations.currentPosition();
       if (mounted) setState(() => _position = position);
-    } catch (_) {}
+    } catch (_) {
+    } finally {
+      _loadingPosition = false;
+    }
+  }
+
+  void _selectTab(int tab) {
+    setState(() => _selectedTab = tab);
+    if (tab == 2) _loadPosition();
   }
 
   Future<void> _searchUsers() async {
@@ -49,6 +59,20 @@ class _FriendsPageState extends State<FriendsPage> {
     if (uid == null) return;
     final controller = TextEditingController();
     List<PublicProfile> results = const [];
+    var searched = false;
+
+    Future<void> search(
+      BuildContext dialogContext,
+      StateSetter setDialogState,
+    ) async {
+      final found = await _friends.searchProfiles(controller.text, uid);
+      if (!dialogContext.mounted) return;
+      setDialogState(() {
+        searched = true;
+        results = found;
+      });
+    }
+
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -65,14 +89,15 @@ class _FriendsPageState extends State<FriendsPage> {
                     hintText: 'Search username',
                     prefixIcon: Icon(Icons.search),
                   ),
-                  onSubmitted: (query) async {
-                    final found = await _friends.searchProfiles(query, uid);
-                    setDialogState(() => results = found);
-                  },
+                  onSubmitted: (_) => search(dialogContext, setDialogState),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 if (results.isEmpty)
-                  const Text('Enter a username and press search.')
+                  Text(
+                    searched
+                        ? 'No matching users found.'
+                        : 'Enter a username and press search.',
+                  )
                 else
                   for (final profile in results)
                     ListTile(
@@ -105,11 +130,7 @@ class _FriendsPageState extends State<FriendsPage> {
           ),
           actions: [
             TextButton(
-              onPressed: () async {
-                final found =
-                    await _friends.searchProfiles(controller.text, uid);
-                setDialogState(() => results = found);
-              },
+              onPressed: () => search(dialogContext, setDialogState),
               child: const Text('Search'),
             ),
             TextButton(
@@ -124,17 +145,22 @@ class _FriendsPageState extends State<FriendsPage> {
   }
 
   String _distanceLabel(FriendMapEntry friend) {
+    final meters = _distanceMeters(friend);
+    if (meters == null) return 'Location shared';
+    return meters < 1000
+        ? '${meters.round()} m away'
+        : '${(meters / 1000).toStringAsFixed(1)} km away';
+  }
+
+  double? _distanceMeters(FriendMapEntry friend) {
     final position = _position;
-    if (position == null) return 'Location shared';
-    final meters = Geolocator.distanceBetween(
+    if (position == null) return null;
+    return Geolocator.distanceBetween(
       position.latitude,
       position.longitude,
       friend.location.point.latitude,
       friend.location.point.longitude,
     );
-    return meters < 1000
-        ? '${meters.round()} m away'
-        : '${(meters / 1000).toStringAsFixed(1)} km away';
   }
 
   @override
@@ -199,7 +225,7 @@ class _FriendsPageState extends State<FriendsPage> {
                     ],
                     selected: {_selectedTab},
                     onSelectionChanged: (selection) =>
-                        setState(() => _selectedTab = selection.first),
+                        _selectTab(selection.first),
                   ),
                 ),
                 Expanded(
@@ -210,6 +236,7 @@ class _FriendsPageState extends State<FriendsPage> {
                         uid: uid,
                         repository: _friends,
                         distanceLabel: _distanceLabel,
+                        distanceMeters: _distanceMeters,
                       ),
                   },
                 ),
@@ -267,16 +294,46 @@ class _FriendsList extends StatelessWidget {
   }
 }
 
-class _RequestsList extends StatelessWidget {
+class _RequestsList extends StatefulWidget {
   const _RequestsList({required this.uid, required this.repository});
 
   final String uid;
   final FriendDataSource repository;
 
   @override
+  State<_RequestsList> createState() => _RequestsListState();
+}
+
+class _RequestsListState extends State<_RequestsList> {
+  final Set<String> _responding = {};
+
+  Future<void> _respond(
+    FriendRequestRecord request, {
+    required bool accept,
+  }) async {
+    if (_responding.contains(request.id)) return;
+    setState(() => _responding.add(request.id));
+    try {
+      if (accept) {
+        await widget.repository.acceptRequest(request);
+      } else {
+        await widget.repository.declineRequest(request);
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.toString())),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _responding.remove(request.id));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<FriendRequestRecord>>(
-      stream: repository.watchIncomingRequests(uid),
+      stream: widget.repository.watchIncomingRequests(widget.uid),
       builder: (context, snapshot) {
         final requests = snapshot.data ?? const <FriendRequestRecord>[];
         if (requests.isEmpty) {
@@ -291,9 +348,10 @@ class _RequestsList extends StatelessWidget {
           itemBuilder: (context, index) {
             final request = requests[index];
             return FutureBuilder<PublicProfile?>(
-              future: repository.getProfile(request.senderId),
+              future: widget.repository.getProfile(request.senderId),
               builder: (context, profileSnapshot) {
                 final profile = profileSnapshot.data;
+                final responding = _responding.contains(request.id);
                 return AppCard(
                   child: ListTile(
                     contentPadding: EdgeInsets.zero,
@@ -303,20 +361,33 @@ class _RequestsList extends StatelessWidget {
                     title: Text(profile?.displayName ?? 'Fluentish user'),
                     subtitle:
                         Text(profile == null ? '' : '@${profile.username}'),
-                    trailing: Wrap(
-                      children: [
-                        IconButton(
-                          tooltip: 'Accept',
-                          onPressed: () => repository.acceptRequest(request),
-                          icon: const Icon(Icons.check, color: Colors.green),
-                        ),
-                        IconButton(
-                          tooltip: 'Decline',
-                          onPressed: () => repository.declineRequest(request),
-                          icon: const Icon(Icons.close, color: Colors.red),
-                        ),
-                      ],
-                    ),
+                    trailing: responding
+                        ? const SizedBox.square(
+                            dimension: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Wrap(
+                            children: [
+                              IconButton(
+                                tooltip: 'Accept',
+                                onPressed: () =>
+                                    _respond(request, accept: true),
+                                icon: const Icon(
+                                  Icons.check,
+                                  color: Colors.green,
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: 'Decline',
+                                onPressed: () =>
+                                    _respond(request, accept: false),
+                                icon: const Icon(
+                                  Icons.close,
+                                  color: Colors.red,
+                                ),
+                              ),
+                            ],
+                          ),
                   ),
                 );
               },
@@ -333,18 +404,28 @@ class _NearbyList extends StatelessWidget {
     required this.uid,
     required this.repository,
     required this.distanceLabel,
+    required this.distanceMeters,
   });
 
   final String uid;
   final FriendDataSource repository;
   final String Function(FriendMapEntry) distanceLabel;
+  final double? Function(FriendMapEntry) distanceMeters;
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<FriendMapEntry>>(
       stream: repository.watchVisibleFriendLocations(uid),
       builder: (context, snapshot) {
-        final friends = snapshot.data ?? const <FriendMapEntry>[];
+        final friends = [...?snapshot.data]..sort((first, second) {
+            final firstDistance = distanceMeters(first);
+            final secondDistance = distanceMeters(second);
+            if (firstDistance == null || secondDistance == null) {
+              return first.profile.displayName
+                  .compareTo(second.profile.displayName);
+            }
+            return firstDistance.compareTo(secondDistance);
+          });
         if (friends.isEmpty) {
           return const _EmptyState(
             icon: Icons.location_off_outlined,
