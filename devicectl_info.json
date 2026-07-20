@@ -1,0 +1,101 @@
+{
+  "info" : {
+    "arguments" : [
+      "devicectl",
+      "list",
+      "devices",
+      "--json-output",
+      "/Users/minhdong/development/fluentish/devicectl_info.json"
+    ],
+    "commandType" : "devicectl.list.devices",
+    "environment" : {
+
+    },
+    "jsonVersion" : 2,
+    "outcome" : "success",
+    "version" : "397.24"
+  },
+  "result" : {
+    "devices" : [
+      {
+        "capabilities" : [
+          {
+            "featureIdentifier" : "com.apple.coredevice.feature.unpairdevice",
+            "name" : "Unpair Device"
+          }
+        ],
+        "connectionProperties" : {
+          "authenticationType" : "manualPairing",
+          "isMobileDeviceOnly" : false,
+          "lastConnectionDate" : "2026-07-02T17:17:26.747Z",
+          "pairingState" : "paired",
+          "potentialHostnames" : [
+            "00008120-001438D10222201E.coredevice.local",
+            "5FF30584-A749-49E8-AE8F-9709160D3C22.coredevice.local"
+          ],
+          "tunnelState" : "unavailable"
+        },
+        "deviceProperties" : {
+          "bootedFromSnapshot" : true,
+          "bootedSnapshotName" : "com.apple.os.update-745A744E9ECB8CACC11F5F89610F361CA28CFBA2E1495DFB76DD36BF0246733F",
+          "ddiServicesAvailable" : false,
+          "developerModeStatus" : "enabled",
+          "hasInternalOSBuild" : false,
+          "name" : "iPhone15",
+          "osBuildUpdate" : "23F84",
+          "osVersionNumber" : "26.5.2",
+          "rootFileSystemIsWritable" : false
+        },
+        "hardwareProperties" : {
+          "cpuType" : {
+            "name" : "arm64e",
+            "subType" : 2,
+            "type" : 16777228
+          },
+          "deviceType" : "iPhone",
+          "ecid" : 5691969869324318,
+          "hardwareModel" : "D37AP",
+          "internalStorageCapacity" : 256000000000,
+          "isProductionFused" : true,
+          "marketingName" : "iPhone 15",
+          "platform" : "iOS",
+          "productType" : "iPhone15,4",
+          "reality" : "physical",
+          "serialNumber" : "X4V9PKWX5F",
+          "supportedCPUTypes" : [
+            {
+              "name" : "arm64e",
+              "subType" : 2,
+              "type" : 16777228
+            },
+            {
+              "name" : "arm64",
+              "subType" : 0,
+              "type" : 16777228
+            },
+            {
+              "name" : "arm64",
+              "subType" : 1,
+              "type" : 16777228
+            },
+            {
+              "name" : "arm64_32",
+              "subType" : 1,
+              "type" : 33554444
+            }
+          ],
+          "supportedDeviceFamilies" : [
+            1
+          ],
+          "thinningProductType" : "iPhone15,4",
+          "udid" : "00008120-001438D10222201E"
+        },
+        "identifier" : "5FF30584-A749-49E8-AE8F-9709160D3C22",
+        "tags" : [
+
+        ],
+        "visibilityClass" : "default"
+      }
+    ]
+  }
+}

@@ -1,0 +1,262 @@
+=== AUDITING TRAVEL CORPUS ===
+Found 253 entries in travel_corpus.dart.
+
+Rule violations in travel_corpus.dart:
+Double question marks (0):
+
+Multiple choices with slashes (2):
+  Line/Index 81: vi: Tôi muốn mua một vé một chiều/khứ hồi. | en: I would like to buy a one-way/round-trip ticket.
+  Line/Index 98: vi: Cửa hàng tiện lợi gần nhất có mở cửa 24/24 không? | en: Is the nearest convenience store open 24/7?
+
+Duplicate entries (0):
+
+=== AUDITING DICTIONARY ===
+Found 925 dictionary entries.
+
+Rule violations in _dictionary:
+Double question marks (0):
+
+Multiple choices with slashes (207):
+  Index 6: key: how are you | val: Bạn có khỏe không? / Dạo này bạn thế nào?
+  Index 7: key: how are you? | val: Bạn có khỏe không? / Dạo này bạn thế nào?
+  Index 10: key: dạo này bạn thế nào | val: How have you been? / How are you?
+  Index 35: key: xin lỗi | val: Sorry / Excuse me
+  Index 36: key: yes | val: Có / Đúng
+  Index 38: key: đúng | val: Yes / Correct
+  Index 41: key: có thể | val: Maybe / Can
+  Index 42: key: of course | val: Dĩ nhiên / Tất nhiên
+  Index 45: key: cheers | val: Chúc mừng / Một hai ba dô!
+  Index 46: key: chúc mừng | val: Congratulations / Cheers
+  Index 61: key: how much | val: Bao nhiêu tiền / Bao nhiêu
+  Index 78: key: chúng ta của | val: Our / Of us
+  Index 83: key: tôi | val: I / Me
+  Index 85: key: bạn | val: You / Friend
+  Index 87: key: anh ấy | val: He / Him
+  Index 89: key: cô ấy | val: She / Her
+  Index 90: key: we | val: Chúng tôi / Chúng ta
+  Index 92: key: chúng tôi | val: We / Us
+  Index 93: key: chúng ta | val: We / Us
+  Index 96: key: họ | val: They / Them
+  Index 98: key: bạn bè | val: Friend / Friends
+  Index 108: key: trạm xăng | val: Gas station / Petrol station
+  Index 111: key: cây xăng | val: Gas station / Petrol station
+  Index 136: key: chùa | val: Temple / Pagoda
+  Index 141: key: restaurant | val: Nhà hàng / Quán ăn
+  Index 143: key: quán ăn | val: Restaurant / Eatery
+  Index 150: key: rạp chiếu phim | val: Cinema / Movie theater
+  Index 153: key: phòng tập gym | val: Gym / Fitness center
+  Index 156: key: tiệm cắt tóc | val: Barber / Hair salon
+  Index 167: key: tàu điện ngầm | val: Subway / Metro
+  Index 186: key: xe máy | val: Motorbike / Scooter
+  Index 239: key: đồ ăn | val: Food / Cuisine
+  Index 243: key: rất ngon | val: Very tasty / Delicious
+  Index 244: key: ngon | val: Delicious / Tasty
+  Index 255: key: bill please | val: Xin hóa đơn / Tính tiền
+  Index 256: key: tính tiền | val: Check please / Bill please
+  Index 262: key: cơm | val: Rice / Meal
+  Index 263: key: noodles | val: Mỳ / Phở
+  Index 296: key: tính tiền giúp tôi | val: Check please / Bill please
+  Index 298: key: expensive | val: Đắt / Mắc
+  Index 299: key: too expensive | val: Quá đắt / Quá mắc
+  Index 303: key: rẻ | val: Cheap / Inexpensive
+  Index 320: key: cửa hàng | val: Shop / Store
+  Index 326: key: đặt phòng | val: Book a room / Reservation
+  Index 335: key: air conditioner | val: Máy lạnh / Điều hòa
+  Index 342: key: cứu tôi với | val: Help me / Emergency!
+  Index 347: key: nhà vệ sinh ở đâu | val: Where is the restroom / toilet?
+  Index 352: key: tiệm thuốc | val: Pharmacy / Drugstore
+  Index 355: key: i am sick | val: Tôi bị bệnh / Tôi thấy mệt
+  Index 356: key: tôi bị mệt | val: I feel tired / sick
+  Index 360: key: fire | val: Cháy / Hỏa hoạn
+  Index 374: key: what time is it | val: Bây giờ là mấy giờ? / Mấy giờ rồi?
+  Index 375: key: what time is it? | val: Bây giờ là mấy giờ? / Mấy giờ rồi?
+  Index 394: key: thousand | val: Nghìn / Ngàn
+  Index 439: key: tôi biết rồi | val: I know already / I understand
+  Index 456: key: không sao | val: It\'s okay / No problem
+  Index 457: key: được | val: Okay / Yes
+  Index 458: key: không được | val: Not okay / Cannot
+  Index 466: key: dinner | val: Bữa tối / Ăn tối
+  Index 469: key: lunch | val: Bữa trưa / Ăn trưa
+  Index 472: key: breakfast | val: Bữa sáng / Ăn sáng
+  Index 475: key: open | val: Mở cửa / Mở
+  Index 478: key: close | val: Đóng cửa / Đóng
+  Index 482: key: cửa | val: Door / Window
+  Index 485: key: table | val: Bàn / Bàn ăn
+  Index 489: key: bill | val: Hóa đơn / Tính tiền
+  Index 490: key: hóa đơn | val: Bill / Receipt
+  Index 491: key: check | val: Kiểm tra / Tính tiền
+  Index 492: key: kiểm tra | val: Check / Inspect
+  Index 493: key: matter | val: Vấn đề / Việc
+  Index 494: key: vấn đề | val: Problem / Matter
+  Index 496: key: giúp | val: Help / Assist
+  Index 497: key: giúp đỡ | val: Help / Assistance
+  Index 498: key: cross | val: Đi qua / Băng qua
+  Index 500: key: street | val: Đường / Phố
+  Index 501: key: đường | val: Street / Road / Sugar
+  Index 503: key: order | val: Gọi món / Đặt
+  Index 507: key: giá | val: Price / Cost
+  Index 508: key: giảm giá | val: Discount / Sale
+  Index 509: key: recommend | val: Giới thiệu / Gợi ý
+  Index 510: key: giới thiệu | val: Recommend / Introduce
+  Index 511: key: why | val: Tại sao / Vì sao
+  Index 514: key: how | val: Làm thế nào / Ra sao
+  Index 517: key: đi | val: Go / Walk
+  Index 523: key: look | val: Nhìn / Xem
+  Index 524: key: nhìn | val: Look / See
+  Index 525: key: find | val: Tìm thấy / Tìm
+  Index 526: key: tìm | val: Find / Search for
+  Index 527: key: take | val: Lấy / Cầm / Chụp
+  Index 528: key: lấy | val: Take / Get
+  Index 529: key: give | val: Cho / Đưa
+  Index 530: key: đưa | val: Give / Hand over
+  Index 534: key: pay | val: Thanh toán / Trả tiền
+  Index 535: key: thanh toán | val: Pay / Checkout
+  Index 537: key: cost | val: Chi phí / Giá
+  Index 538: key: spend | val: Tiêu xài / Dành thời gian
+  Index 539: key: save | val: Lưu / Tiết kiệm
+  Index 540: key: tiết kiệm | val: Save / Economize
+  Index 541: key: visit | val: Thăm / Đến chơi
+  Index 542: key: travel | val: Du lịch / Di chuyển
+  Index 543: key: du lịch | val: Travel / Tourism
+  Index 545: key: đến nơi | val: Arrive / Reach
+  Index 547: key: khởi hành | val: Depart / Set off
+  Index 548: key: stay | val: Ở lại / Lưu trú
+  Index 549: key: ở lại | val: Stay / Remain
+  Index 555: key: lái xe | val: Drive / Driver
+  Index 556: key: ride | val: Cưỡi / Đi xe
+  Index 557: key: fly | val: Bay / Đi máy bay
+  Index 561: key: wake | val: Thức dậy / Dậy
+  Index 563: key: study | val: Học / Nghiên cứu
+  Index 564: key: học | val: Study / Learn
+  Index 565: key: work | val: Làm việc / Công việc
+  Index 566: key: làm việc | val: Work / Labor
+  Index 567: key: meet | val: Gặp gỡ / Gặp
+  Index 568: key: gặp | val: Meet / See
+  Index 570: key: nói chuyện | val: Talk / Chat
+  Index 572: key: nói | val: Speak / Say
+  Index 573: key: listen | val: Lắng nghe / Nghe
+  Index 574: key: nghe | val: Listen / Hear
+  Index 583: key: nhớ | val: Remember / Miss
+  Index 588: key: think | val: Nghĩ / Suy nghĩ
+  Index 591: key: biết | val: Know / Can
+  Index 593: key: muốn | val: Want / Desire
+  Index 595: key: cần | val: Need / Require
+  Index 597: key: thích | val: Like / Enjoy
+  Index 598: key: love | val: Yêu / Yêu thích
+  Index 600: key: try | val: Thử / Cố gắng
+  Index 601: key: thử | val: Try / Test
+  Index 602: key: use | val: Sử dụng / Dùng
+  Index 603: key: dùng | val: Use / Consume
+  Index 604: key: sử dụng | val: Use / Utilize
+  Index 605: key: make | val: Làm / Tạo ra
+  Index 606: key: làm | val: Make / Do / Work
+  Index 607: key: do | val: Làm / Thực hiện
+  Index 608: key: get | val: Lấy được / Nhận
+  Index 609: key: put | val: Đặt / Để
+  Index 610: key: đặt | val: Put / Place / Order
+  Index 612: key: giữ | val: Keep / Hold
+  Index 613: key: bring | val: Mang theo / Đem đến
+  Index 614: key: mang | val: Bring / Carry / Wear
+  Index 619: key: nhận | val: Receive / Accept
+  Index 620: key: ask | val: Hỏi / Yêu cầu
+  Index 621: key: hỏi | val: Ask / Question
+  Index 623: key: trả lời | val: Answer / Reply
+  Index 624: key: call | val: Gọi điện / Gọi
+  Index 625: key: gọi | val: Call / Order
+  Index 626: key: wait | val: Chờ / Đợi
+  Index 631: key: bắt đầu | val: Start / Begin
+  Index 632: key: finish | val: Hoàn thành / Xong
+  Index 633: key: xong | val: Done / Finished
+  Index 635: key: vào | val: Enter / Go in
+  Index 636: key: exit | val: Ra / Lối ra
+  Index 638: key: return | val: Trở về / Hoàn trả
+  Index 639: key: change | val: Thay đổi / Đổi tiền
+  Index 640: key: đổi | val: Change / Exchange
+  Index 641: key: show | val: Cho xem / Chỉ
+  Index 642: key: chỉ | val: Point out / Show / Only
+  Index 643: key: tell | val: Bảo / Kể
+  Index 646: key: what | val: Cái gì / Gì / Món gì
+  Index 653: key: sẽ | val: Will / Would
+  Index 654: key: would | val: Sẽ / Muốn
+  Index 659: key: phải | val: Must / Right
+  Index 662: key: done | val: Xong / Hoàn thành
+  Index 668: key: be | val: Là / Ở
+  Index 670: key: là | val: Is / Are / Am
+  Index 674: key: who | val: Ai / Người nào
+  Index 679: key: như thế nào | val: How / What like
+  Index 682: key: or | val: Hoặc / Hay
+  Index 684: key: hay | val: Or / Good / Interesting
+  Index 689: key: because | val: Bởi vì / Vì
+  Index 691: key: so | val: Cho nên / Vậy nên
+  Index 692: key: cho nên | val: So / Therefore
+  Index 694: key: then | val: Sau đó / Khi đó
+  Index 695: key: sau đó | val: Then / After that
+  Index 704: key: night | val: Đêm / Tối
+  Index 706: key: time | val: Thời gian / Lần
+  Index 708: key: hour | val: Giờ / Tiếng đồng hồ
+  Index 720: key: năm | val: Year / Five
+  Index 721: key: every | val: Mỗi / Mọi
+  Index 722: key: mỗi | val: Every / Each
+  Index 724: key: tất cả | val: All / Everything
+  Index 725: key: some | val: Một vài / Một số
+  Index 739: key: spring rolls | val: Nem rán / Chả giò
+  Index 754: key: tofu | val: Đậu hũ / Đậu phụ
+  Index 763: key: soy sauce | val: Nước tương / Xì dầu
+  Index 768: key: peanut | val: Đậu phộng / Lạc
+  Index 781: key: runny nose | val: Sổ mũi / Chảy nước mũi
+  Index 790: key: dị ứng | val: Allergy / Allergic
+  Index 813: key: connecting flight | val: Chuyến bay tiếp nối / chuyển tiếp
+  Index 821: key: air conditioner | val: Máy lạnh / Điều hòa
+  Index 828: key: blanket | val: Chăn / Mền
+  Index 842: key: quầy lễ tân | val: Front desk / Reception
+  Index 845: key: receipt | val: Hóa đơn / Biên lai
+  Index 851: key: giảm giá | val: Discount / Sale
+  Index 858: key: change | val: Tiền lẻ / Tiền thừa
+  Index 873: key: train station | val: Ga xe lửa / Ga tàu
+  Index 877: key: intersection | val: Ngã tư / Giao lộ
+  Index 892: key: temple | val: Đền / Miếu
+  Index 908: key: delicious | val: Ngon / Tuyệt vời
+  Index 909: key: ngon | val: Delicious / Tasty
+  Index 910: key: fresh | val: Tươi sống / Trong lành
+  Index 913: key: đông đúc | val: Crowded / Busy
+  Index 915: key: yên tĩnh | val: Quiet / Peaceful
+  Index 918: key: recommend | val: Gợi ý / Giới thiệu
+  Index 919: key: gợi ý | val: Recommend / Suggest
+  Index 921: key: thuê | val: Rent / Hire
+  Index 922: key: order | val: Đặt món / Gọi món
+
+Duplicate keys (34):
+  Index 738: key 'phở bò' is duplicate of Index 258
+  Index 743: key 'cà phê sữa đá' is duplicate of Index 229
+  Index 821: key 'air conditioner' is duplicate of Index 335
+  Index 822: key 'máy lạnh' is duplicate of Index 336
+  Index 826: key 'towel' is duplicate of Index 338
+  Index 850: key 'discount' is duplicate of Index 304
+  Index 851: key 'giảm giá' is duplicate of Index 508
+  Index 854: key 'credit card' is duplicate of Index 311
+  Index 855: key 'thẻ tín dụng' is duplicate of Index 312
+  Index 856: key 'cash' is duplicate of Index 309
+  Index 857: key 'tiền mặt' is duplicate of Index 310
+  Index 858: key 'change' is duplicate of Index 639
+  Index 871: key 'bus stop' is duplicate of Index 168
+  Index 872: key 'trạm xe buýt' is duplicate of Index 169
+  Index 873: key 'train station' is duplicate of Index 172
+  Index 882: key 'convenience store' is duplicate of Index 114
+  Index 883: key 'cửa hàng tiện lợi' is duplicate of Index 115
+  Index 884: key 'police station' is duplicate of Index 124
+  Index 885: key 'đồn cảnh sát' is duplicate of Index 125
+  Index 886: key 'embassy' is duplicate of Index 120
+  Index 887: key 'đại sứ quán' is duplicate of Index 122
+  Index 888: key 'museum' is duplicate of Index 128
+  Index 889: key 'bảo tàng' is duplicate of Index 129
+  Index 892: key 'temple' is duplicate of Index 134
+  Index 894: key 'pagoda' is duplicate of Index 135
+  Index 895: key 'chùa' is duplicate of Index 136
+  Index 896: key 'night market' is duplicate of Index 145
+  Index 897: key 'chợ đêm' is duplicate of Index 147
+  Index 898: key 'spicy' is duplicate of Index 287
+  Index 899: key 'cay' is duplicate of Index 288
+  Index 908: key 'delicious' is duplicate of Index 240
+  Index 909: key 'ngon' is duplicate of Index 244
+  Index 918: key 'recommend' is duplicate of Index 509
+  Index 922: key 'order' is duplicate of Index 503
