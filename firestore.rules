@@ -39,10 +39,26 @@ service cloud.firestore {
     match /publicProfiles/{uid} {
       allow read: if signedIn();
       allow create: if isOwner(uid)
-          && request.resource.data.uid == request.auth.uid;
+          && request.resource.data.uid == request.auth.uid
+          && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.usernameLower)).data.uid == uid;
       allow update: if isOwner(uid)
-          && request.resource.data.uid == resource.data.uid;
+          && request.resource.data.uid == resource.data.uid
+          && (request.resource.data.usernameLower == resource.data.usernameLower
+              || getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.usernameLower)).data.uid == uid);
       allow delete: if isOwner(uid);
+    }
+
+    match /usernames/{usernameLower} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+          && request.resource.data.uid == request.auth.uid
+          && getAfter(/databases/$(database)/documents/publicProfiles/$(request.auth.uid)).data.usernameLower == usernameLower;
+      allow update: if signedIn()
+          && resource.data.uid == request.auth.uid
+          && request.resource.data.uid == request.auth.uid
+          && getAfter(/databases/$(database)/documents/publicProfiles/$(request.auth.uid)).data.usernameLower == usernameLower;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
     }
 
     match /friendRequests/{requestId} {

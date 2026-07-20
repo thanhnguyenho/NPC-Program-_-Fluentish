@@ -27,6 +27,7 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
   bool _uploadingAvatar = false;
   String? _avatarUrl;
   String? _avatarBase64;
+  String _originalUsernameLower = '';
 
   @override
   void initState() {
@@ -71,6 +72,7 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
       if (profile.isNotEmpty) {
         _username.text =
             (profile['username'] ?? profile['displayName'] ?? '').toString();
+        _originalUsernameLower = _username.text.trim().toLowerCase();
         _dob.text = (profile['dateOfBirth'] ?? '').toString();
         _phone.text = (profile['phoneNumber'] ?? '').toString();
         final avatar = (profile['avatarUrl'] ?? '').toString();
@@ -163,57 +165,120 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    final username = _username.text.trim();
+    final usernameLower = username.toLowerCase();
+    final newEmail = _email.text.trim().toLowerCase();
+    if (!RegExp(r'^[a-zA-Z0-9_]{3,24}$').hasMatch(username)) {
+      _showMessage(
+        'Username must be 3–24 characters and use only letters, numbers, or _.',
+      );
+      return;
+    }
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(newEmail)) {
+      _showMessage('Please enter a valid email address.');
+      return;
+    }
+
     setState(() {
       _saving = true;
     });
 
     try {
-      final newEmail = _email.text.trim();
-      if (newEmail.isNotEmpty && newEmail != user.email) {
-        await user.verifyBeforeUpdateEmail(newEmail);
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'A verification link was sent to $newEmail. Your email will '
-              'update once you confirm it.',
-            ),
-          ),
-        );
+      if (usernameLower != _originalUsernameLower) {
+        final duplicate = await FirebaseFirestore.instance
+            .collection('publicProfiles')
+            .where('usernameLower', isEqualTo: usernameLower)
+            .limit(1)
+            .get();
+        if (duplicate.docs.any((document) => document.id != user.uid)) {
+          throw const _ProfileSaveException('This username is already taken.');
+        }
       }
 
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-        'username': _username.text.trim(),
-        'dateOfBirth': _dob.text.trim(),
-        'phoneNumber': _phone.text.trim(),
-        'avatarUrl': _avatarUrl,
-        'avatarBase64': _avatarBase64,
-      }, SetOptions(merge: true));
+      final currentEmail = user.email?.trim().toLowerCase();
+      final emailChanged = newEmail != currentEmail;
+      if (emailChanged) {
+        await user.verifyBeforeUpdateEmail(newEmail);
+      }
 
-      await FirebaseFirestore.instance
-          .collection('publicProfiles')
-          .doc(user.uid)
-          .set({
-        'displayName': _username.text.trim(),
-        'username': _username.text.trim(),
-        'usernameLower': _username.text.trim().toLowerCase(),
-        'avatarUrl': _avatarUrl,
-        'avatarBase64': _avatarBase64,
-      }, SetOptions(merge: true));
+      final firestore = FirebaseFirestore.instance;
+      await firestore.runTransaction((transaction) async {
+        final usernameReference =
+            firestore.collection('usernames').doc(usernameLower);
+        final usernameSnapshot = await transaction.get(usernameReference);
+        final ownerUid = usernameSnapshot.data()?['uid']?.toString();
+        if (usernameSnapshot.exists && ownerUid != user.uid) {
+          throw const _ProfileSaveException('This username is already taken.');
+        }
+        DocumentReference<Map<String, dynamic>>? oldReference;
+        if (_originalUsernameLower.isNotEmpty &&
+            _originalUsernameLower != usernameLower) {
+          oldReference =
+              firestore.collection('usernames').doc(_originalUsernameLower);
+          final oldSnapshot = await transaction.get(oldReference);
+          if (oldSnapshot.data()?['uid'] == user.uid) {
+            transaction.delete(oldReference);
+          }
+        }
+        transaction.set(usernameReference, {
+          'uid': user.uid,
+          'username': username,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        transaction.set(
+          firestore.collection('users').doc(user.uid),
+          {
+            'username': username,
+            'dateOfBirth': _dob.text.trim(),
+            'phoneNumber': _phone.text.trim(),
+            'avatarUrl': _avatarUrl,
+            'avatarBase64': _avatarBase64,
+          },
+          SetOptions(merge: true),
+        );
+        transaction.set(
+          firestore.collection('publicProfiles').doc(user.uid),
+          {
+            'uid': user.uid,
+            'displayName': username,
+            'username': username,
+            'usernameLower': usernameLower,
+            'avatarUrl': _avatarUrl,
+            'avatarBase64': _avatarBase64,
+          },
+          SetOptions(merge: true),
+        );
+      });
 
       if (!mounted) return;
       setState(() {
         _dirty = false;
+        _originalUsernameLower = usernameLower;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated.')),
+      _showMessage(
+        emailChanged
+            ? 'Profile updated. A verification link was sent to $newEmail. '
+                'Your email changes only after you confirm it.'
+            : 'Profile updated.',
       );
-    } catch (e) {
+    } on FirebaseAuthException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not save changes: $e')),
-      );
+      _showMessage(switch (error.code) {
+        'email-already-in-use' =>
+          'This email is already used by another account.',
+        'invalid-email' => 'Please enter a valid email address.',
+        'requires-recent-login' =>
+          'Please sign out, sign in again, then retry changing your email.',
+        _ => 'Could not update email. Please try again.',
+      });
+    } on _ProfileSaveException catch (error) {
+      if (!mounted) return;
+      _showMessage(error.message);
+    } catch (error) {
+      if (!mounted) return;
+      debugPrint('Could not save profile: $error');
+      _showMessage('Could not save changes. Please try again.');
     } finally {
       if (mounted) {
         setState(() {
@@ -221,6 +286,13 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
         });
       }
     }
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   @override
@@ -465,4 +537,10 @@ class _DetailField extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ProfileSaveException implements Exception {
+  const _ProfileSaveException(this.message);
+
+  final String message;
 }

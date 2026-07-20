@@ -57,6 +57,51 @@ test('private users are owner-only and public profiles require auth', async () =
   await assertFails(getDoc(doc(guest, 'publicProfiles/alice')));
 });
 
+test('username registry prevents duplicate usernames and supports atomic rename', async () => {
+  await testEnvironment.withSecurityRulesDisabled(async (context) => {
+    const firestore = context.firestore();
+    await setDoc(doc(firestore, 'publicProfiles/alice'), {
+      uid: 'alice',
+      displayName: 'Alice',
+      username: 'Alice',
+      usernameLower: 'alice',
+    });
+    await setDoc(doc(firestore, 'usernames/alice'), {
+      uid: 'alice',
+      username: 'Alice',
+    });
+  });
+
+  const alice = testEnvironment.authenticatedContext('alice').firestore();
+  const bob = testEnvironment.authenticatedContext('bob').firestore();
+
+  const duplicateBatch = writeBatch(bob);
+  duplicateBatch.set(doc(bob, 'publicProfiles/bob'), {
+    uid: 'bob',
+    displayName: 'Alice',
+    username: 'Alice',
+    usernameLower: 'alice',
+  });
+  duplicateBatch.set(doc(bob, 'usernames/alice'), {
+    uid: 'bob',
+    username: 'Alice',
+  });
+  await assertFails(duplicateBatch.commit());
+
+  const renameBatch = writeBatch(alice);
+  renameBatch.update(doc(alice, 'publicProfiles/alice'), {
+    displayName: 'Alice New',
+    username: 'Alice_New',
+    usernameLower: 'alice_new',
+  });
+  renameBatch.set(doc(alice, 'usernames/alice_new'), {
+    uid: 'alice',
+    username: 'Alice_New',
+  });
+  renameBatch.delete(doc(alice, 'usernames/alice'));
+  await assertSucceeds(renameBatch.commit());
+});
+
 test('accepted friends can read active shared locations only', async () => {
   const future = Timestamp.fromMillis(Date.now() + 10 * 60 * 1000);
   const past = Timestamp.fromMillis(Date.now() - 60 * 1000);
