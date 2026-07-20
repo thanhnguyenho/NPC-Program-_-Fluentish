@@ -46,19 +46,25 @@ class _SoundboardPageState extends State<SoundboardPage> {
   }
 
   Future<void> _loadFavourites() async {
-    final user = FirebaseAuth.instance.currentUser;
-    debugPrint('Loading favourites for user: ${user?.uid}');
-    if (user == null) return;
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+    
+      if (user == null) return;
 
-    final snapshot = await FirebaseFirestore.instance
+      final snapshot = await FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
         .collection('favouriteSoundboardBites')
         .get();
 
-    setState(() {
-      favouriteIds = snapshot.docs.map((doc) => doc.id).toSet();
-    });
+      if (!mounted) return;
+      
+      setState(() {
+        favouriteIds = snapshot.docs.map((doc) => doc.id).toSet();
+      });
+    } catch (error) {
+      debugPrint('Could not load favourites: $error');
+    }
   }
 
   @override
