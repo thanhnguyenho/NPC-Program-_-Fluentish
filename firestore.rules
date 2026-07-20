@@ -31,6 +31,10 @@ service cloud.firestore {
         allow read, write: if isOwner(uid);
       }
 
+      match /favouritePhrases/{favouriteId} {
+        allow read, write: if isOwner(uid);
+      }
+
       match /favouriteSoundboardBites/{favouriteId} {
         allow read, write: if isOwner(uid);
       }
@@ -39,9 +43,9 @@ service cloud.firestore {
     match /publicProfiles/{uid} {
       allow read: if signedIn();
       allow create: if isOwner(uid)
-          && request.resource.data.uid == request.auth.uid;
+          && request.resource.data.uid == uid;
       allow update: if isOwner(uid)
-          && request.resource.data.uid == resource.data.uid;
+          && request.resource.data.uid == uid;
       allow delete: if isOwner(uid);
     }
 

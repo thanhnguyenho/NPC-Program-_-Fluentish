@@ -61,6 +61,38 @@ test('private users are owner-only and public profiles require auth', async () =
   await assertFails(getDoc(doc(bob, 'users/alice')));
   await assertSucceeds(getDoc(doc(bob, 'publicProfiles/alice')));
   await assertFails(getDoc(doc(guest, 'publicProfiles/alice')));
+  await assertSucceeds(setDoc(doc(alice, 'publicProfiles/alice'), {
+    uid: 'alice',
+    displayName: 'Alice Updated',
+    username: 'alice',
+    usernameLower: 'alice',
+  }));
+  await assertFails(setDoc(doc(alice, 'publicProfiles/alice'), {
+    uid: 'bob',
+    displayName: 'Invalid Profile',
+    username: 'alice',
+    usernameLower: 'alice',
+  }));
+});
+
+test('favourites and history are private to their owner', async () => {
+  const alice = testEnvironment.authenticatedContext('alice').firestore();
+  const bob = testEnvironment.authenticatedContext('bob').firestore();
+  const collections = [
+    'favouritePhrases',
+    'favouriteSoundboardBites',
+    'history',
+    'savedGuides',
+  ];
+
+  for (const collectionName of collections) {
+    const reference = doc(alice, `users/alice/${collectionName}/entry-1`);
+    await assertSucceeds(setDoc(reference, { value: 'private' }));
+    await assertSucceeds(getDoc(reference));
+    await assertFails(getDoc(
+      doc(bob, `users/alice/${collectionName}/entry-1`),
+    ));
+  }
 });
 
 test('accepted friends can read active shared locations only', async () => {
