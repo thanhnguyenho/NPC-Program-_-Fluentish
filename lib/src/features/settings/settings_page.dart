@@ -1,40 +1,252 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 
+import 'package:fluentish/src/features/change_password/change_password_page.dart';
+import 'package:fluentish/src/features/privacy_policy/privacy_policy_sheet.dart';
+import 'package:fluentish/src/features/terms_of_service/terms_of_service_sheet.dart';
+import 'package:fluentish/src/services/auth_service.dart';
+import 'package:fluentish/src/services/location_language_service.dart';
+import 'package:fluentish/src/services/push_notification_service.dart';
+import 'package:fluentish/src/services/settings_controller.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
-class SettingsPage extends StatefulWidget {
+class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
-  @override
-  State<SettingsPage> createState() => _SettingsPageState();
-}
+  Future<void> _togglePushNotifications(
+    BuildContext context,
+    bool enabled,
+  ) async {
+    final settings = SettingsController.instance;
+    final messenger = ScaffoldMessenger.of(context);
 
-class _SettingsPageState extends State<SettingsPage> {
-  bool _autoDetectLocation = true;
-  bool _pushNotifications = true;
-  bool _friendUpdates = true;
-  bool _nearbyRecommendation = true;
+    if (!enabled) {
+      await settings.setPushNotifications(false);
+      await PushNotificationService().unregister();
+      return;
+    }
 
-  void _confirmDelete() {
+    final granted =
+        await PushNotificationService().requestPermissionAndRegister();
+    await settings.setPushNotifications(granted);
+
+    if (!granted) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Notifications permission was denied. You can enable it from '
+            'your browser/device settings and try again.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _toggleAutoDetectLocation(
+    BuildContext context,
+    bool enabled,
+  ) async {
+    final settings = SettingsController.instance;
+    await settings.setAutoDetectLocation(enabled);
+    if (!enabled) return;
+    if (!context.mounted) return;
+    await _detectLocationLanguage(context, showNoChangeMessage: false);
+  }
+
+  Future<void> _detectLocationLanguage(
+    BuildContext context, {
+    bool showNoChangeMessage = true,
+  }) async {
+    final settings = SettingsController.instance;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Detecting your location...')),
+    );
+    try {
+      final result = await LocationLanguageService().detect();
+      if (result.language != settings.targetLanguage) {
+        await settings.setTargetLanguage(result.language);
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'Detected ${result.countryName} — switched target language '
+              'to ${result.language}.',
+            ),
+          ),
+        );
+      } else if (showNoChangeMessage) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'Detected ${result.countryName} — already set to '
+              '${result.language}.',
+            ),
+          ),
+        );
+      }
+    } on LocationDetectionException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not detect location: $e')),
+      );
+    }
+  }
+
+  Future<void> _pickThemeMode(BuildContext context) async {
+    final settings = SettingsController.instance;
+    final selected = await showModalBottomSheet<ThemeMode>(
+      context: context,
+      backgroundColor: AppColors.blush,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final mode in ThemeMode.values)
+                RadioListTile<ThemeMode>(
+                  value: mode,
+                  groupValue: settings.themeMode,
+                  activeColor: AppColors.pine,
+                  title: Text(
+                    switch (mode) {
+                      ThemeMode.light => 'Light',
+                      ThemeMode.dark => 'Dark',
+                      ThemeMode.system => 'System Default',
+                    },
+                    style: AppTextStyles.body.copyWith(color: AppColors.pine),
+                  ),
+                  onChanged: (value) => Navigator.pop(context, value),
+                ),
+              const SizedBox(height: AppSpacing.xs),
+            ],
+          ),
+        );
+      },
+    );
+    if (selected != null) {
+      await settings.setThemeMode(selected);
+    }
+  }
+
+  Future<void> _pickTextSize(BuildContext context) async {
+    final settings = SettingsController.instance;
+    final selected = await showModalBottomSheet<AppTextSize>(
+      context: context,
+      backgroundColor: AppColors.blush,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final size in AppTextSize.values)
+                RadioListTile<AppTextSize>(
+                  value: size,
+                  groupValue: settings.textSize,
+                  activeColor: AppColors.pine,
+                  title: Text(
+                    size.label,
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.pine,
+                      fontSize: 14 * size.scale,
+                    ),
+                  ),
+                  onChanged: (value) => Navigator.pop(context, value),
+                ),
+              const SizedBox(height: AppSpacing.xs),
+            ],
+          ),
+        );
+      },
+    );
+    if (selected != null) {
+      await settings.setTextSize(selected);
+    }
+  }
+
+  Future<void> _pickLanguage({
+    required BuildContext context,
+    required String current,
+    required ValueChanged<String> onPicked,
+  }) async {
+    const options = ['English', 'Vietnamese'];
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppColors.blush,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final option in options)
+                RadioListTile<String>(
+                  value: option,
+                  groupValue: current,
+                  activeColor: AppColors.pine,
+                  title: Text(
+                    option,
+                    style: AppTextStyles.body.copyWith(color: AppColors.pine),
+                  ),
+                  onChanged: (value) => Navigator.pop(context, value),
+                ),
+              const SizedBox(height: AppSpacing.xs),
+            ],
+          ),
+        );
+      },
+    );
+    if (selected != null) {
+      onPicked(selected);
+    }
+  }
+
+  void _confirmDelete(BuildContext context) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Delete Account"),
+        title: const Text('Delete Account'),
         content: const Text(
-          "Are you sure you want to permanently delete your account?\n\nThis action cannot be undone.",
+          'Are you sure you want to permanently delete your account?\n\nThis action cannot be undone.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text("Cancel"),
+            child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await AuthService().currentUser?.delete();
+                if (context.mounted) {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Could not delete account: $e. You may need to '
+                        'log in again before deleting.',
+                      ),
+                    ),
+                  );
+                }
+              }
+            },
             child: const Text(
-              "Delete",
-              style: TextStyle(
-                color: Colors.red,
-              ),
+              'Delete',
+              style: TextStyle(color: Colors.red),
             ),
           ),
         ],
@@ -44,199 +256,211 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.shell,
-      body: Column(
-        children: [
-          //------------------------------------
-          // Header
-          //------------------------------------
+    return ListenableBuilder(
+      listenable: SettingsController.instance,
+      builder: (context, _) {
+        final settings = SettingsController.instance;
 
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              color: AppColors.pine,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
+        return Scaffold(
+          backgroundColor: AppColors.shell,
+          body: Column(
+            children: [
+              Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: AppColors.pine,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(30),
+                    bottomRight: Radius.circular(30),
+                  ),
+                ),
+                padding: const EdgeInsets.fromLTRB(
+                  8,
+                  50,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: AppColors.blush,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Settings',
+                        style: AppTextStyles.title.copyWith(
+                          color: AppColors.blush,
+                          fontSize: 22,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            padding: const EdgeInsets.fromLTRB(
-              8,
-              50,
-              AppSpacing.md,
-              AppSpacing.md,
-            ),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(
-                    Icons.arrow_back,
-                    color: AppColors.blush,
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                Expanded(
-                  child: Text(
-                    "Settings",
-                    style: AppTextStyles.title.copyWith(
-                      color: AppColors.blush,
-                      fontSize: 22,
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  children: [
+                    const _SectionLabel('LANGUAGE'),
+                    _SettingsGroup(
+                      children: [
+                        _NavRow(
+                          icon: Icons.language,
+                          label: 'Source Language',
+                          trailing: settings.sourceLanguage,
+                          onTap: () => _pickLanguage(
+                            context: context,
+                            current: settings.sourceLanguage,
+                            onPicked: settings.setSourceLanguage,
+                          ),
+                        ),
+                        _NavRow(
+                          icon: Icons.arrow_forward,
+                          label: 'Target Language',
+                          trailing: settings.targetLanguage,
+                          onTap: () => _pickLanguage(
+                            context: context,
+                            current: settings.targetLanguage,
+                            onPicked: settings.setTargetLanguage,
+                          ),
+                        ),
+                        _SwitchRow(
+                          icon: Icons.location_on_outlined,
+                          label: 'Auto-detect Location',
+                          value: settings.autoDetectLocation,
+                          onChanged: (value) =>
+                              _toggleAutoDetectLocation(context, value),
+                        ),
+                        if (settings.autoDetectLocation)
+                          _NavRow(
+                            icon: Icons.my_location,
+                            label: 'Detect Now',
+                            onTap: () => _detectLocationLanguage(context),
+                          ),
+                      ],
                     ),
-                  ),
+                    const SizedBox(height: AppSpacing.md),
+                    const _SectionLabel('APPEARANCE'),
+                    _SettingsGroup(
+                      children: [
+                        _NavRow(
+                          icon: Icons.wb_sunny_outlined,
+                          label: 'Theme',
+                          trailing: switch (settings.themeMode) {
+                            ThemeMode.light => 'Light',
+                            ThemeMode.dark => 'Dark',
+                            ThemeMode.system => 'System',
+                          },
+                          onTap: () => _pickThemeMode(context),
+                        ),
+                        _NavRow(
+                          icon: Icons.text_fields,
+                          label: 'Text Size',
+                          trailing: settings.textSize.label,
+                          onTap: () => _pickTextSize(context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    const _SectionLabel('NOTIFICATIONS'),
+                    _SettingsGroup(
+                      children: [
+                        _SwitchRow(
+                          icon: Icons.notifications_none,
+                          label: 'Push Notifications',
+                          value: settings.pushNotifications,
+                          onChanged: (value) =>
+                              _togglePushNotifications(context, value),
+                        ),
+                        _SwitchRow(
+                          icon: Icons.people_outline,
+                          label: 'Friend Updates',
+                          value: settings.friendUpdates,
+                          onChanged: settings.setFriendUpdates,
+                        ),
+                        _SwitchRow(
+                          icon: Icons.near_me_outlined,
+                          label: 'Nearby Recommendation',
+                          value: settings.nearbyRecommendation,
+                          onChanged: settings.setNearbyRecommendation,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    const _SectionLabel('PRIVACY & ACCOUNT'),
+                    _SettingsGroup(
+                      children: [
+                        _NavRow(
+                          icon: Icons.lock_outline,
+                          label: 'Change Password',
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const ChangePasswordPage(),
+                            ),
+                          ),
+                        ),
+                        _NavRow(
+                          icon: Icons.mark_email_read_outlined,
+                          label: 'Email Me a Reset Link',
+                          onTap: () async {
+                            final email = AuthService().currentUser?.email;
+                            if (email == null) return;
+                            try {
+                              await AuthService().resetPassword(email);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Password reset email sent to $email',
+                                    ),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Failed: $e')),
+                                );
+                              }
+                            }
+                          },
+                        ),
+                        _NavRow(
+                          icon: Icons.shield_outlined,
+                          label: 'Privacy Policy',
+                          onTap: () => showPrivacyPolicySheet(context),
+                        ),
+                        _NavRow(
+                          icon: Icons.description_outlined,
+                          label: 'Terms of Service',
+                          onTap: () => showTermsOfServiceSheet(context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    const _SectionLabel('DANGER ZONE'),
+                    _SettingsGroup(
+                      children: [
+                        _NavRow(
+                          icon: Icons.delete_outline,
+                          label: 'Delete Account',
+                          labelColor: Colors.red,
+                          iconColor: Colors.red,
+                          onTap: () => _confirmDelete(context),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-
-          //------------------------------------
-          // Body
-          //------------------------------------
-
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              children: [
-                const _SectionLabel("LANGUAGE"),
-
-                _SettingsGroup(
-                  children: [
-                    _NavRow(
-                      icon: Icons.language,
-                      label: "Source Language",
-                      trailing: "English",
-                      onTap: () {},
-                    ),
-
-                    _NavRow(
-                      icon: Icons.arrow_forward,
-                      label: "Target Language",
-                      trailing: "Vietnamese",
-                      onTap: () {},
-                    ),
-
-                    _SwitchRow(
-                      icon: Icons.location_on_outlined,
-                      label: "Auto-detect Location",
-                      value: _autoDetectLocation,
-                      onChanged: (v) {
-                        setState(() {
-                          _autoDetectLocation = v;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: AppSpacing.md),
-
-                const _SectionLabel("APPEARANCE"),
-
-                _SettingsGroup(
-                  children: [
-                    _NavRow(
-                      icon: Icons.wb_sunny_outlined,
-                      label: "Theme",
-                      trailing: "Light",
-                      onTap: () {},
-                    ),
-
-                    _NavRow(
-                      icon: Icons.text_fields,
-                      label: "Text Size",
-                      trailing: "Medium",
-                      onTap: () {},
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: AppSpacing.md),
-
-                const _SectionLabel("NOTIFICATIONS"),
-
-                _SettingsGroup(
-                  children: [
-                    _SwitchRow(
-                      icon: Icons.notifications_none,
-                      label: "Push Notifications",
-                      value: _pushNotifications,
-                      onChanged: (v) {
-                        setState(() {
-                          _pushNotifications = v;
-                        });
-                      },
-                    ),
-
-                    _SwitchRow(
-                      icon: Icons.people_outline,
-                      label: "Friend Updates",
-                      value: _friendUpdates,
-                      onChanged: (v) {
-                        setState(() {
-                          _friendUpdates = v;
-                        });
-                      },
-                    ),
-
-                    _SwitchRow(
-                      icon: Icons.near_me_outlined,
-                      label: "Nearby Recommendation",
-                      value: _nearbyRecommendation,
-                      onChanged: (v) {
-                        setState(() {
-                          _nearbyRecommendation = v;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: AppSpacing.md),
-
-                const _SectionLabel("PRIVACY & ACCOUNT"),
-
-                _SettingsGroup(
-                  children: [
-                    _NavRow(
-                      icon: Icons.lock_outline,
-                      label: "Change Password",
-                      onTap: () {},
-                    ),
-
-                    _NavRow(
-                      icon: Icons.shield_outlined,
-                      label: "Privacy Policy",
-                      onTap: () {},
-                    ),
-
-                    _NavRow(
-                      icon: Icons.description_outlined,
-                      label: "Terms of Service",
-                      onTap: () {},
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: AppSpacing.md),
-
-                const _SectionLabel("DANGER ZONE"),
-
-                _SettingsGroup(
-                  children: [
-                    _NavRow(
-                      icon: Icons.delete_outline,
-                      label: "Delete Account",
-                      labelColor: Colors.red,
-                      iconColor: Colors.red,
-                      onTap: _confirmDelete,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -332,21 +556,18 @@ class _NavRow extends StatelessWidget {
             Icon(
               icon,
               size: 20,
-              color: iconColor ?? AppColors.pine,
+              color: iconColor ?? AppColors.ink,
             ),
-
             const SizedBox(width: AppSpacing.md),
-
             Expanded(
               child: Text(
                 label,
                 style: AppTextStyles.body.copyWith(
-                  color: labelColor ?? AppColors.pine,
+                  color: labelColor ?? AppColors.ink,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-
             if (trailing != null)
               Text(
                 trailing!,
@@ -355,9 +576,7 @@ class _NavRow extends StatelessWidget {
                   fontSize: 13,
                 ),
               ),
-
             const SizedBox(width: 4),
-
             const Icon(
               Icons.chevron_right,
               size: 18,
@@ -395,21 +614,18 @@ class _SwitchRow extends StatelessWidget {
           Icon(
             icon,
             size: 20,
-            color: AppColors.pine,
+            color: AppColors.ink,
           ),
-
           const SizedBox(width: AppSpacing.md),
-
           Expanded(
             child: Text(
               label,
               style: AppTextStyles.body.copyWith(
-                color: AppColors.pine,
+                color: AppColors.ink,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
-
           Switch(
             value: value,
             onChanged: onChanged,

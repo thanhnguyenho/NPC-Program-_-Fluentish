@@ -23,4 +23,9 @@ linux/flutter/ephemeral/
 *.log
 *.tmp
 .DS_Store
+**/.DS_Store
 
+# Firebase Admin credentials must remain local.
+*service-account*.json
+firebase-admin-key*.json
+tool/firebase-seed/node_modules/

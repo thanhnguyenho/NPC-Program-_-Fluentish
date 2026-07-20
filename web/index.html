@@ -41,42 +41,6 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
-  <script>
-    (function () {
-      const params = new URLSearchParams(window.location.search);
-      const keyFromUrl = params.get('googleMapsApiKey');
-      if (keyFromUrl) {
-        window.localStorage.setItem('FLUENTISH_GOOGLE_MAPS_API_KEY', keyFromUrl);
-      }
-
-      const apiKey = keyFromUrl ||
-        window.localStorage.getItem('FLUENTISH_GOOGLE_MAPS_API_KEY') ||
-        '';
-      window.fluentishHasGoogleMapsKey = Boolean(apiKey);
-
-      function startFlutter() {
-        const flutterScript = document.createElement('script');
-        flutterScript.src = 'flutter_bootstrap.js';
-        flutterScript.async = true;
-        document.body.appendChild(flutterScript);
-      }
-
-      if (!apiKey) {
-        startFlutter();
-        return;
-      }
-
-      const mapsScript = document.createElement('script');
-      mapsScript.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}`;
-      mapsScript.async = true;
-      mapsScript.defer = true;
-      mapsScript.onload = startFlutter;
-      mapsScript.onerror = function () {
-        window.fluentishHasGoogleMapsKey = false;
-        startFlutter();
-      };
-      document.head.appendChild(mapsScript);
-    })();
-  </script>
+  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

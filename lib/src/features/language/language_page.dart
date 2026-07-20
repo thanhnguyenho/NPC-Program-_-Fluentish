@@ -11,6 +11,7 @@ class LanguagePage extends StatelessWidget {
   final String? initialTargetText;
   final String? initialSourceLang;
   final String? initialTargetLang;
+  final String? initialQuery;
 
   const LanguagePage({
     super.key,
@@ -18,15 +19,17 @@ class LanguagePage extends StatelessWidget {
     this.initialTargetText,
     this.initialSourceLang,
     this.initialTargetLang,
+    this.initialQuery,
   });
 
   @override
   Widget build(BuildContext context) {
     return LanguageTranslatorScreen(
-      initialSourceText: initialSourceText,
+      initialSourceText: initialSourceText ?? initialQuery,
       initialTargetText: initialTargetText,
       initialSourceLang: initialSourceLang,
       initialTargetLang: initialTargetLang,
+      initialQuery: initialQuery,
     );
   }
 }
@@ -36,6 +39,7 @@ class LanguageTranslatorScreen extends StatefulWidget {
   final String? initialTargetText;
   final String? initialSourceLang;
   final String? initialTargetLang;
+  final String? initialQuery;
 
   const LanguageTranslatorScreen({
     super.key,
@@ -43,6 +47,7 @@ class LanguageTranslatorScreen extends StatefulWidget {
     this.initialTargetText,
     this.initialSourceLang,
     this.initialTargetLang,
+    this.initialQuery,
   });
 
   @override
@@ -101,12 +106,13 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
     super.initState();
     if (widget.initialSourceLang != null) _sourceLang = widget.initialSourceLang!;
     if (widget.initialTargetLang != null) _targetLang = widget.initialTargetLang!;
-    if (widget.initialSourceText != null && widget.initialSourceText!.isNotEmpty) {
-      _sourceController.text = widget.initialSourceText!;
+    final initText = widget.initialSourceText ?? widget.initialQuery;
+    if (initText != null && initText.isNotEmpty) {
+      _sourceController.text = initText;
       if (widget.initialTargetText != null && widget.initialTargetText!.isNotEmpty) {
         _translatedText = widget.initialTargetText!;
       } else {
-        _onSourceTextChanged(widget.initialSourceText!);
+        _onSourceTextChanged(initText);
       }
     }
   }

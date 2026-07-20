@@ -5,12 +5,19 @@ import 'package:fluentish/src/features/login/login_page.dart';
 import 'package:fluentish/src/features/registration/registration_page.dart';
 import 'package:fluentish/src/features/welcome/welcome_page.dart';
 import 'package:fluentish/src/shared/theme/app_theme.dart';
+import '../../../../helpers/fakes.dart';
 
 void main() {
+  late FakeAuthGateway fakeAuth;
+
+  setUp(() {
+    fakeAuth = FakeAuthGateway(uid: null);
+  });
+
   Widget buildSubject() {
     return MaterialApp(
       theme: AppTheme.light,
-      home: const WelcomePage(),
+      home: WelcomePage(auth: fakeAuth),
     );
   }
 
