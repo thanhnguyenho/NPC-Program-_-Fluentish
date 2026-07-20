@@ -2,6 +2,7 @@ import '../models/soundboard_word.dart';
 
 const List<SoundboardWord> words = [
   SoundboardWord(
+    id: 'hello',
     english: 'Hello',
     vietnamese: 'Xin chào',
     category: 'Greetings',
@@ -9,6 +10,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Hello - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'thank_you',
     english: 'Thank you',
     vietnamese: 'Cảm ơn',
     category: 'Greetings',
@@ -16,6 +18,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Thank You - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'goodbye',
     english: 'Goodbye',
     vietnamese: 'Tạm biệt',
     category: 'Greetings',
@@ -23,6 +26,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Goodbye - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'please',
     english: 'Please',
     vietnamese: 'Xin vui lòng',
     category: 'Greetings',
@@ -30,6 +34,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Please - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'youre_welcome',
     english: "You're welcome",
     vietnamese: 'Không có gì',
     category: 'Greetings',
@@ -37,6 +42,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: "audio/You're Welcome - Vietnamese.mp3",
   ),
   SoundboardWord(
+    id: 'im_sorry',
     english: "I'm sorry",
     vietnamese: 'Tôi xin lỗi',
     category: 'Greetings',
@@ -44,6 +50,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: "audio/I'm sorry - Vietnamese.mp3",
   ),
   SoundboardWord(
+    id: 'excuse_me',
     english: 'Excuse me',
     vietnamese: 'Xin lỗi',
     category: 'Greetings',
@@ -51,6 +58,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Excuse Me - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'yes',
     english: 'Yes',
     vietnamese: 'Đúng',
     category: 'Common Words',
@@ -58,6 +66,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Yes - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'no',
     english: 'No',
     vietnamese: 'Không',
     category: 'Common Words',
@@ -65,6 +74,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/No - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'me',
     english: 'Me',
     vietnamese: 'Tôi',
     category: 'Common Words',
@@ -72,6 +82,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Me - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'what',
     english: 'What?',
     vietnamese: 'Gì?',
     category: 'Common Words',
@@ -79,6 +90,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/What - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'who',
     english: 'Who?',
     vietnamese: 'Ai?',
     category: 'Common Words',
@@ -86,6 +98,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Who - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'when',
     english: 'When?',
     vietnamese: 'Khi nào?',
     category: 'Common Words',
@@ -93,6 +106,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/When - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'where',
     english: 'Where?',
     vietnamese: 'Ở đâu?',
     category: 'Common Words',
@@ -100,6 +114,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Where - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'why',
     english: 'Why?',
     vietnamese: 'Tại sao?',
     category: 'Common Words',
@@ -107,6 +122,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Why - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'how',
     english: 'How?',
     vietnamese: 'Làm sao?',
     category: 'Common Words',
@@ -114,6 +130,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/How - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'very_good',
     english: 'Very good',
     vietnamese: 'Rất tốt',
     category: 'Common Words',
@@ -121,6 +138,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Very good - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: '0',
     english: '0',
     vietnamese: 'Không',
     category: 'Numbers',
@@ -128,6 +146,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/0 - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: '1',
     english: '1',
     vietnamese: 'Một',
     category: 'Numbers',
@@ -135,6 +154,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/1 - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: '2',
     english: '2',
     vietnamese: 'Hai',
     category: 'Numbers',
@@ -142,6 +162,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/2 - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: '3',
     english: '3',
     vietnamese: 'Ba',
     category: 'Numbers',
@@ -149,6 +170,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/3 - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: '4',
     english: '4',
     vietnamese: 'Bốn',
     category: 'Numbers',
@@ -156,6 +178,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/4 - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: '5',
     english: '5',
     vietnamese: 'Năm',
     category: 'Numbers',
@@ -163,6 +186,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/5 - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: '6',
     english: '6',
     vietnamese: 'Sáu',
     category: 'Numbers',
@@ -170,6 +194,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/6 - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: '7',
     english: '7',
     vietnamese: 'Bảy',
     category: 'Numbers',
@@ -177,6 +202,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/7 - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: '8',
     english: '8',
     vietnamese: 'Tám',
     category: 'Numbers',
@@ -184,6 +210,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/8 - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: '9',
     english: '9',
     vietnamese: 'Chín',
     category: 'Numbers',
@@ -191,6 +218,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/9 - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: '10',
     english: '10',
     vietnamese: 'Mười',
     category: 'Numbers',
@@ -198,6 +226,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/10 - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: '100',
     english: '100',
     vietnamese: 'Một trăm',
     category: 'Numbers',
@@ -205,6 +234,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/100 - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: '1000',
     english: '1,000',
     vietnamese: 'Một ngàn',
     category: 'Numbers',
@@ -212,6 +242,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/1,000 - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: '10000',
     english: '10,000',
     vietnamese: 'Mười ngàn',
     category: 'Numbers',
@@ -219,6 +250,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/10,000 - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: '100000',
     english: '100,000',
     vietnamese: 'Một trăm ngàn',
     category: 'Numbers',
@@ -226,6 +258,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/100,000 - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: '1000000',
     english: '1,000,000',
     vietnamese: 'Một triệu',
     category: 'Numbers',
@@ -233,6 +266,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/1,000,000 - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'hotel',
     english: 'Hotel',
     vietnamese: 'Khách sạn',
     category: 'Travel',
@@ -240,6 +274,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Hotel - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'passport',
     english: 'Passport',
     vietnamese: 'Hộ chiếu',
     category: 'Travel',
@@ -247,6 +282,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Passport - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'luggage',
     english: 'Luggage',
     vietnamese: 'Hành lý',
     category: 'Travel',
@@ -254,6 +290,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Luggage - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'ticket',
     english: 'Ticket',
     vietnamese: 'Vé',
     category: 'Travel',
@@ -261,6 +298,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Ticket - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'airport',
     english: 'Airport',
     vietnamese: 'Sân bay',
     category: 'Travel',
@@ -268,6 +306,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Airport - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'station',
     english: 'Station',
     vietnamese: 'Ga tàu',
     category: 'Travel',
@@ -275,6 +314,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Station - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'water',
     english: 'Water',
     vietnamese: 'Nước',
     category: 'Dining',
@@ -282,6 +322,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Water - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'food',
     english: 'Food',
     vietnamese: 'Đồ ăn',
     category: 'Dining',
@@ -289,6 +330,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Food - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'rice',
     english: 'Rice',
     vietnamese: 'Cơm',
     category: 'Dining',
@@ -296,6 +338,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Rice - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'noodles',
     english: 'Noodles',
     vietnamese: 'Mì',
     category: 'Dining',
@@ -303,6 +346,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Noodles - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'chicken',
     english: 'Chicken',
     vietnamese: 'Gà',
     category: 'Dining',
@@ -310,6 +354,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Chicken - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'beef',
     english: 'Beef',
     vietnamese: 'Bò',
     category: 'Dining',
@@ -317,6 +362,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Beef - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'vegetarian',
     english: 'Vegetarian',
     vietnamese: 'Người ăn chay',
     category: 'Dining',
@@ -324,6 +370,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Vegetarian - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'vegan',
     english: 'Vegan',
     vietnamese: 'Thuần chay',
     category: 'Dining',
@@ -331,6 +378,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Vegan - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'bill',
     english: 'Bill',
     vietnamese: 'Hóa đơn',
     category: 'Dining',
@@ -338,6 +386,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Bill - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'money',
     english: 'Money',
     vietnamese: 'Tiền',
     category: 'Shopping',
@@ -345,6 +394,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Money - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'price',
     english: 'Price',
     vietnamese: 'Giá',
     category: 'Shopping',
@@ -352,6 +402,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Price - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'expensive',
     english: 'Expensive',
     vietnamese: 'Đắt',
     category: 'Shopping',
@@ -359,6 +410,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Expensive - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'cheap',
     english: 'Cheap',
     vietnamese: 'Rẻ',
     category: 'Shopping',
@@ -366,6 +418,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Cheap - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'market',
     english: 'Market',
     vietnamese: 'Chợ',
     category: 'Shopping',
@@ -373,6 +426,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Market - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'store',
     english: 'Store',
     vietnamese: 'Cửa hàng',
     category: 'Shopping',
@@ -380,6 +434,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Store - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'buy',
     english: 'Buy',
     vietnamese: 'Mua',
     category: 'Shopping',
@@ -387,6 +442,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Buy - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'sell',
     english: 'Sell',
     vietnamese: 'Bán',
     category: 'Shopping',
@@ -394,6 +450,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Sell - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'hospital',
     english: 'Hospital',
     vietnamese: 'Bệnh viện',
     category: 'Emergency',
@@ -401,6 +458,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Hospital - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'doctor',
     english: 'Doctor',
     vietnamese: 'Bác sĩ',
     category: 'Emergency',
@@ -408,6 +466,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Doctor - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'pharmacy',
     english: 'Pharmacy',
     vietnamese: 'Nhà thuốc',
     category: 'Emergency',
@@ -415,6 +474,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Pharmacy - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'police',
     english: 'Police',
     vietnamese: 'Cảnh sát',
     category: 'Emergency',
@@ -422,6 +482,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Police - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'help_me',
     english: 'Help me',
     vietnamese: 'Cứu tôi',
     category: 'Emergency',
@@ -429,6 +490,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Help Me - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'sick',
     english: 'Sick',
     vietnamese: 'Ốm',
     category: 'Emergency',
@@ -436,6 +498,7 @@ const List<SoundboardWord> words = [
     vietnameseAudio: 'audio/Sick - Vietnamese.mp3',
   ),
   SoundboardWord(
+    id: 'danger',
     english: 'Danger',
     vietnamese: 'Nguy hiểm',
     category: 'Emergency',
