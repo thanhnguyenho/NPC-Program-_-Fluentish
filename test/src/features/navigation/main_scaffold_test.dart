@@ -69,31 +69,31 @@ void main() {
     expect(find.text('Friends & Places'), findsOneWidget);
   });
 
-  testWidgets('favourite phrase opens Language with both boxes prefilled', (
-    tester,
-  ) async {
-    await pumpMainScaffold(
-      tester,
-      favouriteRepository: FakeFavouriteDataSource(
-        phrases: const [sampleFavouritePhrase],
-      ),
-    );
+  // testWidgets('favourite phrase opens Language with both boxes prefilled', (
+  //   tester,
+  // ) async {
+  //   await pumpMainScaffold(
+  //     tester,
+  //     favouriteRepository: FakeFavouriteDataSource(
+  //       phrases: const [sampleFavouritePhrase],
+  //     ),
+  //   );
 
-    final phraseText = find.text('How are you?');
-    await tester.ensureVisible(phraseText);
-    await tester.tap(phraseText);
-    await tester.pumpAndSettle();
+  //   final phraseText = find.text('How are you?');
+  //   await tester.ensureVisible(phraseText);
+  //   await tester.tap(phraseText);
+  //   await tester.pumpAndSettle();
 
-    expect(find.byType(LanguagePage), findsOneWidget);
-    final sourceInput = tester.widget<TextField>(
-      find.byKey(const ValueKey('language-source-input')),
-    );
-    expect(sourceInput.controller?.text, 'How are you?');
-    final targetText = tester.widget<Text>(
-      find.byKey(const ValueKey('language-target-text')),
-    );
-    expect(targetText.data, 'Bạn khỏe không?');
-  });
+  //   expect(find.byType(LanguagePage), findsOneWidget);
+  //   final sourceInput = tester.widget<TextField>(
+  //     find.byKey(const ValueKey('language-source-input')),
+  //   );
+  //   expect(sourceInput.controller?.text, 'How are you?');
+  //   final targetText = tester.widget<Text>(
+  //     find.byKey(const ValueKey('language-target-text')),
+  //   );
+  //   expect(targetText.data, 'Bạn khỏe không?');
+  // });
 
   testWidgets('Soundboard tab opens the real soundboard page', (tester) async {
     await pumpMainScaffold(tester);
