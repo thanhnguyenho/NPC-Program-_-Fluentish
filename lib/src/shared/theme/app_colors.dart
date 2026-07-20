@@ -12,4 +12,5 @@ class AppColors {
   static const textMuted = Color(0x8C000000);
   static const textSoft = Color(0xFF5C6452);
   static const shadow = Color(0x14000000);
+  static const ink = pine;
 }

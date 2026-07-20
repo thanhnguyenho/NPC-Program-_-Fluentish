@@ -6,7 +6,12 @@ import 'package:fluentish/src/features/welcome/widgets/welcome_logo.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
 class WelcomePage extends StatelessWidget {
-  const WelcomePage({super.key});
+  const WelcomePage({
+    super.key,
+    this.auth,
+  });
+
+  final AuthGateway? auth;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +32,7 @@ class WelcomePage extends StatelessWidget {
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => const LoginPage(),
+                      builder: (_) => LoginPage(auth: auth),
                     ),
                   );
                 },
@@ -38,7 +43,7 @@ class WelcomePage extends StatelessWidget {
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => const RegistrationPage(),
+                      builder: (_) => RegistrationPage(auth: auth),
                     ),
                   );
                 },
