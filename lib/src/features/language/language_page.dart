@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
-import 'dart:io';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:fluentish/src/features/language/translator_engine.dart';
 import 'package:fluentish/src/features/language/phrase_library.dart';
 import 'package:fluentish/src/features/common/smart_search_bar.dart';
@@ -74,6 +74,7 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
   // Debounce timer: only record to history AFTER user stops typing for 800ms
   Timer? _historyDebounceTimer;
   int _translateRequestId = 0;
+  FlutterTts? _flutterTts;
 
   // Clean initial history & favourites
   final List<Map<String, String>> _historyList = [];
@@ -99,11 +100,19 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
 
   @override
   void dispose() {
+    _flutterTts?.stop();
     _translationDebounceTimer?.cancel();
     _historyDebounceTimer?.cancel();
     _searchController.dispose();
     _sourceController.dispose();
     super.dispose();
+  }
+
+  FlutterTts _getTts() {
+    if (_flutterTts != null) return _flutterTts!;
+    final tts = FlutterTts();
+    _flutterTts = tts;
+    return tts;
   }
 
   bool _looksLikeVietnamese(String text) {
@@ -371,58 +380,37 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
     if (text.trim().isEmpty) return;
     final colors = context.fluentishColors;
 
-    // 1. Tìm câu tiếng Anh chuẩn chỉnh đúng chính tả (canonical English)
+    // Determine the text to speak and the TTS locale
     String textToSpeak = text.trim();
-    final canonical = PhraseLibrary.getCanonicalEnglish(textToSpeak);
-    if (canonical != null && canonical.isNotEmpty) {
-      textToSpeak = canonical;
-    } else if (_spellingCorrectionSuggestion != null &&
-        _spellingCorrectionSuggestion!.isNotEmpty &&
-        lang.toLowerCase().contains('en')) {
-      // Nếu có gợi ý sửa lỗi chính tả tiếng Anh, phát âm câu đã sửa đúng chính tả
-      textToSpeak = _spellingCorrectionSuggestion!;
+    String ttsLocale;
+
+    // Check if the text is Vietnamese
+    final isVi = lang.toLowerCase().contains('vi') ||
+        RegExp(r'[ăâđêôơưáàảãạéèẻẽẹíìỉĩịóòỏõọúùủũụýỳỷỹỵ]',
+                caseSensitive: false)
+            .hasMatch(textToSpeak);
+
+    if (isVi) {
+      ttsLocale = 'vi-VN';
     } else {
-      // Nếu không tìm thấy trong kho và text đang là tiếng Việt (lang là Vietnamese hoặc chứa ký tự tiếng Việt),
-      // kiểm tra xem bên kia (source hoặc target) có câu tiếng Anh chuẩn không để phát âm.
-      final isVi = lang.toLowerCase().contains('vi') ||
-          RegExp(r'[ăâđêôơưáàảãạéèẻẽẹíìỉĩịóòỏõọúùủũụýỳỷỹỵ]',
-                  caseSensitive: false)
-              .hasMatch(textToSpeak);
-      if (isVi) {
-        // Thử tìm tiếng Anh chuẩn từ ô còn lại
-        final otherText = (_sourceController.text.trim() == textToSpeak)
-            ? _translatedText
-            : _sourceController.text;
-        final otherCanonical = PhraseLibrary.getCanonicalEnglish(otherText);
-        if (otherCanonical != null && otherCanonical.isNotEmpty) {
-          textToSpeak = otherCanonical;
-        } else if (!otherText.toLowerCase().contains('ă') &&
-            RegExp(r'^[a-zA-Z0-9\s.,?!"-]+$').hasMatch(otherText)) {
-          textToSpeak = otherText;
-        } else {
-          // Chỉ phát âm các câu và chữ đúng chính tả tiếng Anh -> Không phát âm tiếng Việt hoặc câu lỗi
-          return;
-        }
+      ttsLocale = 'en-AU';
+      // Try to find canonical English for better pronunciation
+      final canonical = PhraseLibrary.getCanonicalEnglish(textToSpeak);
+      if (canonical != null && canonical.isNotEmpty) {
+        textToSpeak = canonical;
+      } else if (_spellingCorrectionSuggestion != null &&
+          _spellingCorrectionSuggestion!.isNotEmpty) {
+        textToSpeak = _spellingCorrectionSuggestion!;
       }
     }
 
-    // 2. Phát âm chuẩn tiếng Anh trên macOS / Mobile
+    // Speak using FlutterTts (cross-platform: iOS, Android, macOS)
     try {
-      if (Platform.isMacOS) {
-        // Dừng lệnh say cũ ngay lập tức (dùng runSync để đảm bảo không bị xung đột khi lặp lại)
-        try {
-          Process.runSync('killall', ['say']);
-        } catch (_) {}
-
-        // Sử dụng giọng tiếng Anh chuẩn (Samantha hoặc Eddy / Alex) với tốc độ rõ ràng tự nhiên (-r 175)
-        Process.run('say', ['-v', 'Samantha', '-r', '175', textToSpeak])
-            .then((res) {
-          if (res.exitCode != 0) {
-            // Fallback nếu Samantha không khả dụng hoặc lỗi tham số
-            Process.run('say', [textToSpeak]);
-          }
-        });
-      }
+      final tts = _getTts();
+      tts.setLanguage(ttsLocale);
+      tts.setSpeechRate(0.45);
+      tts.setVolume(1.0);
+      tts.speak(textToSpeak);
     } catch (_) {}
 
     showModalBottomSheet(
