@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fluentish/src/shared/widgets/app_bottom_nav.dart';
-import 'package:fluentish/src/shared/widgets/app_card.dart';
 import 'package:fluentish/src/features/language/language_page.dart';
-import 'package:fluentish/src/features/soundboard/soundboard_page.dart';
-import 'package:fluentish/src/features/community/community_page.dart';
-import 'package:fluentish/src/features/profile/profile_page.dart';
-import 'package:fluentish/src/features/guides_review/guides_review_page.dart';
 import 'package:fluentish/src/shared/theme/app_spacing.dart';
 import 'package:fluentish/src/shared/theme/app_text_styles.dart';
 import 'package:fluentish/src/shared/theme/app_colors.dart';
@@ -18,30 +13,73 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _currentIndex = 0;
+  // Core focus: Language & Translator (Index 1)
+  int _currentIndex = 1;
 
   Widget _pageForIndex(int index) {
     switch (index) {
       case 0:
-        return HomeScreen(
-          onNavigateToGuides: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const GuidesPage()),
-            );
-          },
-        );
+        return _buildTabPlaceholder('Home Dashboard', Icons.home_outlined);
       case 1:
         return const LanguagePage();
       case 2:
-        return const SoundboardPage();
+        return _buildTabPlaceholder('Soundboard', Icons.volume_up_outlined);
       case 3:
-        return const CommunityPage();
+        return _buildTabPlaceholder('Community Hub', Icons.groups_2_outlined);
       case 4:
-        return const ProfilePage();
+        return _buildTabPlaceholder('User Profile', Icons.person_outline);
       default:
         return const SizedBox.shrink();
     }
+  }
+
+  Widget _buildTabPlaceholder(String title, IconData icon) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5EBEB),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 72, color: const Color(0xFF3E4E31)),
+                const SizedBox(height: 20),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF3E4E31),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'This module is trimmed to keep our GitHub repository focused exclusively on the Language & Offline Translation Core.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.black54,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                ElevatedButton.icon(
+                  onPressed: () => setState(() => _currentIndex = 1),
+                  icon: const Icon(Icons.translate, color: Colors.white),
+                  label: const Text('Go to Language & Translator', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF3E4E31),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override

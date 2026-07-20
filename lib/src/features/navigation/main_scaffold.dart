@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:fluentish/src/features/language/language_page.dart';
-import 'package:fluentish/src/features/community/community_page.dart';
-import 'package:fluentish/src/features/soundboard/soundboard_page.dart';
 
 class MainScaffold extends StatefulWidget {
   final int initialIndex;
@@ -31,12 +29,12 @@ class _MainScaffoldState extends State<MainScaffold> {
         children: [
           // 0: Home Placeholder
           _buildPlaceholderPage('Home Dashboard', Icons.home_rounded),
-          // 1: Language Page (Figma Page 12)
+          // 1: Language Page (Core Focus)
           const LanguagePage(),
           // 2: Soundboard Placeholder
-          const SoundboardPage(),
-          // 3: Community Page (Figma Page 14)
-          const CommunityPage(),
+          _buildPlaceholderPage('Soundboard', Icons.graphic_eq),
+          // 3: Community Placeholder
+          _buildPlaceholderPage('Community Hub', Icons.people_outline),
           // 4: Profile Placeholder
           _buildPlaceholderPage('User Profile', Icons.person_rounded),
         ],
