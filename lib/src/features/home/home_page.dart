@@ -727,7 +727,7 @@ class _FavouriteSoundboardCard extends StatelessWidget {
           const CircleAvatar(
             backgroundColor: AppColors.blush,
             foregroundColor: AppColors.pine,
-            child: Icon(Icons.music_note),
+            child: Icon(Icons.volume_up_outlined),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
