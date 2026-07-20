@@ -450,6 +450,52 @@ class FakeFavouriteDataSource implements FavouriteDataSource {
     soundboardBites.removeWhere((bite) => bite.id == favouriteId);
     _soundboardChanges.add(List.unmodifiable(soundboardBites));
   }
+
+  @override
+  Future<void> saveFavouritePhrase(
+    String uid, {
+    required String sourceText,
+    required String translatedText,
+    required String sourceLanguage,
+    required String targetLanguage,
+  }) async {
+    final id = 'phrase_${phrases.length + 1}';
+    final record = FavouritePhraseRecord(
+      id: id,
+      sourceText: sourceText,
+      translatedText: translatedText,
+      sourceLanguage: sourceLanguage,
+      targetLanguage: targetLanguage,
+      createdAt: DateTime.now(),
+    );
+    phrases.add(record);
+    _phraseChanges.add(List.unmodifiable(phrases));
+  }
+
+  @override
+  Future<void> saveFavouriteSoundboardBite(
+    String uid, {
+    required String english,
+    required String vietnamese,
+    required String category,
+    required String englishAudio,
+    required String vietnameseAudio,
+    required String preferredLanguage,
+  }) async {
+    final id = 'bite_${soundboardBites.length + 1}';
+    final record = FavouriteSoundboardRecord(
+      id: id,
+      english: english,
+      vietnamese: vietnamese,
+      category: category,
+      englishAudio: englishAudio,
+      vietnameseAudio: vietnameseAudio,
+      preferredLanguage: preferredLanguage,
+      createdAt: DateTime.now(),
+    );
+    soundboardBites.add(record);
+    _soundboardChanges.add(List.unmodifiable(soundboardBites));
+  }
 }
 
 class FakeLocationDataSource implements LocationDataSource {

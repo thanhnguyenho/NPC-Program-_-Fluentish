@@ -448,6 +448,10 @@ class TranslatorEngine {
     'nói lại': 'Say it again',
     'where is the nearest bank?': 'Ngân hàng gần nhất nằm ở đâu?',
     'where is the nearest bank': 'Ngân hàng gần nhất nằm ở đâu?',
+    'where is the parking lot near the hotel?': 'Bãi đỗ xe gần khách sạn nằm ở đâu?',
+    'where is the parking lot near the hotel': 'Bãi đỗ xe gần khách sạn nằm ở đâu?',
+    'parking lot near the hotel': 'bãi đỗ xe gần khách sạn',
+    'parking lot': 'bãi đỗ xe',
     'i would like to rent a motorbike to travel around the city tomorrow': 'Tôi muốn thuê một chiếc xe máy đi vòng quanh thành phố vào ngày mai',
     'tôi muốn thuê một chiếc xe máy đi vòng quanh thành phố vào ngày mai': 'I would like to rent a motorbike to travel around the city tomorrow',
     'can you recommend a good restaurant?': 'Bạn có thể giới thiệu một nhà hàng ngon không?',
@@ -539,7 +543,6 @@ class TranslatorEngine {
     'go': 'Đi',
     'đi': 'Go / Walk',
     'eat': 'Ăn',
-    'ăn': 'Eat',
     'drink': 'Uống',
     'uống': 'Drink',
     'bán': 'Sell',
@@ -1748,6 +1751,11 @@ class TranslatorEngine {
         return null;
       }
     }
+    for (final item in _vectorCorpus) {
+      if (item['vi']!.toLowerCase() == cleanLower || item['en']!.toLowerCase() == cleanLower) {
+        return null;
+      }
+    }
 
     // Run manual typo normalizations BEFORE checking allWordsValid
     final rawWords = clean.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
@@ -1843,6 +1851,7 @@ class TranslatorEngine {
     if (anyWordFixed) {
       return correctedWords.join(' ');
     }
+    if (!hasTypoWord) return null;
 
     // Check VSM Cosine Similarity for closest sentence/phrase match (range [0.88, 0.99])
     final queryVector = _vectorize(cleanLower);

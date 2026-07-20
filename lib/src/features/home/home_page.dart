@@ -610,9 +610,9 @@ class _FavouritePhrasesSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final userId = uid;
     if (userId == null) {
-      return Column(
+      return const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
+        children: [
           _SectionHeader(title: 'Favourite Phrases'),
           SizedBox(height: AppSpacing.md),
           _EmptyCard('Sign in to see your favourite phrases.'),
@@ -625,9 +625,9 @@ class _FavouritePhrasesSection extends StatelessWidget {
         final phrases = snapshot.data ?? const <FavouritePhraseRecord>[];
         if (snapshot.connectionState == ConnectionState.waiting &&
             phrases.isEmpty) {
-          return Column(
+          return const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               _SectionHeader(title: 'Favourite Phrases'),
               SizedBox(height: AppSpacing.md),
               Center(child: CircularProgressIndicator()),
@@ -635,9 +635,9 @@ class _FavouritePhrasesSection extends StatelessWidget {
           );
         }
         if (snapshot.hasError) {
-          return Column(
+          return const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               _SectionHeader(title: 'Favourite Phrases'),
               SizedBox(height: AppSpacing.md),
               _EmptyCard('Favourite phrases could not be loaded.'),
