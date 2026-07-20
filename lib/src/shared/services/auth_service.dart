@@ -10,6 +10,7 @@ abstract class AuthGateway {
   String? get currentEmail;
   Stream<String?> get userIdChanges;
   Stream<PublicProfile?> watchCurrentProfile();
+  Future<void> updatePresence();
   Future<void> signInWithEmailAndPassword({
     required String email,
     required String password,
@@ -58,6 +59,15 @@ class Auth implements AuthGateway {
                 document.exists ? PublicProfile.fromDocument(document) : null,
           );
     });
+  }
+
+  @override
+  Future<void> updatePresence() async {
+    final uid = currentUserId;
+    if (uid == null) return;
+    await _firestore.collection('publicProfiles').doc(uid).set({
+      'lastSeenAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   @override
@@ -179,12 +189,7 @@ class Auth implements AuthGateway {
 
   @override
   Future<void> signOut() async {
-    final uid = currentUserId;
-    if (uid != null) {
-      await _firestore.collection('publicProfiles').doc(uid).set({
-        'lastSeenAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    }
+    await updatePresence();
     await _firebaseAuth.signOut();
   }
 

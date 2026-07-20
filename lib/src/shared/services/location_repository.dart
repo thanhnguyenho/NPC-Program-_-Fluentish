@@ -44,12 +44,20 @@ class LocationRepository implements LocationDataSource {
   }
 
   @override
-  Future<void> setSharing(String uid, bool enabled) {
-    return _firestore.collection('locationSharing').doc(uid).set({
-      'enabled': enabled,
-      'audience': 'friends',
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+  Future<void> setSharing(String uid, bool enabled) async {
+    final batch = _firestore.batch();
+    batch.set(
+        _firestore.collection('locationSharing').doc(uid),
+        {
+          'enabled': enabled,
+          'audience': 'friends',
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true));
+    if (!enabled) {
+      batch.delete(_firestore.collection('locations').doc(uid));
+    }
+    await batch.commit();
   }
 
   Future<void> _ensurePermission() async {
@@ -87,7 +95,7 @@ class LocationRepository implements LocationDataSource {
       'accuracyM': position.accuracy,
       'updatedAt': FieldValue.serverTimestamp(),
       'expiresAt': Timestamp.fromDate(now.add(const Duration(minutes: 10))),
-    }, SetOptions(merge: true));
+    });
   }
 
   @override

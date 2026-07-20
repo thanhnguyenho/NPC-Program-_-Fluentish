@@ -273,6 +273,7 @@ class FakeAuthGateway implements AuthGateway {
   String? signedInPassword;
   bool signedInWithGoogle = false;
   bool signedOut = false;
+  int presenceUpdates = 0;
 
   @override
   String? get currentUserId => uid;
@@ -285,6 +286,11 @@ class FakeAuthGateway implements AuthGateway {
 
   @override
   Stream<PublicProfile?> watchCurrentProfile() => Stream.value(profile);
+
+  @override
+  Future<void> updatePresence() async {
+    presenceUpdates++;
+  }
 
   @override
   Future<void> signInWithEmailAndPassword({
@@ -334,6 +340,8 @@ class FakeFriendDataSource implements FriendDataSource {
   final List<FriendRequestRecord> requests;
   final List<FriendMapEntry> locations;
   final List<PublicProfile> searchResults;
+  final List<String> acceptedRequestIds = [];
+  final List<String> declinedRequestIds = [];
 
   @override
   Stream<List<PublicProfile>> watchFriends(String uid) => Stream.value(friends);
@@ -362,10 +370,14 @@ class FakeFriendDataSource implements FriendDataSource {
   Future<void> sendRequest(String senderId, String receiverId) async {}
 
   @override
-  Future<void> acceptRequest(FriendRequestRecord request) async {}
+  Future<void> acceptRequest(FriendRequestRecord request) async {
+    acceptedRequestIds.add(request.id);
+  }
 
   @override
-  Future<void> declineRequest(FriendRequestRecord request) async {}
+  Future<void> declineRequest(FriendRequestRecord request) async {
+    declinedRequestIds.add(request.id);
+  }
 }
 
 class FakeGuideDataSource implements GuideDataSource {
@@ -456,10 +468,16 @@ class FakeLocationDataSource implements LocationDataSource {
   FakeLocationDataSource({
     this.sharing = false,
     this.mapLocations = sampleMapLocations,
+    this.currentPositionError,
+    this.startSharingError,
   });
 
   bool sharing;
   final List<MapLocationRecord> mapLocations;
+  final Object? currentPositionError;
+  final Object? startSharingError;
+  final StreamController<bool> _sharingChanges = StreamController.broadcast();
+  int currentPositionCalls = 0;
 
   static final position = Position(
     longitude: 106.7009,
@@ -475,7 +493,10 @@ class FakeLocationDataSource implements LocationDataSource {
   );
 
   @override
-  Stream<bool> watchSharing(String uid) => Stream.value(sharing);
+  Stream<bool> watchSharing(String uid) async* {
+    yield sharing;
+    yield* _sharingChanges.stream;
+  }
 
   @override
   Stream<List<MapLocationRecord>> watchMapLocations() =>
@@ -484,16 +505,24 @@ class FakeLocationDataSource implements LocationDataSource {
   @override
   Future<void> setSharing(String uid, bool enabled) async {
     sharing = enabled;
+    _sharingChanges.add(enabled);
   }
 
   @override
-  Future<Position> currentPosition() async => position;
+  Future<Position> currentPosition() async {
+    currentPositionCalls++;
+    if (currentPositionError case final error?) throw error;
+    return position;
+  }
 
   @override
   Future<LocationSharingSession> startForegroundSharing(String uid) async {
+    if (startSharingError case final error?) throw error;
     return LocationSharingSession(
       subscription: const Stream<Position>.empty().listen((_) {}),
       timer: Timer(const Duration(days: 1), () {}),
     );
   }
+
+  Future<void> dispose() => _sharingChanges.close();
 }
