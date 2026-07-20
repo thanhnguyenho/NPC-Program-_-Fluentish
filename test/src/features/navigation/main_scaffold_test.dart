@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fluentish/src/shared/services/favourite_repository.dart';
 import 'package:fluentish/src/features/friend_location/friend_location_page.dart';
 import 'package:fluentish/src/features/home/home_page.dart';
-import 'package:fluentish/src/features/language/language_page.dart';
+//import 'package:fluentish/src/features/language/language_page.dart';
 import 'package:fluentish/src/features/navigation/main_scaffold.dart';
 import 'package:fluentish/src/features/profile/profile_page.dart';
 import 'package:fluentish/src/features/soundboard/soundboard_page.dart';
