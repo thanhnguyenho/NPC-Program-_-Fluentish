@@ -190,7 +190,7 @@ class _WordCardState extends State<WordCard> {
                         ? Icons.star
                         : Icons.star_border,
                     color: _isFavourite
-                        ? const Color(0xFFFFF8AF)
+                        ? Colors.amber
                         : _isPlaying
                             ? Colors.white
                             : Colors.grey,

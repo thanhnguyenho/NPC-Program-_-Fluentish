@@ -876,6 +876,12 @@ class _FavouriteSoundboardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryText = bite.prefersEnglish ? bite.english : bite.vietnamese;
+
+    final secondaryText = bite.prefersEnglish ? bite.vietnamese : bite.english;
+
+    final primaryLanguage = bite.prefersEnglish ? 'English' : 'Vietnamese';
+
     return AppCard(
       width: double.infinity,
       onTap: onPlay,
@@ -884,7 +890,7 @@ class _FavouriteSoundboardCard extends StatelessWidget {
           const CircleAvatar(
             backgroundColor: AppColors.blush,
             foregroundColor: AppColors.pine,
-            child: Icon(Icons.music_note),
+            child: Icon(Icons.volume_up_outlined),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -892,14 +898,19 @@ class _FavouriteSoundboardCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  bite.english,
-                  style: AppTextStyles.title.copyWith(fontSize: 19),
+                  primaryText,
+                  style: AppTextStyles.title.copyWith(
+                    fontSize: 19,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.xxs),
-                Text(bite.vietnamese, style: AppTextStyles.body),
+                Text(
+                  secondaryText,
+                  style: AppTextStyles.body,
+                ),
                 const SizedBox(height: AppSpacing.xxs),
                 Text(
-                  bite.category,
+                  '${bite.category} · $primaryLanguage',
                   style: AppTextStyles.body.copyWith(
                     color: AppColors.pineMuted,
                     fontSize: 11,
@@ -910,9 +921,11 @@ class _FavouriteSoundboardCard extends StatelessWidget {
           ),
           IconButton(
             key: ValueKey('play-soundboard-${bite.id}'),
-            tooltip: 'Play sound',
+            tooltip: 'Play $primaryLanguage sound',
             onPressed: onPlay,
-            icon: Icon(isPlaying ? Icons.graphic_eq : Icons.volume_up),
+            icon: Icon(
+              isPlaying ? Icons.graphic_eq : Icons.volume_up,
+            ),
           ),
           IconButton(
             key: ValueKey('remove-soundboard-${bite.id}'),
@@ -921,9 +934,14 @@ class _FavouriteSoundboardCard extends StatelessWidget {
             icon: isRemoving
                 ? const SizedBox.square(
                     dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                    ),
                   )
-                : const Icon(Icons.star, color: Colors.amber),
+                : const Icon(
+                    Icons.star,
+                    color: Colors.amber,
+                  ),
           ),
         ],
       ),
