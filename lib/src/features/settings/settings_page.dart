@@ -22,21 +22,51 @@ class SettingsPage extends StatelessWidget {
     final messenger = ScaffoldMessenger.of(context);
 
     if (!enabled) {
+      await settings.setFriendUpdates(false);
       await settings.setPushNotifications(false);
       await PushNotificationService().unregister();
       return;
     }
 
-    final granted =
+    final result =
         await PushNotificationService().requestPermissionAndRegister();
-    await settings.setPushNotifications(granted);
+    await settings.setPushNotifications(result.enabled);
 
-    if (!granted) {
+    if (result.simulated) {
       messenger.showSnackBar(
         const SnackBar(
           content: Text(
-            'Notifications could not be enabled. Check your device permission '
-            'and Firebase Messaging configuration, then try again.',
+            '🔔 Demo notification: Push Notifications enabled. This works '
+            'inside the app only.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _toggleFriendUpdates(
+    BuildContext context,
+    bool enabled,
+  ) async {
+    final settings = SettingsController.instance;
+    if (!enabled) {
+      await settings.setFriendUpdates(false);
+      return;
+    }
+
+    if (!settings.pushNotifications) {
+      final result =
+          await PushNotificationService().requestPermissionAndRegister();
+      await settings.setPushNotifications(result.enabled);
+    }
+
+    await settings.setFriendUpdates(true);
+    if (context.mounted && PushNotificationService.isDemoMode) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            '👥 Demo notification: Friend Updates enabled. New friend '
+            'activity will be simulated while the app is open.',
           ),
         ),
       );
@@ -388,7 +418,8 @@ class SettingsPage extends StatelessWidget {
                           icon: Icons.people_outline,
                           label: 'Friend Updates',
                           value: settings.friendUpdates,
-                          onChanged: settings.setFriendUpdates,
+                          onChanged: (value) =>
+                              _toggleFriendUpdates(context, value),
                         ),
                         _SwitchRow(
                           icon: Icons.near_me_outlined,
@@ -616,34 +647,37 @@ class _SwitchRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.fluentishColors;
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xxs,
-      ),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 20,
-            color: colors.textPrimary,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Text(
-              label,
-              style: AppTextStyles.body.copyWith(
-                color: colors.textPrimary,
-                fontWeight: FontWeight.w600,
+    return InkWell(
+      onTap: () => onChanged(!value),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xxs,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: colors.textPrimary,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Text(
+                label,
+                style: AppTextStyles.body.copyWith(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: colors.accent,
-          ),
-        ],
+            Switch(
+              value: value,
+              onChanged: onChanged,
+              activeThumbColor: colors.accent,
+            ),
+          ],
+        ),
       ),
     );
   }

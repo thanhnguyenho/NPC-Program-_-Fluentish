@@ -4,6 +4,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' as ll;
 
+import '../../services/settings_controller.dart';
 import '../../shared/shared.dart';
 import '../community/community_page.dart';
 import '../friend_location/friend_location_page.dart';
@@ -122,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late final FriendDataSource _friends;
   late final FavouriteDataSource _favourites;
   late final LocationDataSource _locations;
-  late Future<Position> _positionFuture;
+  Future<Position>? _positionFuture;
   AudioPlayer? _audioPlayer;
   FlutterTts? _flutterTts;
   String? _playingFavouriteId;
@@ -135,7 +136,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _friends = widget.friendRepository ?? FriendRepository();
     _favourites = widget.favouriteRepository ?? FavouriteRepository();
     _locations = widget.locationRepository ?? LocationRepository();
-    _positionFuture = _locations.currentPosition();
+    if (SettingsController.instance.nearbyRecommendation) {
+      _positionFuture = _locations.currentPosition();
+    }
   }
 
   @override
@@ -353,6 +356,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final uid = _auth.currentUserId;
     final colors = context.fluentishColors;
+    final showNearby = SettingsController.instance.nearbyRecommendation;
+    if (showNearby) {
+      _positionFuture ??= _locations.currentPosition();
+    }
     return SafeArea(
       bottom: false,
       child: SingleChildScrollView(
@@ -381,19 +388,21 @@ class _HomeScreenState extends State<HomeScreen> {
               style: AppTextStyles.body.copyWith(color: AppColors.pineMuted),
             ),
             const SizedBox(height: AppSpacing.xl),
-            _SectionHeader(
-              title: 'Nearby Recommendations',
-              action: 'See all',
-              onTap: widget.onNavigateToMap,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _NearbyRecommendations(
-              positionFuture: _positionFuture,
-              locations: _locations,
-              onRetryPosition: _retryPosition,
-              onOpenDirections: _openDirections,
-            ),
-            const SizedBox(height: AppSpacing.lg),
+            if (showNearby) ...[
+              _SectionHeader(
+                title: 'Nearby Recommendations',
+                action: 'See all',
+                onTap: widget.onNavigateToMap,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _NearbyRecommendations(
+                positionFuture: _positionFuture!,
+                locations: _locations,
+                onRetryPosition: _retryPosition,
+                onOpenDirections: _openDirections,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
             _SectionHeader(
               title: 'Favourite Phrases',
               action: 'Browse',

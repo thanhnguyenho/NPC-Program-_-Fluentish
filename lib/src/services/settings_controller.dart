@@ -32,7 +32,7 @@ class SettingsController extends ChangeNotifier {
     'targetLanguage': 'Vietnamese',
     'autoDetectLocation': true,
     'pushNotifications': false,
-    'friendUpdates': true,
+    'friendUpdates': false,
     'nearbyRecommendation': true,
     'themeMode': 'light',
     'textSize': 'medium',
@@ -92,7 +92,8 @@ class SettingsController extends ChangeNotifier {
     _targetLanguage = values['targetLanguage'] as String? ?? 'Vietnamese';
     _autoDetectLocation = values['autoDetectLocation'] as bool? ?? true;
     _pushNotifications = values['pushNotifications'] as bool? ?? false;
-    _friendUpdates = values['friendUpdates'] as bool? ?? true;
+    _friendUpdates =
+        _pushNotifications && (values['friendUpdates'] as bool? ?? false);
     _nearbyRecommendation = values['nearbyRecommendation'] as bool? ?? true;
     _themeMode = ThemeMode.values.firstWhere(
       (mode) => mode.name == values['themeMode'],
@@ -116,9 +117,9 @@ class SettingsController extends ChangeNotifier {
       };
 
   Future<void> _persist() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
     try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
         {'settings': _data},
         SetOptions(merge: true),
@@ -171,18 +172,18 @@ class SettingsController extends ChangeNotifier {
     await _persist();
   }
 
-  void setFriendUpdates(bool value) {
+  Future<void> setFriendUpdates(bool value) async {
     if (_friendUpdates == value) return;
     _friendUpdates = value;
     notifyListeners();
-    unawaited(_persist());
+    await _persist();
   }
 
-  void setNearbyRecommendation(bool value) {
+  Future<void> setNearbyRecommendation(bool value) async {
     if (_nearbyRecommendation == value) return;
     _nearbyRecommendation = value;
     notifyListeners();
-    unawaited(_persist());
+    await _persist();
   }
 
   Future<void> setThemeMode(ThemeMode value) async {
