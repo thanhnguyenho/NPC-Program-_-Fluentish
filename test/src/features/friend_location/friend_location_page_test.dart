@@ -6,7 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../helpers/fakes.dart';
 
 void main() {
-  Future<void> pumpPage(WidgetTester tester) async {
+  Future<void> pumpPage(
+    WidgetTester tester, {
+    FakeLocationDataSource? locationRepository,
+  }) async {
     tester.view.physicalSize = const Size(393, 852);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -19,7 +22,7 @@ void main() {
           auth: FakeAuthGateway(),
           friendRepository: FakeFriendDataSource(),
           guideRepository: FakeGuideDataSource(),
-          locationRepository: FakeLocationDataSource(),
+          locationRepository: locationRepository ?? FakeLocationDataSource(),
         ),
       ),
     );
@@ -60,5 +63,19 @@ void main() {
     expect(find.text('4.5 (12)'), findsOneWidget);
     expect(find.text('Opening hours'), findsOneWidget);
     expect(find.text('8 AM to 10 PM'), findsOneWidget);
+  });
+
+  testWidgets('rolls sharing back when GPS cannot start', (tester) async {
+    final locations = FakeLocationDataSource(
+      startSharingError: StateError('Location permission is required.'),
+    );
+    addTearDown(locations.dispose);
+    await pumpPage(tester, locationRepository: locations);
+
+    await tester.tap(find.byType(Switch));
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(locations.sharing, isFalse);
+    expect(find.text('Location permission is required.'), findsOneWidget);
   });
 }
