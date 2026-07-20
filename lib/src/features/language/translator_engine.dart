@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'corpus/travel_corpus.dart';
 import 'corpus/expanded_corpus.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class TranslatorEngine {
   // Exhaustive bidirectional dictionary covering 700+ core vocabulary concepts & travel landmarks
@@ -1124,26 +1125,18 @@ class TranslatorEngine {
     return s[0].toUpperCase() + s.substring(1);
   }
 
-  // Google Gemini API keys (base64 encoded to protect against automated secret scanning while preserving fast-path access)
-  static String _decodeApiKey() => utf8.decode(base64Decode(_geminiApiKeysEncoded[_currentApiKeyIndex]));
+  // Google Gemini API keys loaded securely from .env file
+  static List<String> get _geminiApiKeys {
+    final keysString = dotenv.env['GEMINI_API_KEYS'] ?? '';
+    final keys = keysString.split(',').map((k) => k.trim()).where((k) => k.isNotEmpty).toList();
+    return keys;
+  }
 
-  static final List<String> _geminiApiKeysEncoded = [
-    'QUl6YVN5Q0MzbFA4TDhPQUQ3NEJGUDJDT0FJLWlseFppQWxJUDRv',
-    'QUl6YVN5RFJaRGx0X2MyUHB1STdmNWM4TGVkNlhmVW5SM3M0Y0FB',
-    'QUl6YVN5QmYxVFlQYUJ4eDc5TkRpQU1MZGlsRzV0RjM2dlkxdndJ',
-    'QUl6YVN5QlB4VmZjTUgtbUt4OTNxa29SQnI2Q0o3MEVyQ1hxYVJB',
-    'QUl6YVN5QTNpRGl4UmZ4WHpPRjNHLUl0b0dtSkpacVlTRnJxd0lJ',
-    'QUl6YVN5QTU2dDZuR0ZsSmZzNXJCX3RnLXJOTG9KTlBlUzhiMzQ0',
-    'QUl6YVN5RGR5YTBBVmdmOXl5Yk9zZnUyaDRMaUtWOFQ5bU9iZlJj',
-    'QVEuQWI4Uk42SnFiLUpLYkZ6MzJhYmhhbzBQd1d2ZFBkRDNOZHZBRFY4ZmVWVFpzY2tOVkE=',
-    'QVEuQWI4Uk42TFVVb0NjeEktVXViZm9WTjJBbnZYZ09JRUp6YjByaXBhU0l3d3pDQ01KR0E=',
-    'QVEuQWI4Uk42SjZPeW5wcVFHQmFDWEJWay0xMllrTG5FQnJ0TWpmQ1c3RWpNU0d6d2hnQ1E=',
-    'QVEuQWI4Uk42SzNOWlA3N3MyQWhNZ1hnOW5CMGRIR1ZWY2NjMTMtUWtUUllIYjEwbk4yM2c=',
-    'QVEuQWI4Uk42SVdIMmVSdWlxOWFSSm1nakJTY3Jfc2xacDFOc3FwSEhTMU1pMjg2LUUtQWc=',
-    'QVEuQWI4Uk42TDFUcmVnWTQ0cERQdWJORjhtbFl1MVdtNTRWNFhCTmtNSzBJX2xlRDM3TUE=',
-    'QVEuQWI4Uk42TFF0cGZaS1pDczBNSzJUd2hoeHRrV0I5Z3VLX3ptODZURXM0XzFuT2Z6VlE=',
-    'QVEuQWI4Uk42SnQxUTZBOHhxZVFzSW1CYU1SYm96OV9pR3pZLXdQX3dWV191bXRfMnhucWc=',
-  ];
+  static String _decodeApiKey() {
+    final keys = _geminiApiKeys;
+    if (keys.isEmpty) return '';
+    return keys[_currentApiKeyIndex % keys.length];
+  }
   static int _currentApiKeyIndex = 0;
 
   // Models xoay tua chính thức cho Gemini (tính đến 2026 trên v1beta API)
@@ -1381,13 +1374,15 @@ class TranslatorEngine {
           if (response.statusCode == 404 || response.statusCode == 400) {
             _currentModelIndex = (_currentModelIndex + 1) % _geminiModels.length;
           } else {
-            _currentApiKeyIndex = (_currentApiKeyIndex + 1) % _geminiApiKeysEncoded.length;
+            final keysLength = _geminiApiKeys.isNotEmpty ? _geminiApiKeys.length : 1;
+            _currentApiKeyIndex = (_currentApiKeyIndex + 1) % keysLength;
           }
           continue;
         }
       } catch (e) {
         debugPrint('🔴 [GEMINI EXCEPTION] Attempt $attempt -> $e');
-        _currentApiKeyIndex = (_currentApiKeyIndex + 1) % _geminiApiKeysEncoded.length;
+        final keysLength = _geminiApiKeys.isNotEmpty ? _geminiApiKeys.length : 1;
+        _currentApiKeyIndex = (_currentApiKeyIndex + 1) % keysLength;
       }
     }
 

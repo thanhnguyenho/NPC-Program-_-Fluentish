@@ -26,6 +26,7 @@ dependencies:
   plugin_platform_interface: ^2.1.8
   url_launcher: ^6.3.2
   flutter_tts: ^4.2.5
+  flutter_dotenv: ^6.0.1
 
 dev_dependencies:
   flutter_test:
@@ -41,3 +42,4 @@ flutter:
     - assets/google_fonts/
     - assets/images/
     - assets/audio/
+    - .env
