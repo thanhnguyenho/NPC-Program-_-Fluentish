@@ -114,8 +114,16 @@ void main() {
     buffer.writeln('|---|-------|----------|---------------------|-------------------|--------|-------------|');
     resultsList.forEach(buffer.writeln);
     
-    final file = File('/Users/minhdong/development/fluentish/.agents/auditor_spellcheck/typo_qa_report.md');
-    file.writeAsStringSync(buffer.toString());
-    debugPrint('Report successfully written to ${file.path}');
+    try {
+      final dir = Directory('.agents/auditor_spellcheck');
+      if (!dir.existsSync()) {
+        dir.createSync(recursive: true);
+      }
+      final file = File('${dir.path}/typo_qa_report.md');
+      file.writeAsStringSync(buffer.toString());
+      debugPrint('Report successfully written to ${file.path}');
+    } catch (e) {
+      debugPrint('Skipping report write: $e');
+    }
   });
 }
