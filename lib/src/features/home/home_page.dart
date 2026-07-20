@@ -409,12 +409,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: AppSpacing.lg),
             ],
-            _SectionHeader(
-              title: 'Favourite Phrases',
-              action: 'Browse',
-              onTap: widget.onNavigateToLanguage ?? () {},
-            ),
-            const SizedBox(height: AppSpacing.md),
             _FavouritePhrasesSection(
               uid: uid,
               favourites: _favourites,
