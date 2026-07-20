@@ -8,6 +8,7 @@ import 'models/soundboard_word.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:fluentish/src/features/history/history_page.dart';
 
 class SoundboardPage extends StatefulWidget {
   const SoundboardPage({super.key});
@@ -97,13 +98,29 @@ class _SoundboardPageState extends State<SoundboardPage> {
                       fontSize: 34,
                     ),
                   ),
-                  LanguageToggle(
-                    isVietnamese: isVietnamese,
-                    onToggle: () {
-                      setState(() {
-                        isVietnamese = !isVietnamese;
-                      });
-                    },
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        tooltip: 'Soundboard history',
+                        icon: Icon(Icons.history, color: colors.textPrimary),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const HistoryPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      LanguageToggle(
+                        isVietnamese: isVietnamese,
+                        onToggle: () {
+                          setState(() {
+                            isVietnamese = !isVietnamese;
+                          });
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),

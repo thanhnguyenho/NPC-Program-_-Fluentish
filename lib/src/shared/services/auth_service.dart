@@ -10,6 +10,7 @@ abstract class AuthGateway {
   String? get currentEmail;
   Stream<String?> get userIdChanges;
   Stream<PublicProfile?> watchCurrentProfile();
+  Future<void> updatePresence();
   Future<void> signInWithEmailAndPassword({
     required String email,
     required String password,
@@ -58,6 +59,15 @@ class Auth implements AuthGateway {
                 document.exists ? PublicProfile.fromDocument(document) : null,
           );
     });
+  }
+
+  @override
+  Future<void> updatePresence() async {
+    final uid = currentUserId;
+    if (uid == null) return;
+    await _firestore.collection('publicProfiles').doc(uid).set({
+      'lastSeenAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   @override
@@ -123,6 +133,7 @@ class Auth implements AuthGateway {
           _firestore.collection('publicProfiles').doc(user.uid);
       final sharingReference =
           _firestore.collection('locationSharing').doc(user.uid);
+      DocumentReference<Map<String, dynamic>>? usernameReference;
       final snapshots = await Future.wait([
         privateReference.get(),
         publicReference.get(),
@@ -150,6 +161,8 @@ class Auth implements AuthGateway {
             SetOptions(merge: true));
       } else {
         final username = _defaultUsername(user);
+        usernameReference =
+            _firestore.collection('usernames').doc(username.toLowerCase());
         batch.set(publicReference, {
           'uid': user.uid,
           'displayName': _defaultDisplayName(user),
@@ -157,6 +170,11 @@ class Auth implements AuthGateway {
           'usernameLower': username.toLowerCase(),
           'avatarUrl': user.photoURL,
           'lastSeenAt': FieldValue.serverTimestamp(),
+        });
+        batch.set(usernameReference, {
+          'uid': user.uid,
+          'username': username,
+          'updatedAt': FieldValue.serverTimestamp(),
         });
       }
       if (!sharingExists) {
@@ -195,12 +213,7 @@ class Auth implements AuthGateway {
 
   @override
   Future<void> signOut() async {
-    final uid = currentUserId;
-    if (uid != null) {
-      await _firestore.collection('publicProfiles').doc(uid).set({
-        'lastSeenAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    }
+    await updatePresence();
     await _firebaseAuth.signOut();
   }
 
@@ -240,6 +253,8 @@ class Auth implements AuthGateway {
         _firestore.collection('publicProfiles').doc(user.uid);
     final sharingReference =
         _firestore.collection('locationSharing').doc(user.uid);
+    final usernameReference =
+        _firestore.collection('usernames').doc(normalizedUsername);
     final batch = _firestore.batch();
     batch.set(privateReference, {
       'uid': user.uid,
@@ -259,6 +274,11 @@ class Auth implements AuthGateway {
       'usernameLower': normalizedUsername,
       'avatarUrl': null,
       'lastSeenAt': FieldValue.serverTimestamp(),
+    });
+    batch.set(usernameReference, {
+      'uid': user.uid,
+      'username': username.trim(),
+      'updatedAt': FieldValue.serverTimestamp(),
     });
     batch.set(sharingReference, {
       'enabled': false,

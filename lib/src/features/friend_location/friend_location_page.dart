@@ -102,6 +102,9 @@ class _FriendLocationPageState extends State<FriendLocationPage>
       _sharingSession = session;
       await _loadCurrentPosition(moveMap: false);
     } catch (error) {
+      try {
+        await _locations.setSharing(uid, false);
+      } catch (_) {}
       if (mounted) {
         setState(() => _message = _cleanError(error));
       }
