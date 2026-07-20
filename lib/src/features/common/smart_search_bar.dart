@@ -69,6 +69,7 @@ class SmartSearchBar extends StatefulWidget {
       'what should we eat today?',
       'what time does the cafe open?',
       'cái này giá bao nhiêu tiền',
+      'chúng ta đi ăn ở đâu bây giờ',
       'may i see the menu, please?',
       'check please / bill please',
       'làm ơn cho xem thực đơn',
@@ -92,11 +93,21 @@ class _SmartSearchBarState extends State<SmartSearchBar> {
   }
 
   void _onFocusChanged() {
-    setState(() {
-      _showSuggestions = _focusNode.hasFocus &&
-          widget.controller.text.trim().isNotEmpty &&
-          _filteredSuggestions.isNotEmpty;
-    });
+    if (_focusNode.hasFocus) {
+      setState(() {
+        _showSuggestions = widget.controller.text.trim().isNotEmpty &&
+            _filteredSuggestions.isNotEmpty;
+      });
+    } else {
+      // Delay hiding suggestions so onTap on a suggestion item fires reliably
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) {
+          setState(() {
+            _showSuggestions = false;
+          });
+        }
+      });
+    }
   }
 
   void _filterSuggestions(String query) {
@@ -167,6 +178,8 @@ class _SmartSearchBarState extends State<SmartSearchBar> {
             },
             onSubmitted: (val) {
               setState(() => _showSuggestions = false);
+              _focusNode.unfocus();
+              FocusManager.instance.primaryFocus?.unfocus();
               widget.onSubmitted?.call(val);
             },
             decoration: InputDecoration(
@@ -187,6 +200,8 @@ class _SmartSearchBarState extends State<SmartSearchBar> {
                       onPressed: () {
                         widget.controller.clear();
                         _filterSuggestions('');
+                        _focusNode.unfocus();
+                        FocusManager.instance.primaryFocus?.unfocus();
                         widget.onChanged?.call('');
                       },
                     )
@@ -229,6 +244,7 @@ class _SmartSearchBarState extends State<SmartSearchBar> {
                         widget.controller.text = suggestion;
                         setState(() => _showSuggestions = false);
                         _focusNode.unfocus();
+                        FocusManager.instance.primaryFocus?.unfocus();
                         widget.onSuggestionSelected?.call(suggestion);
                       },
                       child: Padding(

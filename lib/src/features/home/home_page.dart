@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../shared/shared.dart';
 import '../community/community_page.dart';
 import '../friends/friends_page.dart';
@@ -16,7 +15,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _currentIndex = 0;
+  // Core focus: Language & Translator (Index 1)
+  int _currentIndex = 1;
 
   Widget _pageForIndex(int index) {
     return switch (index) {
@@ -33,6 +33,8 @@ class _HomePageState extends State<HomePage> {
       _ => const SizedBox.shrink(),
     };
   }
+
+
 
   @override
   Widget build(BuildContext context) {
