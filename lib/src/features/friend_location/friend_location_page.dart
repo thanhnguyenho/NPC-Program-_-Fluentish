@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart' as fm;
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' as ll;
-
+import 'package:url_launcher/url_launcher.dart';
 import '../../shared/shared.dart';
 import '../guides_review/guides_review_page.dart';
 import 'maps_launcher.dart';
 
-enum MapContentFilter { all, friends, guides }
+enum MapContentFilter { all, friends, locations }
 
 class FriendLocationPage extends StatefulWidget {
   const FriendLocationPage({
@@ -54,6 +54,7 @@ class _FriendLocationPageState extends State<FriendLocationPage>
   List<GuideStop> _activeStops = const [];
   GuideRecord? _activeRoute;
   bool _focusedInitialPlace = false;
+  bool _focusedInitialMapLocation = false;
   fm.LatLngBounds? _visibleBounds;
 
   @override
@@ -223,6 +224,197 @@ class _FriendLocationPageState extends State<FriendLocationPage>
     );
   }
 
+  Future<void> _showMapLocation(MapLocationRecord location) async {
+    final point = ll.LatLng(location.point.latitude, location.point.longitude);
+    final address = location.address.isNotEmpty
+        ? location.address
+        : [location.neighborhood, location.city]
+            .where((part) => part.isNotEmpty)
+            .join(', ');
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: AppColors.shell,
+      builder: (sheetContext) => FractionallySizedBox(
+        heightFactor: 0.82,
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              0,
+              AppSpacing.lg,
+              AppSpacing.xl,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 27,
+                      backgroundColor: _mapLocationColor(location.group),
+                      foregroundColor: Colors.white,
+                      child: Icon(
+                        _mapLocationIcon(location.iconKey),
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            location.name,
+                            style: AppTextStyles.title.copyWith(fontSize: 25),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            location.categoryLabel,
+                            style: AppTextStyles.body.copyWith(
+                              color: _mapLocationColor(location.group),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (address.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  Text(address, style: AppTextStyles.body),
+                ],
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  _distanceLabel(_distanceTo(point.latitude, point.longitude)),
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.pineMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: [
+                    if (location.rating != null)
+                      Chip(
+                        avatar: const Icon(Icons.star, size: 18),
+                        label: Text(
+                          '${location.rating!.toStringAsFixed(1)}'
+                          ' (${location.reviewCount})',
+                        ),
+                      ),
+                    if (location.price?.isNotEmpty ?? false)
+                      Chip(
+                        avatar: const Icon(Icons.payments_outlined, size: 18),
+                        label: Text(location.price!),
+                      ),
+                    if (location.status.isNotEmpty)
+                      Chip(
+                        avatar: const Icon(Icons.info_outline, size: 18),
+                        label: Text(_statusLabel(location.status)),
+                      ),
+                  ],
+                ),
+                if (location.sourceCategory.isNotEmpty &&
+                    location.sourceCategory != location.categoryLabel) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    'Google category: ${location.sourceCategory}',
+                    style: AppTextStyles.body,
+                  ),
+                ],
+                if (location.openingHours.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(
+                    'Opening hours',
+                    style: AppTextStyles.title.copyWith(fontSize: 19),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  for (final entry in location.openingHours.entries)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: 92,
+                            child: Text(
+                              _capitalise(entry.key),
+                              style: AppTextStyles.body.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(entry.value, style: AppTextStyles.body),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+                if ((location.phone?.isNotEmpty ?? false) ||
+                    (location.website?.isNotEmpty ?? false)) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    children: [
+                      if (location.phone?.isNotEmpty ?? false)
+                        FilledButton.tonalIcon(
+                          onPressed: () => _launchExternal(
+                            Uri(scheme: 'tel', path: location.phone),
+                          ),
+                          icon: const Icon(Icons.phone),
+                          label: const Text('Call'),
+                        ),
+                      if (location.website?.isNotEmpty ?? false)
+                        FilledButton.tonalIcon(
+                          onPressed: () => _launchExternal(
+                            _websiteUri(location.website!),
+                          ),
+                          icon: const Icon(Icons.language),
+                          label: const Text('Website'),
+                        ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.lg),
+                AppButton(
+                  label: 'Route',
+                  icon: Icons.directions_walk,
+                  backgroundColor: AppColors.pine,
+                  foregroundColor: Colors.white,
+                  onPressed: () => launchGoogleMapsDirections(point),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _launchExternal(Uri uri) async {
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open that link.')),
+      );
+    }
+  }
+
+  Uri _websiteUri(String value) {
+    final uri = Uri.tryParse(value);
+    if (uri != null && uri.hasScheme) return uri;
+    return Uri.parse('https://$value');
+  }
+
   Future<void> _showPlace(PlaceRecord place) async {
     final guides = await _guides.guidesForPlace(place.id);
     if (!mounted) return;
@@ -351,7 +543,11 @@ class _FriendLocationPageState extends State<FriendLocationPage>
   }
 
   void _focusInitialPlace(List<PlaceRecord> places) {
-    if (_focusedInitialPlace || widget.initialPlaceId == null) return;
+    if (_focusedInitialPlace ||
+        _focusedInitialMapLocation ||
+        widget.initialPlaceId == null) {
+      return;
+    }
     for (final place in places) {
       if (place.id == widget.initialPlaceId) {
         _focusedInitialPlace = true;
@@ -361,6 +557,28 @@ class _FriendLocationPageState extends State<FriendLocationPage>
             16,
           );
           _showPlace(place);
+        });
+        return;
+      }
+    }
+  }
+
+  void _focusInitialMapLocation(List<MapLocationRecord> locations) {
+    if (_focusedInitialMapLocation ||
+        _focusedInitialPlace ||
+        widget.initialPlaceId == null) {
+      return;
+    }
+    for (final location in locations) {
+      if (location.id == widget.initialPlaceId ||
+          location.placeId == widget.initialPlaceId) {
+        _focusedInitialMapLocation = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _mapController.move(
+            ll.LatLng(location.point.latitude, location.point.longitude),
+            16,
+          );
+          _showMapLocation(location);
         });
         return;
       }
@@ -381,7 +599,7 @@ class _FriendLocationPageState extends State<FriendLocationPage>
     final uid = _auth.currentUserId;
     if (uid == null) {
       return const Scaffold(
-        body: Center(child: Text('Sign in to view friends and guides.')),
+        body: Center(child: Text('Sign in to view friends and places.')),
       );
     }
     return Scaffold(
@@ -389,183 +607,211 @@ class _FriendLocationPageState extends State<FriendLocationPage>
       bottomNavigationBar: widget.showBottomNavigation
           ? const AppBottomNav(currentIndex: 3, onItemSelected: _ignoreNavTap)
           : null,
-      body: StreamBuilder<List<PlaceRecord>>(
-        stream: _guides.watchPublishedPlaces(),
-        builder: (context, placeSnapshot) {
-          final places = placeSnapshot.data ?? const <PlaceRecord>[];
-          _focusInitialPlace(places);
-          return StreamBuilder<List<FriendMapEntry>>(
-            stream: _friends.watchVisibleFriendLocations(uid),
-            builder: (context, friendSnapshot) {
-              final friends = friendSnapshot.data ?? const <FriendMapEntry>[];
-              final showFriends = _filter != MapContentFilter.guides;
-              final showGuides = _filter != MapContentFilter.friends;
-              final visibleFriends = friends.where((friend) {
-                final point = friend.location.point;
-                return _visibleBounds?.contains(
-                      ll.LatLng(point.latitude, point.longitude),
-                    ) ??
-                    true;
-              }).length;
-              final visibleGuides = places
-                  .where((place) =>
-                      _visibleBounds?.contains(ll.LatLng(
-                        place.point.latitude,
-                        place.point.longitude,
-                      )) ??
-                      true)
-                  .fold<int>(0, (count, place) => count + place.guideCount);
-              return Stack(
-                children: [
-                  fm.FlutterMap(
-                    mapController: _mapController,
-                    options: fm.MapOptions(
-                      initialCenter: _districtOne,
-                      initialZoom: 14.4,
-                      minZoom: 11,
-                      maxZoom: 19,
-                      onPositionChanged: (camera, _) {
-                        if (!mounted) return;
-                        setState(() => _visibleBounds = camera.visibleBounds);
-                      },
-                    ),
+      body: StreamBuilder<List<MapLocationRecord>>(
+        stream: _locations.watchMapLocations(),
+        builder: (context, locationSnapshot) {
+          final mapLocations =
+              locationSnapshot.data ?? const <MapLocationRecord>[];
+          _focusInitialMapLocation(mapLocations);
+          return StreamBuilder<List<PlaceRecord>>(
+            stream: _guides.watchPublishedPlaces(),
+            builder: (context, placeSnapshot) {
+              final places = placeSnapshot.data ?? const <PlaceRecord>[];
+              _focusInitialPlace(places);
+              return StreamBuilder<List<FriendMapEntry>>(
+                stream: _friends.watchVisibleFriendLocations(uid),
+                builder: (context, friendSnapshot) {
+                  final friends =
+                      friendSnapshot.data ?? const <FriendMapEntry>[];
+                  final showFriends = _filter == MapContentFilter.all ||
+                      _filter == MapContentFilter.friends;
+                  final showLocations = _filter == MapContentFilter.all ||
+                      _filter == MapContentFilter.locations;
+                  final visibleFriends = friends.where((friend) {
+                    final point = friend.location.point;
+                    return _visibleBounds?.contains(
+                          ll.LatLng(point.latitude, point.longitude),
+                        ) ??
+                        true;
+                  }).length;
+                  final visibleLocations = mapLocations.where((location) {
+                    final point = location.point;
+                    return _visibleBounds?.contains(
+                          ll.LatLng(point.latitude, point.longitude),
+                        ) ??
+                        true;
+                  }).length;
+                  final visibleGuides = places
+                      .where((place) =>
+                          _visibleBounds?.contains(ll.LatLng(
+                            place.point.latitude,
+                            place.point.longitude,
+                          )) ??
+                          true)
+                      .fold<int>(
+                        0,
+                        (count, place) => count + place.guideCount,
+                      );
+                  return Stack(
                     children: [
-                      fm.TileLayer(
-                        urlTemplate:
-                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        userAgentPackageName: 'com.fluentish.app',
-                      ),
-                      if (_activeStops.length > 1)
-                        fm.PolylineLayer(
-                          polylines: [
-                            fm.Polyline(
-                              points: _activeStops
-                                  .map((stop) => ll.LatLng(
-                                        stop.point.latitude,
-                                        stop.point.longitude,
-                                      ))
-                                  .toList(),
-                              color: Colors.blue,
-                              strokeWidth: 5,
-                            ),
-                          ],
+                      fm.FlutterMap(
+                        mapController: _mapController,
+                        options: fm.MapOptions(
+                          initialCenter: _districtOne,
+                          initialZoom: 14.4,
+                          minZoom: 11,
+                          maxZoom: 19,
+                          onPositionChanged: (camera, _) {
+                            if (!mounted) return;
+                            setState(
+                              () => _visibleBounds = camera.visibleBounds,
+                            );
+                          },
                         ),
-                      fm.MarkerLayer(
-                        markers: [
-                          if (_myPosition != null)
-                            fm.Marker(
-                              point: ll.LatLng(
-                                _myPosition!.latitude,
-                                _myPosition!.longitude,
-                              ),
-                              width: 52,
-                              height: 52,
-                              child: const _CurrentUserMarker(),
+                        children: [
+                          fm.TileLayer(
+                            urlTemplate:
+                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.fluentish.app',
+                          ),
+                          if (_activeStops.length > 1)
+                            fm.PolylineLayer(
+                              polylines: [
+                                fm.Polyline(
+                                  points: _activeStops
+                                      .map((stop) => ll.LatLng(
+                                            stop.point.latitude,
+                                            stop.point.longitude,
+                                          ))
+                                      .toList(),
+                                  color: Colors.blue,
+                                  strokeWidth: 5,
+                                ),
+                              ],
                             ),
-                          if (showFriends)
-                            for (final friend in friends)
-                              fm.Marker(
-                                point: ll.LatLng(
-                                  friend.location.point.latitude,
-                                  friend.location.point.longitude,
+                          fm.MarkerLayer(
+                            markers: [
+                              if (_myPosition != null)
+                                fm.Marker(
+                                  point: ll.LatLng(
+                                    _myPosition!.latitude,
+                                    _myPosition!.longitude,
+                                  ),
+                                  width: 52,
+                                  height: 52,
+                                  child: const _CurrentUserMarker(),
                                 ),
-                                width: 72,
-                                height: 72,
-                                child: GestureDetector(
-                                  onTap: () => _showFriend(friend),
-                                  child: _FriendMarker(entry: friend),
+                              if (showFriends)
+                                for (final friend in friends)
+                                  fm.Marker(
+                                    point: ll.LatLng(
+                                      friend.location.point.latitude,
+                                      friend.location.point.longitude,
+                                    ),
+                                    width: 72,
+                                    height: 72,
+                                    child: GestureDetector(
+                                      onTap: () => _showFriend(friend),
+                                      child: _FriendMarker(entry: friend),
+                                    ),
+                                  ),
+                              if (showLocations)
+                                for (final location in mapLocations)
+                                  fm.Marker(
+                                    point: ll.LatLng(
+                                      location.point.latitude,
+                                      location.point.longitude,
+                                    ),
+                                    width: 62,
+                                    height: 62,
+                                    child: GestureDetector(
+                                      onTap: () => _showMapLocation(location),
+                                      child: _MapLocationMarker(
+                                        location: location,
+                                      ),
+                                    ),
+                                  ),
+                              for (final stop in _activeStops)
+                                fm.Marker(
+                                  point: ll.LatLng(
+                                    stop.point.latitude,
+                                    stop.point.longitude,
+                                  ),
+                                  width: 40,
+                                  height: 40,
+                                  child: _RouteStopMarker(stop: stop),
                                 ),
+                            ],
+                          ),
+                          const fm.RichAttributionWidget(
+                            attributions: [
+                              fm.TextSourceAttribution(
+                                'OpenStreetMap contributors',
                               ),
-                          if (showGuides)
-                            for (final place in places)
-                              fm.Marker(
-                                point: ll.LatLng(
-                                  place.point.latitude,
-                                  place.point.longitude,
-                                ),
-                                width: 72,
-                                height: 72,
-                                child: GestureDetector(
-                                  onTap: () => _showPlace(place),
-                                  child: _GuideMarker(place: place),
-                                ),
-                              ),
-                          for (final stop in _activeStops)
-                            fm.Marker(
-                              point: ll.LatLng(
-                                stop.point.latitude,
-                                stop.point.longitude,
-                              ),
-                              width: 40,
-                              height: 40,
-                              child: _RouteStopMarker(stop: stop),
-                            ),
+                            ],
+                          ),
                         ],
                       ),
-                      const fm.RichAttributionWidget(
-                        attributions: [
-                          fm.TextSourceAttribution(
-                              'OpenStreetMap contributors'),
-                        ],
+                      SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          child: Column(
+                            children: [
+                              _MapHeader(
+                                friendCount: visibleFriends,
+                                locationCount: visibleLocations,
+                                guideCount: visibleGuides,
+                                sharingBusy: _sharingBusy,
+                                sharingEnabled: _sharingEnabled,
+                                onSharingChanged: _toggleSharing,
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              _MapFilters(
+                                selected: _filter,
+                                onSelected: (filter) =>
+                                    setState(() => _filter = filter),
+                              ),
+                              if (_activeRoute != null) ...[
+                                const SizedBox(height: AppSpacing.sm),
+                                _ActiveRouteBanner(
+                                  guide: _activeRoute!,
+                                  onClose: () => setState(() {
+                                    _activeRoute = null;
+                                    _activeStops = const [];
+                                  }),
+                                ),
+                              ],
+                              if (_message != null) ...[
+                                const SizedBox(height: AppSpacing.sm),
+                                Material(
+                                  color: AppColors.shell,
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Padding(
+                                    padding:
+                                        const EdgeInsets.all(AppSpacing.sm),
+                                    child: Text(_message!),
+                                  ),
+                                ),
+                              ],
+                              const Spacer(),
+                              Align(
+                                alignment: Alignment.bottomRight,
+                                child: FloatingActionButton.small(
+                                  heroTag: 'current-location',
+                                  backgroundColor: AppColors.pine,
+                                  foregroundColor: Colors.white,
+                                  onPressed: () =>
+                                      _loadCurrentPosition(moveMap: true),
+                                  child: const Icon(Icons.my_location),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
-                  ),
-                  SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      child: Column(
-                        children: [
-                          _MapHeader(
-                            friendCount: visibleFriends,
-                            guideCount: visibleGuides,
-                            sharingBusy: _sharingBusy,
-                            sharingEnabled: _sharingEnabled,
-                            onSharingChanged: _toggleSharing,
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                          _MapFilters(
-                            selected: _filter,
-                            onSelected: (filter) =>
-                                setState(() => _filter = filter),
-                          ),
-                          if (_activeRoute != null) ...[
-                            const SizedBox(height: AppSpacing.sm),
-                            _ActiveRouteBanner(
-                              guide: _activeRoute!,
-                              onClose: () => setState(() {
-                                _activeRoute = null;
-                                _activeStops = const [];
-                              }),
-                            ),
-                          ],
-                          if (_message != null) ...[
-                            const SizedBox(height: AppSpacing.sm),
-                            Material(
-                              color: AppColors.shell,
-                              borderRadius: BorderRadius.circular(16),
-                              child: Padding(
-                                padding: const EdgeInsets.all(AppSpacing.sm),
-                                child: Text(_message!),
-                              ),
-                            ),
-                          ],
-                          const Spacer(),
-                          Align(
-                            alignment: Alignment.bottomRight,
-                            child: FloatingActionButton.small(
-                              heroTag: 'current-location',
-                              backgroundColor: AppColors.pine,
-                              foregroundColor: Colors.white,
-                              onPressed: () =>
-                                  _loadCurrentPosition(moveMap: true),
-                              child: const Icon(Icons.my_location),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+                  );
+                },
               );
             },
           );
@@ -580,6 +826,7 @@ class _FriendLocationPageState extends State<FriendLocationPage>
 class _MapHeader extends StatelessWidget {
   const _MapHeader({
     required this.friendCount,
+    required this.locationCount,
     required this.guideCount,
     required this.sharingBusy,
     required this.sharingEnabled,
@@ -587,6 +834,7 @@ class _MapHeader extends StatelessWidget {
   });
 
   final int friendCount;
+  final int locationCount;
   final int guideCount;
   final bool sharingBusy;
   final bool sharingEnabled;
@@ -612,11 +860,11 @@ class _MapHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Friends & Guides',
+                    'Friends & Places',
                     style: AppTextStyles.title.copyWith(fontSize: 18),
                   ),
                   Text(
-                    '$friendCount friends · $guideCount guides',
+                    '$friendCount friends · $locationCount places',
                     style: AppTextStyles.body.copyWith(fontSize: 11),
                   ),
                 ],
@@ -642,22 +890,21 @@ class _MapFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 6,
+      runSpacing: 6,
       children: [
         for (final filter in MapContentFilter.values)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 3),
-            child: ChoiceChip(
-              label: Text(switch (filter) {
-                MapContentFilter.all => 'All',
-                MapContentFilter.friends => 'Friends',
-                MapContentFilter.guides => 'Guides',
-              }),
-              selected: selected == filter,
-              showCheckmark: false,
-              onSelected: (_) => onSelected(filter),
-            ),
+          ChoiceChip(
+            label: Text(switch (filter) {
+              MapContentFilter.all => 'All',
+              MapContentFilter.friends => 'Friends',
+              MapContentFilter.locations => 'Places',
+            }),
+            selected: selected == filter,
+            showCheckmark: false,
+            onSelected: (_) => onSelected(filter),
           ),
       ],
     );
@@ -723,48 +970,34 @@ class _FriendMarker extends StatelessWidget {
   }
 }
 
-class _GuideMarker extends StatelessWidget {
-  const _GuideMarker({required this.place});
+class _MapLocationMarker extends StatelessWidget {
+  const _MapLocationMarker({required this.location});
 
-  final PlaceRecord place;
-
-  IconData get icon => switch (place.category) {
-        'food' => Icons.restaurant,
-        'cafe' => Icons.local_cafe,
-        'route' => Icons.route,
-        _ => Icons.place,
-      };
+  final MapLocationRecord location;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          height: 48,
-          width: 48,
-          decoration: BoxDecoration(
-            color: AppColors.pine,
-            border: Border.all(color: Colors.white, width: 3),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(24),
-              topRight: Radius.circular(24),
-              bottomLeft: Radius.circular(24),
-            ),
-            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
+    return Tooltip(
+      message: location.name,
+      child: Container(
+        height: 46,
+        width: 46,
+        decoration: BoxDecoration(
+          color: _mapLocationColor(location.group),
+          border: Border.all(color: Colors.white, width: 3),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(23),
+            topRight: Radius.circular(23),
+            bottomLeft: Radius.circular(23),
           ),
-          child: Icon(icon, color: Colors.white),
+          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
         ),
-        if (place.guideCount > 1)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-            decoration: BoxDecoration(
-              color: AppColors.blush,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text('${place.guideCount} guides',
-                style: const TextStyle(fontSize: 8)),
-          ),
-      ],
+        child: Icon(
+          _mapLocationIcon(location.iconKey),
+          color: Colors.white,
+          size: 23,
+        ),
+      ),
     );
   }
 }
@@ -830,4 +1063,42 @@ class _ActiveRouteBanner extends StatelessWidget {
       ),
     );
   }
+}
+
+IconData _mapLocationIcon(String iconKey) => switch (iconKey) {
+      'bakery' => Icons.bakery_dining,
+      'bar' => Icons.local_bar,
+      'cafe' => Icons.local_cafe,
+      'restaurant' => Icons.restaurant,
+      'amusement_park' => Icons.attractions,
+      'arcade' => Icons.sports_esports,
+      'bowling_alley' => Icons.sports_baseball,
+      'movie_theatre' => Icons.movie,
+      'nightlife' => Icons.nightlife,
+      'park' => Icons.park,
+      'playground' => Icons.child_care,
+      'water_park' => Icons.water,
+      'zoo' => Icons.pets,
+      'art_gallery' => Icons.palette,
+      'cultural_attraction' => Icons.landscape,
+      'cultural_centre' => Icons.groups,
+      'historical_place' => Icons.account_balance,
+      'museum' => Icons.museum,
+      'theatre' => Icons.theater_comedy,
+      _ => Icons.place,
+    };
+
+Color _mapLocationColor(String group) => switch (group) {
+      'food_drink' => Colors.deepOrange,
+      'entertainment' => Colors.deepPurple,
+      'culture' => Colors.blue,
+      _ => AppColors.pine,
+    };
+
+String _statusLabel(String status) =>
+    status.split('_').map(_capitalise).join(' ');
+
+String _capitalise(String value) {
+  if (value.isEmpty) return value;
+  return '${value[0].toUpperCase()}${value.substring(1)}';
 }

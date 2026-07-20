@@ -1,7 +1,9 @@
 export 'assets/app_assets.dart';
 export 'models/firestore_models.dart';
+export 'models/favourite_models.dart';
 export 'services/auth_service.dart';
 export 'services/friend_repository.dart';
+export 'services/favourite_repository.dart';
 export 'services/guide_repository.dart';
 export 'services/location_repository.dart';
 export 'theme/app_colors.dart';
@@ -14,3 +16,4 @@ export 'widgets/app_card.dart';
 export 'widgets/app_text_field.dart';
 export 'widgets/app_text_label.dart';
 export 'widgets/app_stroke_text.dart';
+export 'widgets/map_location_visuals.dart';

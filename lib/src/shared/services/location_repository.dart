@@ -4,7 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geohash_plus/geohash_plus.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../models/firestore_models.dart';
+
 abstract class LocationDataSource {
+  Stream<List<MapLocationRecord>> watchMapLocations();
   Stream<bool> watchSharing(String uid);
   Future<void> setSharing(String uid, bool enabled);
   Future<Position> currentPosition();
@@ -16,6 +19,22 @@ class LocationRepository implements LocationDataSource {
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
+
+  @override
+  Stream<List<MapLocationRecord>> watchMapLocations() {
+    return _firestore
+        .collection('locations')
+        .where('isActive', isEqualTo: true)
+        .snapshots()
+        .map((snapshot) {
+      final locations = snapshot.docs
+          .map(MapLocationRecord.fromDocument)
+          .where((location) => location.hasValidPoint)
+          .toList();
+      locations.sort((first, second) => first.name.compareTo(second.name));
+      return locations;
+    });
+  }
 
   @override
   Stream<bool> watchSharing(String uid) {

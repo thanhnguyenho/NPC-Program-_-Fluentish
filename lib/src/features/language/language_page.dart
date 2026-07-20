@@ -127,11 +127,26 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
 
   bool _looksLikeVietnamese(String text) {
     final lower = text.toLowerCase().trim();
-    const vnChars = 'ăâđêôơưáàảãạấầẩẫậéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ';
+    const vnChars =
+        'ăâđêôơưáàảãạấầẩẫậéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ';
     for (int i = 0; i < lower.length; i++) {
       if (vnChars.contains(lower[i])) return true;
     }
-    const vnPrefixes = ['xin ', 'xin', 'hôm nay', 'bạn', 'tôi', 'chúng ta', 'làm sao', 'cái này', 'ở đâu', 'ăn gì', 'bao nhiêu', 'chào', 'cảm ơn'];
+    const vnPrefixes = [
+      'xin ',
+      'xin',
+      'hôm nay',
+      'bạn',
+      'tôi',
+      'chúng ta',
+      'làm sao',
+      'cái này',
+      'ở đâu',
+      'ăn gì',
+      'bao nhiêu',
+      'chào',
+      'cảm ơn'
+    ];
     for (final w in vnPrefixes) {
       if (lower.startsWith(w) || lower.contains(' $w ')) return true;
     }
