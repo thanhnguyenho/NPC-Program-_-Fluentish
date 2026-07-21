@@ -1,8 +1,8 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 
 class EditableProfile {
   const EditableProfile({
@@ -62,14 +62,11 @@ class ProfileRepository implements ProfileDataSource {
   ProfileRepository({
     FirebaseAuth? auth,
     FirebaseFirestore? firestore,
-    FirebaseStorage? storage,
   })  : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance,
-        _storage = storage ?? FirebaseStorage.instance;
+        _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
-  final FirebaseStorage _storage;
 
   User get _user {
     final user = _auth.currentUser;
@@ -180,8 +177,10 @@ class ProfileRepository implements ProfileDataSource {
   @override
   Future<EditableProfile> uploadAvatar(ProfileAvatarSelection avatar) async {
     final user = _user;
-    if (avatar.bytes.isEmpty || avatar.bytes.length > 1024 * 1024) {
-      throw StateError('Choose an image smaller than 1 MB.');
+    // Firestore documents are limited to 1 MiB. Base64 adds roughly 33%, so
+    // leave enough room for the rest of the profile document.
+    if (avatar.bytes.isEmpty || avatar.bytes.length > 700 * 1024) {
+      throw StateError('Choose an image smaller than 700 KB.');
     }
     if (!const {
       'image/jpeg',
@@ -191,20 +190,13 @@ class ProfileRepository implements ProfileDataSource {
       throw StateError('Choose a JPEG, PNG, or WebP image.');
     }
 
-    final reference = _storage.ref('avatars/${user.uid}/profile');
-    await reference
-        .putData(
-          avatar.bytes,
-          SettableMetadata(contentType: avatar.contentType),
-        )
-        .timeout(const Duration(seconds: 30));
-    final avatarUrl = await reference.getDownloadURL();
+    final encodedAvatar = base64Encode(avatar.bytes);
     final batch = _firestore.batch();
     batch.set(
       _firestore.collection('users').doc(user.uid),
       {
-        'avatarUrl': avatarUrl,
-        'avatarBase64': FieldValue.delete(),
+        'avatarUrl': FieldValue.delete(),
+        'avatarBase64': encodedAvatar,
       },
       SetOptions(merge: true),
     );
@@ -212,17 +204,15 @@ class ProfileRepository implements ProfileDataSource {
       _firestore.collection('publicProfiles').doc(user.uid),
       {
         'uid': user.uid,
-        'avatarUrl': avatarUrl,
-        'avatarBase64': FieldValue.delete(),
+        'avatarUrl': FieldValue.delete(),
+        'avatarBase64': encodedAvatar,
       },
       SetOptions(merge: true),
     );
-    await batch.commit();
-    await user.updatePhotoURL(avatarUrl);
+    await batch.commit().timeout(const Duration(seconds: 12));
     final current = await loadProfile();
     return current.copyWith(
-      avatarUrl: avatarUrl,
-      clearAvatarBase64: true,
+      avatarBase64: encodedAvatar,
     );
   }
 }

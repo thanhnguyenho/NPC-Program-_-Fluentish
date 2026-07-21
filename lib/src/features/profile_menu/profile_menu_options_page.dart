@@ -86,9 +86,9 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
   Future<ProfileAvatarSelection?> _pickAvatar() async {
     final image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 80,
+      maxWidth: 384,
+      maxHeight: 384,
+      imageQuality: 70,
     );
     if (image == null) return null;
     final lowerPath = image.path.toLowerCase();
