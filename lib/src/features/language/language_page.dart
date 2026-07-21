@@ -256,9 +256,11 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
           TranslatorEngine.findSpellingCorrection(rawText, _sourceLang);
     });
 
+    final normText = PhraseLibrary.normalizeTypo(rawText);
+
     // LAYER 1: Check phrase library cục bộ (instant, <1ms)
     final phraseResult =
-        PhraseLibrary.lookup(rawText, _sourceLang, _targetLang);
+        PhraseLibrary.lookup(normText, _sourceLang, _targetLang);
     if (phraseResult != null) {
       setState(() {
         _translatedText = phraseResult;
@@ -266,21 +268,22 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
       });
       _translationDebounceTimer?.cancel();
       // Lưu lịch sử
-      _saveToHistory(rawText.trim(), phraseResult);
+      _saveToHistory(normText.trim(), phraseResult);
       return;
     }
 
     // LAYER 1.5: Check sync progressive dictionary & grammar engine (instant, <1ms)
     final syncResult =
-        TranslatorEngine.translateSync(rawText, _sourceLang, _targetLang);
+        TranslatorEngine.translateSync(normText, _sourceLang, _targetLang);
     if (syncResult.isNotEmpty &&
+        syncResult.toLowerCase() != normText.trim().toLowerCase() &&
         syncResult.toLowerCase() != rawText.trim().toLowerCase()) {
       setState(() {
         _translatedText = syncResult;
         _isTranslating = false;
       });
       _translationDebounceTimer?.cancel();
-      _saveToHistory(rawText.trim(), syncResult);
+      _saveToHistory(normText.trim(), syncResult);
       return;
     }
 
@@ -297,7 +300,7 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
     _translationDebounceTimer =
         Timer(const Duration(milliseconds: 400), () async {
       if (!mounted || currentReqId != _translateRequestId) return;
-      final cleanSrc = rawText.trim();
+      final cleanSrc = normText.trim();
       if (cleanSrc.isEmpty) return;
 
       // LAYER 2: Gọi dịch Hybrid Race Engine
@@ -306,19 +309,26 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
 
       if (!mounted || currentReqId != _translateRequestId) return;
 
-      if (result.isNotEmpty) {
+      if (result.isNotEmpty && !result.startsWith('⚠️')) {
         setState(() {
           _translatedText = result;
           _isTranslating = false;
         });
         _saveToHistory(cleanSrc, result);
       } else {
+        // FALLBACK TUYỆT ĐỐI KHÔNG HIỆN LỖI: Dùng engine từ điển ngữ pháp Progressive Offline (translateSync)
+        final offlineFallback = TranslatorEngine.translateSync(
+            cleanSrc, _sourceLang, _targetLang, isSubclause: true);
         setState(() {
-          _translatedText = _sourceLang == 'English'
-              ? '⚠️ Không thể dịch lúc này. Vui lòng thử lại sau.'
-              : '⚠️ Unable to translate right now. Please try again later.';
+          _translatedText = offlineFallback.isNotEmpty
+              ? offlineFallback
+              : (_sourceLang == 'English' ? 'Đang cập nhật từ vựng...' : 'Updating vocabulary...');
           _isTranslating = false;
         });
+        if (offlineFallback.isNotEmpty &&
+            offlineFallback.toLowerCase() != cleanSrc.toLowerCase()) {
+          _saveToHistory(cleanSrc, offlineFallback);
+        }
       }
     });
   }
