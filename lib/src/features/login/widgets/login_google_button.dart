@@ -35,7 +35,6 @@ class _LoginGoogleButtonState extends State<LoginGoogleButton> {
           'Google authentication completed without a signed-in user.',
         );
       }
-
       if (!mounted) return;
 
       Navigator.of(context).pushAndRemoveUntil(
@@ -47,7 +46,11 @@ class _LoginGoogleButtonState extends State<LoginGoogleButton> {
         ),
         (route) => false,
       );
-    } catch (error) {
+    } catch (error, stackTrace) {
+      debugPrint('=== GOOGLE LOGIN ERROR ===');
+      debugPrint('$error');
+      debugPrint('$stackTrace');
+      debugPrint('==========================');
       if (!mounted) return;
 
       final message = error is StateError

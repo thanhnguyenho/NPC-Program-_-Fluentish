@@ -1,0 +1,84 @@
+diff --git a/lib/src/features/language/translator_engine.dart b/lib/src/features/language/translator_engine.dart
+index 1234567..89abcde 100644
+--- a/lib/src/features/language/translator_engine.dart
++++ b/lib/src/features/language/translator_engine.dart
+@@ -1430,6 +1430,48 @@ class TranslatorEngine {
+     // Final clean fallback: return original text as-is
+     return text;
+   }
+ 
++  static Set<String>? _knownWords;
++
++  static Set<String> _getKnownWords() {
++    if (_knownWords != null) return _knownWords!;
++    final Set<String> words = {};
++    
++    void addWordsFromText(String text) {
++      final cleaned = text.toLowerCase().replaceAll(
++          RegExp(r'[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ\s]'), ' ');
++      final tokens = cleaned.split(RegExp(r'\s+')).where((w) => w.isNotEmpty);
++      words.addAll(tokens);
++    }
++
++    // 1. Dictionary
++    for (final entry in _dictionary.entries) {
++      addWordsFromText(entry.key);
++      addWordsFromText(entry.value);
++    }
++
++    // 2. TravelCorpus
++    for (final entry in TravelCorpus.entries) {
++      if (entry['vi'] != null) addWordsFromText(entry['vi']!);
++      if (entry['en'] != null) addWordsFromText(entry['en']!);
++    }
++
++    // 3. VectorCorpus
++    for (final entry in _vectorCorpus) {
++      if (entry['vi'] != null) addWordsFromText(entry['vi']!);
++      if (entry['en'] != null) addWordsFromText(entry['en']!);
++    }
++
++    // 4. Proper Nouns
++    const properNouns = {
++      'vietnam', 'việt nam', 'english', 'vietnamese', 'tiếng anh', 'tiếng việt',
++      'hanoi', 'hà nội', 'ho chi minh', 'hồ chí minh', 'saigon', 'sài gòn',
++      'da nang', 'đà nẵng', 'new york', 'london', 'paris', 'tokyo', 'seoul',
++      'beijing', 'singapore', 'thailand', 'thái lan', 'japan', 'nhật bản',
++      'korea', 'hàn quốc', 'america', 'mỹ', 'usa', 'uk', 'france', 'pháp',
++      'china', 'trung quốc', 'vn123', 'i', 'nhật', 'hàn', 'nga', 'đức'
++    };
++    for (final pn in properNouns) {
++      addWordsFromText(pn);
++    }
++
++    _knownWords = words;
++    return _knownWords!;
++  }
++
+   // Live Typo & Spelling Suggestion engine for UI popup ("💡 Bạn có ý là: ...")
+   static String? findSpellingCorrection(String text, String sourceLang) {
+     final clean = text.trim();
+@@ -1445,6 +1487,22 @@ class TranslatorEngine {
+       }
+     }
+ 
++    // If all words are valid known words (or numbers), do not suggest correction
++    final cleanedInput = cleanLower.replaceAll(
++        RegExp(r'[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ\s]'), ' ');
++    final inputWords = cleanedInput.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
++    
++    bool allWordsValid = true;
++    final known = _getKnownWords();
++    for (final w in inputWords) {
++      final isNumber = int.tryParse(w) != null;
++      if (!isNumber && !known.contains(w)) {
++        allWordsValid = false;
++        break;
++      }
++    }
++    if (allWordsValid && inputWords.isNotEmpty) {
++      return null;
++    }
++
+     // Check Step 4A typo normalizations (e.g., shoul -> should, tomorow -> tomorrow, whre -> where)
+     final rawWords = clean.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();

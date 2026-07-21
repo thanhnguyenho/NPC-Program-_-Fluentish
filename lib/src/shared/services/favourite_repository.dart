@@ -20,6 +20,24 @@ abstract class FavouriteDataSource {
   Future<void> removeFavouritePhrase(String uid, String favouriteId);
 
   Future<void> removeFavouriteSoundboardBite(String uid, String favouriteId);
+
+  Future<void> saveFavouritePhrase(
+    String uid, {
+    required String sourceText,
+    required String translatedText,
+    required String sourceLanguage,
+    required String targetLanguage,
+  });
+
+  Future<void> saveFavouriteSoundboardBite(
+    String uid, {
+    required String english,
+    required String vietnamese,
+    required String category,
+    required String englishAudio,
+    required String vietnameseAudio,
+    required String preferredLanguage,
+  });
 }
 
 class FavouriteRepository implements FavouriteDataSource {
@@ -110,6 +128,54 @@ class FavouriteRepository implements FavouriteDataSource {
         .collection('favouriteSoundboardBites')
         .doc(favouriteId)
         .delete();
+  }
+
+  @override
+  Future<void> saveFavouritePhrase(
+    String uid, {
+    required String sourceText,
+    required String translatedText,
+    required String sourceLanguage,
+    required String targetLanguage,
+  }) async {
+    final docRef = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('favouritePhrases')
+        .doc();
+    await docRef.set({
+      'sourceText': sourceText,
+      'translatedText': translatedText,
+      'sourceLanguage': sourceLanguage,
+      'targetLanguage': targetLanguage,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  @override
+  Future<void> saveFavouriteSoundboardBite(
+    String uid, {
+    required String english,
+    required String vietnamese,
+    required String category,
+    required String englishAudio,
+    required String vietnameseAudio,
+    required String preferredLanguage,
+  }) async {
+    final docRef = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('favouriteSoundboardBites')
+        .doc();
+    await docRef.set({
+      'english': english,
+      'vietnamese': vietnamese,
+      'category': category,
+      'englishAudio': englishAudio,
+      'vietnameseAudio': vietnameseAudio,
+      'preferredLanguage': preferredLanguage,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
   }
 }
 

@@ -36,7 +36,11 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           onNavigateToLanguage: _openLanguage,
-          onNavigateToSoundboard: () => setState(() => _currentIndex = 2),
+          onNavigateToSoundboard: () {
+            setState(() {
+              _currentIndex = 2;
+            });
+          },
           onOpenFavouritePhrase: _openFavouritePhrase,
         ),
       1 => LanguagePage(
@@ -149,7 +153,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _retryPosition() {
-    setState(() => _positionFuture = _locations.currentPosition());
+    setState(() {
+      _positionFuture = _locations.currentPosition();
+    });
   }
 
   Future<void> _openDirections(MapLocationRecord location) async {
@@ -403,12 +409,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: AppSpacing.lg),
             ],
-            _SectionHeader(
-              title: 'Favourite Phrases',
-              action: 'Browse',
-              onTap: widget.onNavigateToLanguage ?? () {},
-            ),
-            const SizedBox(height: AppSpacing.md),
             _FavouritePhrasesSection(
               uid: uid,
               favourites: _favourites,
@@ -525,11 +525,112 @@ class _FavouritePhrasesSection extends StatelessWidget {
   final ValueChanged<FavouritePhraseRecord> onRemove;
   final VoidCallback? onBrowse;
 
+  void _showAllPhrasesSheet(BuildContext context, List<FavouritePhraseRecord> phrases) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFFF8EDED),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
+      builder: (context) {
+        String searchQuery = '';
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final filtered = phrases.where((p) =>
+                p.sourceText.toLowerCase().contains(searchQuery.toLowerCase()) ||
+                p.translatedText.toLowerCase().contains(searchQuery.toLowerCase()) ||
+                p.id.toLowerCase().contains(searchQuery.toLowerCase())).toList();
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.8,
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '⭐ All Favourite Phrases (${phrases.length})',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF3E4E31),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Search your ${phrases.length} saved phrases...',
+                      prefixIcon: const Icon(Icons.search, color: Color(0xFF3E4E31)),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    ),
+                    onChanged: (val) => setModalState(() => searchQuery = val),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: filtered.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'No matching phrases found.',
+                              style: TextStyle(color: Colors.grey, fontSize: 15),
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: filtered.length,
+                            itemBuilder: (context, index) {
+                              final phrase = filtered[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: _FavouritePhraseCard(
+                                  phrase: phrase,
+                                  isPlaying: playingId == 'phrase:${phrase.id}',
+                                  isRemoving: removingIds.contains('phrase:${phrase.id}'),
+                                  onOpen: () {
+                                    Navigator.pop(context);
+                                    onOpen(phrase);
+                                  },
+                                  onPlay: () => onPlay(phrase),
+                                  onRemove: () => onRemove(phrase),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final userId = uid;
     if (userId == null) {
-      return const _EmptyCard('Sign in to see your favourite phrases.');
+      return const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionHeader(title: 'Favourite Phrases'),
+          SizedBox(height: AppSpacing.md),
+          _EmptyCard('Sign in to see your favourite phrases.'),
+        ],
+      );
     }
     return StreamBuilder<List<FavouritePhraseRecord>>(
       stream: favourites.watchFavouritePhrases(userId),
@@ -537,23 +638,51 @@ class _FavouritePhrasesSection extends StatelessWidget {
         final phrases = snapshot.data ?? const <FavouritePhraseRecord>[];
         if (snapshot.connectionState == ConnectionState.waiting &&
             phrases.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
+          return const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _SectionHeader(title: 'Favourite Phrases'),
+              SizedBox(height: AppSpacing.md),
+              Center(child: CircularProgressIndicator()),
+            ],
+          );
         }
         if (snapshot.hasError) {
-          return const _EmptyCard('Favourite phrases could not be loaded.');
+          return const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _SectionHeader(title: 'Favourite Phrases'),
+              SizedBox(height: AppSpacing.md),
+              _EmptyCard('Favourite phrases could not be loaded.'),
+            ],
+          );
         }
         if (phrases.isEmpty) {
-          return _FavouriteEmptyCard(
-            icon: Icons.translate,
-            message: 'No favourite phrases yet. Add phrases from the '
-                'Language screen to see them here.',
-            action: 'Browse phrases',
-            onTap: onBrowse,
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _SectionHeader(title: 'Favourite Phrases'),
+              const SizedBox(height: AppSpacing.md),
+              _FavouriteEmptyCard(
+                icon: Icons.translate,
+                message: 'No favourite phrases yet. Add phrases from the '
+                    'Language screen to see them here.',
+                action: 'Browse phrases',
+                onTap: onBrowse,
+              ),
+            ],
           );
         }
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (final phrase in phrases.take(3))
+            _SectionHeader(
+              title: 'Favourite Phrases',
+              action: 'See All (${phrases.length})',
+              onTap: () => _showAllPhrasesSheet(context, phrases),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            for (final phrase in phrases.take(5))
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.md),
                 child: _FavouritePhraseCard(
@@ -563,6 +692,33 @@ class _FavouritePhrasesSection extends StatelessWidget {
                   onOpen: () => onOpen(phrase),
                   onPlay: () => onPlay(phrase),
                   onRemove: () => onRemove(phrase),
+                ),
+              ),
+            if (phrases.length > 5)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: AppCard(
+                  width: double.infinity,
+                  onTap: () => _showAllPhrasesSheet(context, phrases),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircleAvatar(
+                        radius: 18,
+                        backgroundColor: AppColors.blush,
+                        foregroundColor: AppColors.pine,
+                        child: Icon(Icons.add, size: 22, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Text(
+                        'View ${phrases.length - 5} older favourite phrases...',
+                        style: AppTextStyles.body.copyWith(
+                          color: AppColors.pine,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
           ],
@@ -602,7 +758,8 @@ class _FavouriteSoundboardSection extends StatelessWidget {
     return StreamBuilder<List<FavouriteSoundboardRecord>>(
       stream: favourites.watchFavouriteSoundboardBites(userId),
       builder: (context, snapshot) {
-        final bites = snapshot.data ?? const <FavouriteSoundboardRecord>[];
+        final bites =
+            snapshot.data ?? const <FavouriteSoundboardRecord>[];
         if (snapshot.connectionState == ConnectionState.waiting &&
             bites.isEmpty) {
           return const Center(child: CircularProgressIndicator());
@@ -1062,13 +1219,13 @@ String _recommendationDescription(MapLocationRecord location) {
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({
     required this.title,
-    required this.action,
-    required this.onTap,
+    this.action,
+    this.onTap,
   });
 
   final String title;
-  final String action;
-  final VoidCallback onTap;
+  final String? action;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1084,7 +1241,8 @@ class _SectionHeader extends StatelessWidget {
             ),
           ),
         ),
-        TextButton(onPressed: onTap, child: Text(action)),
+        if (action != null && onTap != null)
+          TextButton(onPressed: onTap, child: Text(action!)),
       ],
     );
   }
