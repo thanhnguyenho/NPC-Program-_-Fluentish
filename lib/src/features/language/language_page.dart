@@ -16,6 +16,7 @@ class LanguagePage extends StatelessWidget {
   final String? initialSourceLang;
   final String? initialTargetLang;
   final String? initialQuery;
+  final String? initialFavouriteId;
   final AuthGateway? auth;
   final FavouriteDataSource? favouriteRepository;
 
@@ -26,6 +27,7 @@ class LanguagePage extends StatelessWidget {
     this.initialSourceLang,
     this.initialTargetLang,
     this.initialQuery,
+    this.initialFavouriteId,
     this.auth,
     this.favouriteRepository,
   });
@@ -38,6 +40,7 @@ class LanguagePage extends StatelessWidget {
       initialSourceLang: initialSourceLang,
       initialTargetLang: initialTargetLang,
       initialQuery: initialQuery,
+      initialFavouriteId: initialFavouriteId,
       auth: auth,
       favouriteRepository: favouriteRepository,
     );
@@ -50,6 +53,7 @@ class LanguageTranslatorScreen extends StatefulWidget {
   final String? initialSourceLang;
   final String? initialTargetLang;
   final String? initialQuery;
+  final String? initialFavouriteId;
   final AuthGateway? auth;
   final FavouriteDataSource? favouriteRepository;
 
@@ -60,6 +64,7 @@ class LanguageTranslatorScreen extends StatefulWidget {
     this.initialSourceLang,
     this.initialTargetLang,
     this.initialQuery,
+    this.initialFavouriteId,
     this.auth,
     this.favouriteRepository,
   });
@@ -78,11 +83,8 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
   String _translatedText = '';
 
   bool _isTargetStarred = false;
-  bool _isFavouriteBusy = false;
-  late final AuthGateway _auth;
-  late final FavouriteDataSource _favourites;
-  StreamSubscription<List<FavouritePhraseRecord>>? _favouriteSubscription;
-  List<FavouritePhraseRecord> _savedPhrases = const [];
+  bool _favouriteBusy = false;
+  String? _savedFavouriteId;
   String? _spellingCorrectionSuggestion;
   bool _isTranslating = false;
   Timer? _translationDebounceTimer;
@@ -90,6 +92,8 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
   Timer? _historyDebounceTimer;
   int _translateRequestId = 0;
   FlutterTts? _flutterTts;
+  late final AuthGateway _auth;
+  late final FavouriteDataSource _favourites;
 
   // Clean initial history & favourites
   final List<Map<String, String>> _historyList = [];
@@ -99,6 +103,8 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
     super.initState();
     _auth = widget.auth ?? Auth.instance;
     _favourites = widget.favouriteRepository ?? FavouriteRepository();
+    _savedFavouriteId = widget.initialFavouriteId;
+    _isTargetStarred = _savedFavouriteId != null;
     _sourceLang =
         widget.initialSourceLang ?? SettingsController.instance.sourceLanguage;
     _targetLang =
@@ -113,17 +119,6 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
         _onSourceTextChanged(initText);
       }
     }
-    final uid = _auth.currentUserId;
-    if (uid != null) {
-      _favouriteSubscription =
-          _favourites.watchFavouritePhrases(uid).listen((phrases) {
-        if (!mounted) return;
-        setState(() {
-          _savedPhrases = phrases;
-          _syncStarredState();
-        });
-      });
-    }
   }
 
   @override
@@ -133,7 +128,6 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
     _historyDebounceTimer?.cancel();
     _searchController.dispose();
     _sourceController.dispose();
-    _favouriteSubscription?.cancel();
     super.dispose();
   }
 
@@ -142,6 +136,61 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
     final tts = FlutterTts();
     _flutterTts = tts;
     return tts;
+  }
+
+  Future<void> _toggleFavourite() async {
+    if (_favouriteBusy ||
+        _sourceController.text.trim().isEmpty ||
+        _translatedText.trim().isEmpty) {
+      return;
+    }
+    final uid = _auth.currentUserId;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to save favourites.')),
+      );
+      return;
+    }
+
+    setState(() => _favouriteBusy = true);
+    try {
+      final savedId = _savedFavouriteId;
+      if (savedId != null) {
+        await _favourites.removeFavouritePhrase(uid, savedId);
+        if (!mounted) return;
+        setState(() {
+          _savedFavouriteId = null;
+          _isTargetStarred = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Removed from Favourites')),
+        );
+      } else {
+        final favouriteId = await _favourites.saveFavouritePhrase(
+          uid,
+          sourceText: _sourceController.text.trim(),
+          translatedText: _translatedText.trim(),
+          sourceLanguage: _sourceLang,
+          targetLanguage: _targetLang,
+        );
+        if (!mounted) return;
+        setState(() {
+          _savedFavouriteId = favouriteId;
+          _isTargetStarred = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Saved to Favourites!')),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      debugPrint('Could not update favourite phrase: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not update Favourites.')),
+      );
+    } finally {
+      if (mounted) setState(() => _favouriteBusy = false);
+    }
   }
 
   bool _looksLikeVietnamese(String text) {
@@ -205,8 +254,6 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
     setState(() {
       _spellingCorrectionSuggestion =
           TranslatorEngine.findSpellingCorrection(rawText, _sourceLang);
-      _isSourceStarred = false;
-      _isTargetStarred = false;
     });
 
     // LAYER 1: Check phrase library cục bộ (instant, <1ms)
@@ -216,7 +263,6 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
       setState(() {
         _translatedText = phraseResult;
         _isTranslating = false;
-        _syncStarredState();
       });
       _translationDebounceTimer?.cancel();
       // Lưu lịch sử
@@ -264,7 +310,6 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
         setState(() {
           _translatedText = result;
           _isTranslating = false;
-          _syncStarredState();
         });
         _saveToHistory(cleanSrc, result);
       } else {
@@ -291,7 +336,10 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
         // Tuyệt đối KHÔNG xóa câu hoàn chỉnh trong lịch sử khi người dùng bấm phím Backspace/xóa chữ.
         _historyList.removeWhere((item) =>
             item['source']!.toLowerCase() == source.toLowerCase() ||
-            (source.length > item['source']!.length && source.toLowerCase().startsWith(item['source']!.toLowerCase())));
+            (source.length > item['source']!.length &&
+                source
+                    .toLowerCase()
+                    .startsWith(item['source']!.toLowerCase())));
         _historyList.insert(0, {
           'source': source,
           'target': target,
@@ -339,85 +387,6 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
       hash = (hash * 0x01000193) & 0x7fffffff;
     }
     return hash.toRadixString(16);
-  }
-
-  FavouritePhraseRecord? _matchingFavourite() {
-    final source = _sourceController.text.trim().toLowerCase();
-    final target = _translatedText.trim().toLowerCase();
-    if (source.isEmpty || target.isEmpty) return null;
-    for (final phrase in _savedPhrases) {
-      if (phrase.sourceText.trim().toLowerCase() == source &&
-          phrase.translatedText.trim().toLowerCase() == target &&
-          phrase.sourceLanguage == _sourceLang &&
-          phrase.targetLanguage == _targetLang) {
-        return phrase;
-      }
-    }
-    return null;
-  }
-
-  void _syncStarredState() {
-    final isSaved = _matchingFavourite() != null;
-    _isSourceStarred = isSaved;
-    _isTargetStarred = isSaved;
-  }
-
-  Future<void> _toggleFavourite() async {
-    if (_isFavouriteBusy) return;
-    final source = _sourceController.text.trim();
-    final target = _translatedText.trim();
-    if (source.isEmpty ||
-        target.isEmpty ||
-        target.startsWith('⚠️') ||
-        _isTranslating) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Translate a phrase before saving it.')),
-      );
-      return;
-    }
-    final uid = _auth.currentUserId;
-    if (uid == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sign in to save favourite phrases.')),
-      );
-      return;
-    }
-    final existing = _matchingFavourite();
-    setState(() {
-      _isFavouriteBusy = true;
-      _isSourceStarred = existing == null;
-      _isTargetStarred = existing == null;
-    });
-    try {
-      if (existing != null) {
-        await _favourites.removeFavouritePhrase(uid, existing.id);
-      } else {
-        await _favourites.saveFavouritePhrase(
-          uid,
-          sourceText: source,
-          translatedText: target,
-          sourceLanguage: _sourceLang,
-          targetLanguage: _targetLang,
-        );
-      }
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(existing == null
-              ? 'Phrase saved to favourites.'
-              : 'Phrase removed from favourites.'),
-        ),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      setState(_syncStarredState);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not update favourite phrase.')),
-      );
-      debugPrint('Could not update favourite phrase: $error');
-    } finally {
-      if (mounted) setState(() => _isFavouriteBusy = false);
-    }
   }
 
   void _swapLanguages() {
@@ -498,8 +467,7 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
 
     // Check if the text is Vietnamese
     final isVi = lang.toLowerCase().contains('vi') ||
-        RegExp(r'[ăâđêôơưáàảãạéèẻẽẹíìỉĩịóòỏõọúùủũụýỳỷỹỵ]',
-                caseSensitive: false)
+        RegExp(r'[ăâđêôơưáàảãạéèẻẽẹíìỉĩịóòỏõọúùủũụýỳỷỹỵ]', caseSensitive: false)
             .hasMatch(textToSpeak);
 
     if (isVi) {
@@ -1063,19 +1031,6 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                                               ),
                                             ),
                                           ),
-                                        const SizedBox(width: 8),
-                                        GestureDetector(
-                                          onTap: _toggleFavourite,
-                                          child: Icon(
-                                            _isSourceStarred
-                                                ? Icons.star
-                                                : Icons.star_border,
-                                            color: _isSourceStarred
-                                                ? Colors.amber
-                                                : colors.textPrimary,
-                                            size: 26,
-                                          ),
-                                        ),
                                       ],
                                     ),
                                   ],
@@ -1296,9 +1251,14 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                                             ),
                                           ),
                                         const SizedBox(width: 8),
-                                        GestureDetector(
-                                          onTap: _toggleFavourite,
-                                          child: Icon(
+                                        IconButton(
+                                          tooltip: _isTargetStarred
+                                              ? 'Remove from favourites'
+                                              : 'Save to favourites',
+                                          onPressed: _favouriteBusy
+                                              ? null
+                                              : _toggleFavourite,
+                                          icon: Icon(
                                             _isTargetStarred
                                                 ? Icons.star
                                                 : Icons.star_border,

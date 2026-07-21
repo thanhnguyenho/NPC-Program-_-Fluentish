@@ -59,6 +59,7 @@ class _MainScaffoldState extends State<MainScaffold> {
           initialTargetText: _selectedFavouritePhrase?.translatedText,
           initialSourceLang: _selectedFavouritePhrase?.sourceLanguage,
           initialTargetLang: _selectedFavouritePhrase?.targetLanguage,
+          initialFavouriteId: _selectedFavouritePhrase?.id,
           auth: widget.auth,
           favouriteRepository: widget.favouriteRepository,
         );

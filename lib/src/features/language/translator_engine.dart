@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'corpus/travel_corpus.dart';
 import 'corpus/expanded_corpus.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -1125,9 +1125,11 @@ class TranslatorEngine {
     return s[0].toUpperCase() + s.substring(1);
   }
 
-  // Google Gemini API keys loaded securely from .env file
   static List<String> get _geminiApiKeys {
-    final keysString = dotenv.env['GEMINI_API_KEYS'] ?? '';
+    const buildTimeKeys = String.fromEnvironment('GEMINI_API_KEYS');
+    final keysString = buildTimeKeys.isNotEmpty
+        ? buildTimeKeys
+        : dotenv.env['GEMINI_API_KEYS'] ?? '';
     final keys = keysString.split(',').map((k) => k.trim()).where((k) => k.isNotEmpty).toList();
     return keys;
   }
@@ -1188,16 +1190,12 @@ class TranslatorEngine {
       final url = Uri.parse(
           'https://translate.googleapis.com/translate_a/single?client=gtx&sl=$sl&tl=$tl&dt=t&q=$encoded');
 
-      final client = HttpClient();
-      client.connectionTimeout = const Duration(milliseconds: 2500);
-      final request = await client.getUrl(url);
-      request.headers.set('User-Agent', 'Mozilla/5.0');
-      final response = await request.close();
-      final responseBody = await response.transform(utf8.decoder).join();
-      client.close();
+      final response = await http.get(url).timeout(
+            const Duration(milliseconds: 2500),
+          );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(responseBody) as List<dynamic>?;
+        final data = jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>?;
         if (data != null && data.isNotEmpty && data[0] is List) {
           final segments = data[0] as List<dynamic>;
           final buffer = StringBuffer();
@@ -1317,14 +1315,11 @@ class TranslatorEngine {
     // 3. FALLBACK CUỐI CÙNG: Gemini REST API (trong trường hợp offline hoặc tất cả engine trên bị chặn)
     for (int attempt = 0; attempt < 3; attempt++) {
       final apiKey = _decodeApiKey();
+      if (apiKey.isEmpty) break;
       final model = _geminiModels[_currentModelIndex];
       try {
         final url = Uri.parse(
             'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey');
-        final client = HttpClient();
-        client.connectionTimeout = const Duration(seconds: 3);
-        final request = await client.postUrl(url);
-        request.headers.set('Content-Type', 'application/json');
 
         final prompt =
             'You are a professional translator. Translate the following text from $sourceLang to $targetLang.\n'
@@ -1351,10 +1346,14 @@ class TranslatorEngine {
           }
         });
 
-        request.add(utf8.encode(body));
-        final response = await request.close();
-        final responseBody = await response.transform(utf8.decoder).join();
-        client.close();
+        final response = await http
+            .post(
+              url,
+              headers: const {'Content-Type': 'application/json'},
+              body: body,
+            )
+            .timeout(const Duration(seconds: 3));
+        final responseBody = utf8.decode(response.bodyBytes);
 
         if (response.statusCode == 200) {
           final data = jsonDecode(responseBody);
@@ -1402,12 +1401,7 @@ class TranslatorEngine {
     bool useMaxCompletionTokens = false,
   }) async {
     try {
-      final client = HttpClient();
-      client.connectionTimeout = Duration(seconds: timeoutSeconds);
       final uri = Uri.parse(url);
-      final request = await client.postUrl(uri);
-      request.headers.set('Content-Type', 'application/json; charset=utf-8');
-      request.headers.set('Authorization', 'Bearer $apiKey');
 
       final Map<String, dynamic> requestBody = {
         'model': model,
@@ -1425,11 +1419,17 @@ class TranslatorEngine {
       }
 
       final body = jsonEncode(requestBody);
-
-      request.add(utf8.encode(body));
-      final response = await request.close();
-      final responseBody = await response.transform(utf8.decoder).join();
-      client.close();
+      final response = await http
+          .post(
+            uri,
+            headers: {
+              'Content-Type': 'application/json; charset=utf-8',
+              'Authorization': 'Bearer $apiKey',
+            },
+            body: body,
+          )
+          .timeout(Duration(seconds: timeoutSeconds));
+      final responseBody = utf8.decode(response.bodyBytes);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(responseBody);
