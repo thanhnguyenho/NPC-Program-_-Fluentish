@@ -546,8 +546,6 @@ class TranslatorEngine {
     'road': 'Con đường',
     'order': 'Gọi món / Đặt',
     'gọi món': 'Order food',
-    'ticket': 'Vé',
-    'vé': 'Ticket',
     'giá': 'Price / Cost',
     'recommend': 'Giới thiệu / Gợi ý',
     'giới thiệu': 'Recommend / Introduce',
@@ -1320,9 +1318,6 @@ class TranslatorEngine {
     } catch (_) {}
 
     // 2. TIER 2 RACE (LLM Cloud): Đồng thời kích hoạt các AI Cloud đang hoạt động như một lớp bổ trợ song song
-    final promptSystem =
-        'You are a professional medical and daily life translator. Output ONLY the translated text, no explanations, notes, or markdown formatting. Preserve exact paragraph spacing and line breaks.';
-    final promptUser = 'Translate the following text from $sourceLang to $targetLang:\n\n$text';
 
     if (!_isProviderDisabled('OpenAI')) {
       tryComplete(_callOpenAICompatible(
