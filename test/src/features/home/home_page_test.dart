@@ -15,6 +15,8 @@ void main() {
     VoidCallback? onNavigateToSoundboard,
     ValueChanged<FavouritePhraseRecord>? onOpenFavouritePhrase,
     FavouriteDataSource? favouriteRepository,
+    LocationDataSource? locationRepository,
+    GuideDataSource? guideRepository,
     Future<void> Function(FavouritePhraseRecord)? phrasePlayback,
     Future<void> Function(FavouriteSoundboardRecord)? soundboardPlayback,
   }) async {
@@ -36,7 +38,8 @@ void main() {
             friendRepository: FakeFriendDataSource(),
             favouriteRepository:
                 favouriteRepository ?? FakeFavouriteDataSource(),
-            locationRepository: FakeLocationDataSource(),
+            locationRepository: locationRepository ?? FakeLocationDataSource(),
+            guideRepository: guideRepository ?? FakeGuideDataSource(),
             launchDirections: launchDirections,
             phrasePlayback: phrasePlayback,
             soundboardPlayback: soundboardPlayback,
@@ -85,6 +88,27 @@ void main() {
 
     expect(destination?.latitude, 10.775);
     expect(destination?.longitude, 106.701);
+  });
+
+  testWidgets('falls back to authored guide places', (tester) async {
+    ll.LatLng? destination;
+    await pumpHome(
+      tester,
+      locationRepository: FakeLocationDataSource(mapLocations: const []),
+      launchDirections: (value) async {
+        destination = value;
+        return true;
+      },
+    );
+
+    expect(find.text('Chợ Bến Thành'), findsOneWidget);
+    expect(find.text('Dinh Độc Lập'), findsOneWidget);
+
+    await tester.tap(find.text('Chợ Bến Thành'));
+    await tester.pump();
+
+    expect(destination?.latitude, 10.7725301);
+    expect(destination?.longitude, 106.6980365);
   });
 
   testWidgets('See all opens the map callback', (tester) async {

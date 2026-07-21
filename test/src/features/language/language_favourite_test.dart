@@ -49,6 +49,7 @@ void main() {
             auth: auth,
             friendRepository: FakeFriendDataSource(),
             favouriteRepository: favourites,
+            guideRepository: FakeGuideDataSource(),
             locationRepository: FakeLocationDataSource(),
           ),
         ),
