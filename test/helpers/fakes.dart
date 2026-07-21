@@ -429,6 +429,7 @@ class FakeFavouriteDataSource implements FavouriteDataSource {
   final List<FavouritePhraseRecord> phrases;
   final List<FavouriteSoundboardRecord> soundboardBites;
   final List<String> removedPhraseIds = [];
+  final List<FavouritePhraseRecord> savedPhrases = [];
   final List<String> removedSoundboardIds = [];
   final StreamController<List<FavouritePhraseRecord>> _phraseChanges =
       StreamController.broadcast();
@@ -484,6 +485,7 @@ class FakeFavouriteDataSource implements FavouriteDataSource {
       createdAt: DateTime.now(),
     );
     phrases.add(record);
+    savedPhrases.add(record);
     _phraseChanges.add(List.unmodifiable(phrases));
     return id;
   }

@@ -1,15 +1,21 @@
-import 'dart:convert';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'package:fluentish/src/shared/services/profile_repository.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
-/// "My Details" — lets the user view and edit their profile fields.
+typedef PickProfileAvatar = Future<ProfileAvatarSelection?> Function();
+
 class ProfileMenuOptionsPage extends StatefulWidget {
-  const ProfileMenuOptionsPage({super.key});
+  const ProfileMenuOptionsPage({
+    super.key,
+    this.repository,
+    this.pickAvatar,
+  });
+
+  final ProfileDataSource? repository;
+  final PickProfileAvatar? pickAvatar;
 
   @override
   State<ProfileMenuOptionsPage> createState() => _ProfileMenuOptionsPageState();
@@ -21,278 +27,190 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
   final _phone = TextEditingController();
   final _email = TextEditingController();
 
+  late final ProfileDataSource _repository;
   bool _dirty = false;
   bool _loading = true;
   bool _saving = false;
   bool _uploadingAvatar = false;
+  String? _loadError;
   String? _avatarUrl;
   String? _avatarBase64;
-  String _originalUsernameLower = '';
+  String _originalEmail = '';
+  bool _applyingProfile = false;
 
   @override
   void initState() {
     super.initState();
-    _loadProfile();
-
-    for (final c in [_username, _dob, _phone, _email]) {
-      c.addListener(() {
-        if (!_dirty) {
-          setState(() {
-            _dirty = true;
-          });
-        }
-      });
+    _repository = widget.repository ?? ProfileRepository();
+    for (final controller in [_username, _dob, _phone, _email]) {
+      controller.addListener(_markDirty);
     }
+    _loadProfile();
+  }
+
+  void _markDirty() {
+    if (_applyingProfile || _dirty || !mounted) return;
+    setState(() => _dirty = true);
   }
 
   Future<void> _loadProfile() async {
-    final user = FirebaseAuth.instance.currentUser;
-    _avatarUrl = user?.photoURL;
-    _email.text = user?.email ?? '';
-
-    final uid = user?.uid;
-    if (uid != null) {
-      final publicDoc = await FirebaseFirestore.instance
-          .collection('publicProfiles')
-          .doc(uid)
-          .get();
-      final privateDoc =
-          await FirebaseFirestore.instance.collection('users').doc(uid).get();
-
-      final publicProfile = publicDoc.data();
-      final privateProfile = privateDoc.data();
-      final profile = <String, dynamic>{};
-      if (publicProfile != null) {
-        profile.addAll(Map<String, dynamic>.from(publicProfile));
-      }
-      if (privateProfile != null) {
-        profile.addAll(Map<String, dynamic>.from(privateProfile));
-      }
-
-      if (profile.isNotEmpty) {
-        _username.text =
-            (profile['username'] ?? profile['displayName'] ?? '').toString();
-        _originalUsernameLower = _username.text.trim().toLowerCase();
-        _dob.text = (profile['dateOfBirth'] ?? '').toString();
-        _phone.text = (profile['phoneNumber'] ?? '').toString();
-        final avatar = (profile['avatarUrl'] ?? '').toString();
-        final avatarBase64 = (profile['avatarBase64'] ?? '').toString();
-        if (avatar.isNotEmpty) {
-          _avatarUrl = avatar;
-        }
-        if (avatarBase64.isNotEmpty) {
-          _avatarBase64 = avatarBase64;
-        }
-      }
-    }
-
-    if (!mounted) return;
     setState(() {
-      _loading = false;
-      _dirty = false;
+      _loading = true;
+      _loadError = null;
     });
+    try {
+      final profile = await _repository.loadProfile();
+      if (!mounted) return;
+      _applyProfile(profile);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadError = 'Could not load your profile.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
-  @override
-  void dispose() {
-    _username.dispose();
-    _dob.dispose();
-    _phone.dispose();
-    _email.dispose();
-    super.dispose();
+  void _applyProfile(EditableProfile profile) {
+    _applyingProfile = true;
+    _username.text = profile.username;
+    _dob.text = profile.dateOfBirth;
+    _phone.text = profile.phoneNumber;
+    _email.text = profile.email;
+    _originalEmail = profile.email;
+    _avatarUrl = profile.avatarUrl;
+    _avatarBase64 = profile.avatarBase64;
+    _applyingProfile = false;
+    setState(() => _dirty = false);
+  }
+
+  Future<ProfileAvatarSelection?> _pickAvatar() async {
+    final image = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 80,
+    );
+    if (image == null) return null;
+    final lowerPath = image.path.toLowerCase();
+    final contentType = lowerPath.endsWith('.png')
+        ? 'image/png'
+        : lowerPath.endsWith('.webp')
+            ? 'image/webp'
+            : 'image/jpeg';
+    return ProfileAvatarSelection(
+      bytes: await image.readAsBytes(),
+      contentType: contentType,
+    );
   }
 
   Future<void> _changeAvatar() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null || _uploadingAvatar) return;
-
+    if (_uploadingAvatar) return;
+    final selection = await (widget.pickAvatar ?? _pickAvatar)();
+    if (selection == null || !mounted) return;
+    setState(() => _uploadingAvatar = true);
     try {
-      final image = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 256,
-        maxHeight: 256,
-        imageQuality: 70,
-      );
-      if (image == null) return;
-
-      final bytes = await image.readAsBytes();
-      if (bytes.length > 500 * 1024) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('This photo could not be compressed below 500 KB.'),
-          ),
-        );
-        return;
-      }
-
-      if (mounted) setState(() => _uploadingAvatar = true);
-
-      final encodedAvatar = base64Encode(bytes);
-      final firestore = FirebaseFirestore.instance;
-      final batch = firestore.batch();
-      batch.set(
-        firestore.collection('users').doc(user.uid),
-        {'avatarBase64': encodedAvatar},
-        SetOptions(merge: true),
-      );
-      batch.set(
-        firestore.collection('publicProfiles').doc(user.uid),
-        {'uid': user.uid, 'avatarBase64': encodedAvatar},
-        SetOptions(merge: true),
-      );
-      await batch.commit();
-
+      final profile = await _repository.uploadAvatar(selection);
       if (!mounted) return;
-      setState(() {
-        _avatarBase64 = encodedAvatar;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile photo updated.')),
-      );
-    } catch (_) {
+      _applyProfile(profile);
+      _showMessage('Profile photo updated.');
+    } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Could not upload photo. Please try again.')),
-      );
+      _showMessage(_friendlyError(error, fallback: 'Could not upload photo.'));
     } finally {
       if (mounted) setState(() => _uploadingAvatar = false);
     }
   }
 
   Future<void> _save() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    final username = _username.text.trim();
-    final usernameLower = username.toLowerCase();
-    final newEmail = _email.text.trim().toLowerCase();
-    if (!RegExp(r'^[a-zA-Z0-9_]{3,24}$').hasMatch(username)) {
-      _showMessage(
-        'Username must be 3–24 characters and use only letters, numbers, or _.',
-      );
-      return;
-    }
-    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(newEmail)) {
-      _showMessage('Please enter a valid email address.');
+    if (_saving) return;
+    final validation = validateProfileInput(
+      username: _username.text,
+      phoneNumber: _phone.text,
+      dateOfBirth: _dob.text,
+      email: _email.text,
+    );
+    if (validation != null) {
+      _showMessage(validation);
       return;
     }
 
-    setState(() {
-      _saving = true;
-    });
-
+    final profile = EditableProfile(
+      username: _username.text.trim(),
+      dateOfBirth: _dob.text.trim(),
+      phoneNumber: _phone.text.trim(),
+      email: _email.text.trim(),
+      avatarUrl: _avatarUrl,
+      avatarBase64: _avatarBase64,
+    );
+    setState(() => _saving = true);
     try {
-      if (usernameLower != _originalUsernameLower) {
-        final duplicate = await FirebaseFirestore.instance
-            .collection('publicProfiles')
-            .where('usernameLower', isEqualTo: usernameLower)
-            .limit(1)
-            .get();
-        if (duplicate.docs.any((document) => document.id != user.uid)) {
-          throw const _ProfileSaveException('This username is already taken.');
-        }
-      }
-
-      final currentEmail = user.email?.trim().toLowerCase();
-      final emailChanged = newEmail != currentEmail;
-      if (emailChanged) {
-        await user.verifyBeforeUpdateEmail(newEmail);
-      }
-
-      final firestore = FirebaseFirestore.instance;
-      await firestore.runTransaction((transaction) async {
-        final usernameReference =
-            firestore.collection('usernames').doc(usernameLower);
-        final usernameSnapshot = await transaction.get(usernameReference);
-        final ownerUid = usernameSnapshot.data()?['uid']?.toString();
-        if (usernameSnapshot.exists && ownerUid != user.uid) {
-          throw const _ProfileSaveException('This username is already taken.');
-        }
-        DocumentReference<Map<String, dynamic>>? oldReference;
-        if (_originalUsernameLower.isNotEmpty &&
-            _originalUsernameLower != usernameLower) {
-          oldReference =
-              firestore.collection('usernames').doc(_originalUsernameLower);
-          final oldSnapshot = await transaction.get(oldReference);
-          if (oldSnapshot.data()?['uid'] == user.uid) {
-            transaction.delete(oldReference);
-          }
-        }
-        transaction.set(usernameReference, {
-          'uid': user.uid,
-          'username': username,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-        transaction.set(
-          firestore.collection('users').doc(user.uid),
-          {
-            'username': username,
-            'dateOfBirth': _dob.text.trim(),
-            'phoneNumber': _phone.text.trim(),
-            'avatarUrl': _avatarUrl,
-            'avatarBase64': _avatarBase64,
-          },
-          SetOptions(merge: true),
-        );
-        transaction.set(
-          firestore.collection('publicProfiles').doc(user.uid),
-          {
-            'uid': user.uid,
-            'displayName': username,
-            'username': username,
-            'usernameLower': usernameLower,
-            'avatarUrl': _avatarUrl,
-            'avatarBase64': _avatarBase64,
-          },
-          SetOptions(merge: true),
-        );
-      });
-
+      await _repository.saveProfile(profile);
       if (!mounted) return;
-      setState(() {
-        _dirty = false;
-        _originalUsernameLower = usernameLower;
-      });
-
+      final emailChanged = profile.email != _originalEmail;
+      _originalEmail = profile.email;
+      setState(() => _dirty = false);
       _showMessage(
         emailChanged
-            ? 'Profile updated. A verification link was sent to $newEmail. '
-                'Your email changes only after you confirm it.'
+            ? 'Profile updated. Check your new email to confirm the change.'
             : 'Profile updated.',
       );
-    } on FirebaseAuthException catch (error) {
-      if (!mounted) return;
-      _showMessage(switch (error.code) {
-        'email-already-in-use' =>
-          'This email is already used by another account.',
-        'invalid-email' => 'Please enter a valid email address.',
-        'requires-recent-login' =>
-          'Please sign out, sign in again, then retry changing your email.',
-        _ => 'Could not update email. Please try again.',
-      });
-    } on _ProfileSaveException catch (error) {
-      if (!mounted) return;
-      _showMessage(error.message);
     } catch (error) {
       if (!mounted) return;
-      debugPrint('Could not save profile: $error');
-      _showMessage('Could not save changes. Please try again.');
+      _showMessage(
+        _friendlyError(error, fallback: 'Could not save your profile.'),
+      );
     } finally {
-      if (mounted) {
-        setState(() {
-          _saving = false;
-        });
-      }
+      if (mounted) setState(() => _saving = false);
     }
   }
 
+  String _friendlyError(Object error, {required String fallback}) {
+    if (error is FirebaseAuthException) {
+      return switch (error.code) {
+        'email-already-in-use' =>
+          'This email is already used by another account.',
+        'invalid-email' => 'Enter a valid email address.',
+        'requires-recent-login' =>
+          'Please sign in again before changing your email.',
+        _ => fallback,
+      };
+    }
+    if (error is StateError) {
+      final message = error.message.toLowerCase();
+      if (message.contains('sign in') ||
+          message.contains('choose a jpeg') ||
+          message.contains('smaller than') ||
+          message.contains('username is already taken')) {
+        return error.message;
+      }
+    }
+    final value = error.toString().toLowerCase();
+    if (value.contains('network') || value.contains('timeout')) {
+      return 'Check your connection and try again.';
+    }
+    if (value.contains('requires-recent-login')) {
+      return 'Please sign in again before changing your email.';
+    }
+    if (value.contains('storage') && value.contains('bucket')) {
+      return 'Profile photo storage is not configured yet.';
+    }
+    return fallback;
+  }
+
   void _showMessage(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  @override
+  void dispose() {
+    for (final controller in [_username, _dob, _phone, _email]) {
+      controller
+        ..removeListener(_markDirty)
+        ..dispose();
+    }
+    super.dispose();
   }
 
   @override
@@ -305,10 +223,6 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
       backgroundColor: AppColors.shell,
       body: Column(
         children: [
-          //----------------------------------------
-          // Header
-          //----------------------------------------
-
           Container(
             width: double.infinity,
             decoration: const BoxDecoration(
@@ -318,26 +232,16 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
                 bottomRight: Radius.circular(15),
               ),
             ),
-            padding: const EdgeInsets.fromLTRB(
-              8,
-              50,
-              AppSpacing.md,
-              AppSpacing.md,
-            ),
+            padding: const EdgeInsets.fromLTRB(8, 50, AppSpacing.md, 14),
             child: Row(
               children: [
                 IconButton(
-                  icon: const Icon(
-                    Icons.arrow_back,
-                    color: AppColors.blush,
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context, _avatarUrl);
-                  },
+                  icon: const Icon(Icons.arrow_back, color: AppColors.blush),
+                  onPressed: () => Navigator.pop(context, _avatarUrl),
                 ),
                 Expanded(
                   child: Text(
-                    "My Details",
+                    'My Details',
                     style: AppTextStyles.title.copyWith(
                       color: AppColors.blush,
                       fontSize: 22,
@@ -347,140 +251,122 @@ class _ProfileMenuOptionsPageState extends State<ProfileMenuOptionsPage> {
               ],
             ),
           ),
+          Expanded(child: _body(avatarImage)),
+        ],
+      ),
+    );
+  }
 
-          //----------------------------------------
-          // Body
-          //----------------------------------------
+  Widget _body(ImageProvider<Object>? avatarImage) {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loadError != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off_outlined, size: 52),
+              const SizedBox(height: AppSpacing.md),
+              Text(_loadError!, textAlign: TextAlign.center),
+              const SizedBox(height: AppSpacing.md),
+              AppButton(
+                label: 'Try Again',
+                expand: false,
+                onPressed: _loadProfile,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: Column(
-                      children: [
-                        //----------------------------------------
-                        // Avatar
-                        //----------------------------------------
-
-                        GestureDetector(
-                          onTap: _uploadingAvatar ? null : _changeAvatar,
-                          child: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              CircleAvatar(
-                                radius: 55,
-                                backgroundColor: AppColors.cardSurface,
-                                backgroundImage: avatarImage,
-                                child: _uploadingAvatar
-                                    ? const CircularProgressIndicator()
-                                    : avatarImage == null
-                                        ? const Icon(
-                                            Icons.person,
-                                            size: 56,
-                                            color: AppColors.pine,
-                                          )
-                                        : null,
-                              ),
-                              Positioned(
-                                right: -2,
-                                bottom: -2,
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.blush,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.edit,
-                                    size: 18,
-                                    color: AppColors.pine,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        TextButton(
-                          onPressed: _uploadingAvatar ? null : _changeAvatar,
-                          child: Text(
-                            _uploadingAvatar ? 'Uploading...' : 'Choose Photo',
-                            style: const TextStyle(color: AppColors.pine),
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        //----------------------------------------
-                        // Fields
-                        //----------------------------------------
-
-                        _DetailField(
-                          label: "Username",
-                          controller: _username,
-                          icon: Icons.person_outline,
-                        ),
-
-                        _DetailField(
-                          label: "Date of Birth",
-                          controller: _dob,
-                          icon: Icons.cake_outlined,
-                        ),
-
-                        _DetailField(
-                          label: "Phone Number",
-                          controller: _phone,
-                          icon: Icons.phone_outlined,
-                          keyboardType: TextInputType.phone,
-                        ),
-
-                        _DetailField(
-                          label: "Email",
-                          controller: _email,
-                          icon: Icons.email_outlined,
-                          keyboardType: TextInputType.emailAddress,
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        //----------------------------------------
-                        // Save Button
-                        //----------------------------------------
-
-                        AppButton(
-                          label: _saving ? 'SAVING...' : 'SAVE CHANGES',
-                          backgroundColor: AppColors.pine,
-                          foregroundColor: AppColors.blush,
-                          onPressed: (_dirty && !_saving) ? _save : null,
-                        ),
-                      ],
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        children: [
+          Tooltip(
+            message: 'Change profile photo',
+            child: GestureDetector(
+              onTap: _uploadingAvatar ? null : _changeAvatar,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  CircleAvatar(
+                    radius: 55,
+                    backgroundColor: AppColors.cardSurface,
+                    backgroundImage: avatarImage,
+                    child: _uploadingAvatar
+                        ? const CircularProgressIndicator()
+                        : avatarImage == null
+                            ? const Icon(
+                                Icons.person,
+                                size: 56,
+                                color: AppColors.pine,
+                              )
+                            : null,
+                  ),
+                  Positioned(
+                    right: -2,
+                    bottom: -2,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: AppColors.blush,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.edit,
+                        size: 18,
+                        color: AppColors.pine,
+                      ),
                     ),
                   ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextButton(
+            onPressed: _uploadingAvatar ? null : _changeAvatar,
+            child: Text(
+              _uploadingAvatar ? 'Uploading...' : 'Choose Photo',
+              style: const TextStyle(color: AppColors.pine),
+            ),
+          ),
+          const SizedBox(height: 20),
+          _field('Username', _username, Icons.person_outline),
+          _field('Date of Birth', _dob, Icons.cake_outlined),
+          _field(
+            'Phone Number',
+            _phone,
+            Icons.phone_outlined,
+            keyboardType: TextInputType.phone,
+          ),
+          _field(
+            'Email',
+            _email,
+            Icons.email_outlined,
+            keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 16),
+          AppButton(
+            label: _saving ? 'Saving...' : 'Save Changes',
+            backgroundColor: AppColors.pine,
+            foregroundColor: AppColors.blush,
+            onPressed: (_dirty && !_saving) ? _save : null,
           ),
         ],
       ),
     );
   }
-}
 
-class _DetailField extends StatelessWidget {
-  const _DetailField({
-    required this.label,
-    required this.controller,
-    required this.icon,
-    this.keyboardType = TextInputType.text,
-  });
-
-  final String label;
-  final TextEditingController controller;
-  final IconData icon;
-  final TextInputType keyboardType;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _field(
+    String label,
+    TextEditingController controller,
+    IconData icon, {
+    TextInputType? keyboardType,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Column(
@@ -500,31 +386,22 @@ class _DetailField extends StatelessWidget {
             keyboardType: keyboardType,
             style: const TextStyle(color: AppColors.pine),
             decoration: InputDecoration(
-              prefixIcon: Icon(
-                icon,
-                color: AppColors.textMuted,
-              ),
+              prefixIcon: Icon(icon, color: AppColors.textMuted),
               filled: true,
               fillColor: AppColors.cardSurface,
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(
-                  AppSpacing.buttonRadius,
-                ),
+                borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                 borderSide: BorderSide.none,
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(
-                  AppSpacing.buttonRadius,
-                ),
+                borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                 borderSide: const BorderSide(
                   color: AppColors.pine,
                   width: 2,
                 ),
               ),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(
-                  AppSpacing.buttonRadius,
-                ),
+                borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
                 borderSide: BorderSide.none,
               ),
               contentPadding: const EdgeInsets.symmetric(
@@ -537,10 +414,4 @@ class _DetailField extends StatelessWidget {
       ),
     );
   }
-}
-
-class _ProfileSaveException implements Exception {
-  const _ProfileSaveException(this.message);
-
-  final String message;
 }

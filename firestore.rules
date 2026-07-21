@@ -89,7 +89,9 @@ service cloud.firestore {
                   && request.resource.data.respondedAt == null
                   && request.resource.data.diff(resource.data).affectedKeys()
                       .hasOnly(['status', 'createdAt', 'respondedAt'])));
-      allow delete: if false;
+      allow delete: if signedIn()
+          && (request.auth.uid == resource.data.senderId
+              || request.auth.uid == resource.data.receiverId);
     }
 
     match /friendships/{friendshipId} {

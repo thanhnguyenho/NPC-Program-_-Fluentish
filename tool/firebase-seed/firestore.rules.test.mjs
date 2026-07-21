@@ -10,6 +10,7 @@ import {
 import {
   Timestamp,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -279,6 +280,42 @@ test('request participants can preflight deterministic request ids', async () =>
   await assertSucceeds(getDoc(doc(alice, 'friendRequests/alice_bob')));
   await assertSucceeds(getDoc(doc(alice, 'friendRequests/bob_alice')));
   await assertFails(getDoc(doc(charlie, 'friendRequests/alice_bob')));
+});
+
+test('request participants can delete requests but outsiders cannot', async () => {
+  const alice = testEnvironment.authenticatedContext('alice').firestore();
+  const bob = testEnvironment.authenticatedContext('bob').firestore();
+  const charlie = testEnvironment.authenticatedContext('charlie').firestore();
+
+  await testEnvironment.withSecurityRulesDisabled(async (context) => {
+    const firestore = context.firestore();
+    for (const requestId of ['alice_bob_sender', 'alice_bob_receiver']) {
+      await setDoc(doc(firestore, `friendRequests/${requestId}`), {
+        senderId: 'alice',
+        receiverId: 'bob',
+        status: 'pending',
+        createdAt: Timestamp.now(),
+        respondedAt: null,
+      });
+    }
+    await setDoc(doc(firestore, 'friendRequests/alice_bob_outsider'), {
+      senderId: 'alice',
+      receiverId: 'bob',
+      status: 'pending',
+      createdAt: Timestamp.now(),
+      respondedAt: null,
+    });
+  });
+
+  await assertSucceeds(
+    deleteDoc(doc(alice, 'friendRequests/alice_bob_sender')),
+  );
+  await assertSucceeds(
+    deleteDoc(doc(bob, 'friendRequests/alice_bob_receiver')),
+  );
+  await assertFails(
+    deleteDoc(doc(charlie, 'friendRequests/alice_bob_outsider')),
+  );
 });
 
 test('sender can transactionally preflight and create a friend request', async () => {
