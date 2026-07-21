@@ -35,12 +35,11 @@ void main() {
   ) async {
     await pumpPage(tester);
 
-    expect(find.text('Friends, Places & Guides'), findsOneWidget);
-    expect(find.text('1 friends · 4 places · 2 guides'), findsOneWidget);
+    expect(find.text('Friends & Places'), findsOneWidget);
+    expect(find.text('1 friends · 4 places'), findsOneWidget);
     expect(find.text('All'), findsOneWidget);
     expect(find.text('Friends'), findsOneWidget);
     expect(find.text('Places'), findsOneWidget);
-    expect(find.text('Guides'), findsOneWidget);
     expect(find.text('Test Friend'), findsOneWidget);
     expect(find.byIcon(Icons.restaurant), findsNWidgets(2));
     expect(find.byIcon(Icons.local_cafe), findsOneWidget);
@@ -78,70 +77,6 @@ void main() {
 
     expect(find.byTooltip('21 places'), findsOneWidget);
     expect(find.byTooltip('Sample Cafe'), findsNothing);
-  });
-
-  testWidgets('shows authored guide places when imported places are empty', (
-    tester,
-  ) async {
-    await pumpPage(
-      tester,
-      locationRepository: FakeLocationDataSource(mapLocations: const []),
-    );
-
-    expect(find.text('1 friends · 0 places · 2 guides'), findsOneWidget);
-    expect(find.byIcon(Icons.restaurant), findsOneWidget);
-    expect(find.byIcon(Icons.route), findsOneWidget);
-
-    await tester.tap(find.byTooltip('Chợ Bến Thành'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Street Food Basics'), findsOneWidget);
-    expect(find.text('Read Guide'), findsOneWidget);
-  });
-
-  testWidgets('keeps guides visible when imported places fail', (tester) async {
-    await pumpPage(
-      tester,
-      locationRepository: FakeLocationDataSource(
-        mapLocationsError: StateError('query failed'),
-      ),
-    );
-
-    expect(find.text('Imported places unavailable.'), findsOneWidget);
-    expect(find.byTooltip('Chợ Bến Thành'), findsOneWidget);
-    expect(find.byTooltip('Dinh Độc Lập'), findsOneWidget);
-  });
-
-  testWidgets('filters guide and imported place layers independently', (
-    tester,
-  ) async {
-    await pumpPage(tester);
-
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Guides'));
-    await tester.pump();
-
-    expect(find.byTooltip('Chợ Bến Thành'), findsOneWidget);
-    expect(find.byTooltip('Sample Cafe'), findsNothing);
-    expect(find.text('Test Friend'), findsNothing);
-  });
-
-  testWidgets('draws a route only after View Route is selected', (
-    tester,
-  ) async {
-    await pumpPage(
-      tester,
-      locationRepository: FakeLocationDataSource(mapLocations: const []),
-    );
-
-    expect(find.text('1'), findsNothing);
-    await tester.tap(find.byTooltip('Dinh Độc Lập'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('View Route'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('District 1 Walk'), findsOneWidget);
-    expect(find.text('1'), findsOneWidget);
-    expect(find.text('2'), findsOneWidget);
   });
 
   testWidgets('rolls sharing back when GPS cannot start', (tester) async {
