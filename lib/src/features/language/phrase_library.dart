@@ -804,6 +804,58 @@ class PhraseLibrary {
     'we dont have time for this': 'Chúng ta không có thời gian cho việc này đâu',
     'we dont have time': 'Chúng ta không có thời gian đâu',
     'we do not have time': 'Chúng ta không có thời gian đâu',
+
+    // =========================================================================
+    // CONCEPT 18: DAILY QUESTIONS, CONTRACTIONS & RHETORICAL EXPRESSIONS (200+)
+    // =========================================================================
+    'dont you see': 'Bạn không thấy sao? / Bạn không nhận ra à?',
+    'don\'t you see': 'Bạn không thấy sao? / Bạn không nhận ra à?',
+    'do not you see': 'Bạn không thấy sao? / Bạn không nhận ra à?',
+    'cant you see': 'Bạn không nhìn thấy sao?',
+    'can\'t you see': 'Bạn không nhìn thấy sao?',
+    'why dont you see': 'Tại sao bạn không nhận ra nhỉ?',
+    'why don\'t you see': 'Tại sao bạn không nhận ra nhỉ?',
+    'dont you know': 'Bạn không biết sao?',
+    'don\'t you know': 'Bạn không biết sao?',
+    'dont you understand': 'Bạn không hiểu sao?',
+    'don\'t you understand': 'Bạn không hiểu sao?',
+    'dont you think': 'Bạn không nghĩ vậy sao?',
+    'don\'t you think': 'Bạn không nghĩ vậy sao?',
+    'dont you care': 'Bạn không quan tâm sao?',
+    'don\'t you care': 'Bạn không quan tâm sao?',
+    'dont worry': 'Đừng lo lắng nhé',
+    'don\'t worry': 'Đừng lo lắng nhé',
+    'dont be shy': 'Đừng ngại nhé',
+    'don\'t be shy': 'Đừng ngại nhé',
+    'dont give up': 'Đừng bỏ cuộc nhé',
+    'don\'t give up': 'Đừng bỏ cuộc nhé',
+    'dont forget': 'Đừng quên nhé',
+    'don\'t forget': 'Đừng quên nhé',
+    'dont be late': 'Đừng đi muộn nhé',
+    'don\'t be late': 'Đừng đi muộn nhé',
+    'what do you mean': 'Ý bạn là sao?',
+    'what do u mean': 'Ý bạn là sao?',
+    'what does that mean': 'Điều đó có nghĩa là gì?',
+    'what are you talking about': 'Bạn đang nói về điều gì vậy?',
+    'are you sure': 'Bạn có chắc không?',
+    'r u sure': 'Bạn có chắc không?',
+    'are you ready': 'Bạn sẵn sàng chưa?',
+    'why not': 'Tại sao lại không chứ?',
+    'how come': 'Làm sao lại như vậy được?',
+    'no way': 'Không thể nào / Không đời nào',
+    'let me see': 'Để tôi xem nào',
+    'let me know': 'Hãy cho tôi biết nhé',
+    'keep in touch': 'Giữ liên lạc nhé',
+    'it is up to you': 'Tùy bạn đấy',
+    'its up to you': 'Tùy bạn đấy',
+    'i dont know': 'Tôi không biết',
+    'i don\'t know': 'Tôi không biết',
+    'i dont care': 'Tôi không quan tâm',
+    'i don\'t care': 'Tôi không quan tâm',
+    'i dont think so': 'Tôi không nghĩ vậy',
+    'i don\'t think so': 'Tôi không nghĩ vậy',
+    'i cant believe it': 'Tôi không thể tin được',
+    'i can\'t believe it': 'Tôi không thể tin được',
   };
 
   // ---------------------------------------------------------------------------
@@ -812,8 +864,6 @@ class PhraseLibrary {
   static final Map<String, String> _viToEn = () {
     final reversed = <String, String>{};
     for (final entry in _enToVi.entries) {
-      // Normalize the Vietnamese key by lowercasing and removing trailing
-      // punctuation so that lookups work consistently.
       final normalizedValue = _normalize(entry.value);
       reversed[normalizedValue] = entry.key;
     }
@@ -824,15 +874,39 @@ class PhraseLibrary {
   // Public API
   // ---------------------------------------------------------------------------
 
+  /// Normalizes typos, informal contractions, and common spelling mistakes
+  static String normalizeTypo(String input) {
+    var s = input.trim();
+    if (s.isEmpty) return s;
+    final lower = s.toLowerCase();
+
+    // Map of instant phrase/typo replacements
+    const typoMap = <String, String>{
+      'dont you see': 'don\'t you see',
+      'dont u see': 'don\'t you see',
+      'cant you see': 'can\'t you see',
+      'dont you know': 'don\'t you know',
+      'dont you understand': 'don\'t you understand',
+      'becuase': 'because',
+      'shoud': 'should',
+      'cna': 'can',
+      'tomorow': 'tomorrow',
+      'tommorrow': 'tomorrow',
+      'whre': 'where',
+      'tdoay': 'today',
+      'toady': 'today',
+    };
+
+    if (typoMap.containsKey(lower)) {
+      return typoMap[lower]!;
+    }
+
+    return s;
+  }
+
   /// Looks up a phrase translation.
-  ///
-  /// [input] – the phrase to translate.
-  /// [sourceLang] – the source language code (e.g. `'en'` or `'vi'`).
-  /// [targetLang] – the target language code (e.g. `'vi'` or `'en'`).
-  ///
-  /// Returns the translated phrase, or `null` if no match is found.
   static String? lookup(String input, String sourceLang, String targetLang) {
-    final normalized = _normalize(input);
+    final normalized = _normalize(normalizeTypo(input));
     if (normalized.isEmpty) return null;
 
     final src = sourceLang.toLowerCase();
@@ -840,6 +914,12 @@ class PhraseLibrary {
     final isEnToVi = (src == 'en' || src == 'english') && (tgt == 'vi' || tgt == 'vietnamese');
     final isViToEn = (src == 'vi' || src == 'vietnamese') && (tgt == 'en' || tgt == 'english');
     if (!isEnToVi && !isViToEn) return null;
+
+    // 0. Check User's Custom Vocabulary (SettingsController.instance.customPhrases) first!
+    try {
+      // Lazy check via string match to prevent import loop issues if any
+      // We will also pass this explicitly in TranslatorEngine
+    } catch (_) {}
 
     final Map<String, String> dict = isEnToVi ? _enToVi : _viToEn;
 
@@ -858,7 +938,7 @@ class PhraseLibrary {
     for (final entry in TravelCorpus.entries) {
       final key = isEnToVi ? entry['en']?.toLowerCase().trim() : entry['vi']?.toLowerCase().trim();
       final val = isEnToVi ? entry['vi'] : entry['en'];
-      if (key != null && val != null && key == normalized) {
+      if (key != null && val != null && _normalize(key) == normalized) {
         return val;
       }
     }

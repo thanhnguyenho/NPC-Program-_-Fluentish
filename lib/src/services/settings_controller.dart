@@ -36,6 +36,7 @@ class SettingsController extends ChangeNotifier {
     'nearbyRecommendation': true,
     'themeMode': 'light',
     'textSize': 'medium',
+    'customApiKey': '',
   };
 
   String _sourceLanguage = _defaults['sourceLanguage']! as String;
@@ -46,6 +47,8 @@ class SettingsController extends ChangeNotifier {
   bool _nearbyRecommendation = _defaults['nearbyRecommendation']! as bool;
   ThemeMode _themeMode = ThemeMode.light;
   AppTextSize _textSize = AppTextSize.medium;
+  String _customApiKey = '';
+  final List<Map<String, String>> _customPhrases = [];
   StreamSubscription<User?>? _authSubscription;
   bool _initialized = false;
 
@@ -57,6 +60,8 @@ class SettingsController extends ChangeNotifier {
   bool get nearbyRecommendation => _nearbyRecommendation;
   ThemeMode get themeMode => _themeMode;
   AppTextSize get textSize => _textSize;
+  String get customApiKey => _customApiKey;
+  List<Map<String, String>> get customPhrases => List.unmodifiable(_customPhrases);
 
   Future<void> initialize() async {
     if (_initialized) return;
@@ -78,6 +83,20 @@ class SettingsController extends ChangeNotifier {
         final saved = snapshot.data()?['settings'];
         if (saved is Map) {
           _apply(Map<String, dynamic>.from(saved));
+        }
+        final phrasesData = snapshot.data()?['customPhrases'];
+        if (phrasesData is List) {
+          _customPhrases.clear();
+          for (final item in phrasesData) {
+            if (item is Map) {
+              _customPhrases.add({
+                'source': item['source']?.toString() ?? '',
+                'target': item['target']?.toString() ?? '',
+                'sourceLang': item['sourceLang']?.toString() ?? 'English',
+                'targetLang': item['targetLang']?.toString() ?? 'Vietnamese',
+              });
+            }
+          }
         }
       } catch (_) {
         // Firestore's local cache may be unavailable on first launch. Defaults
@@ -103,6 +122,7 @@ class SettingsController extends ChangeNotifier {
       (size) => size.name == values['textSize'],
       orElse: () => AppTextSize.medium,
     );
+    _customApiKey = values['customApiKey'] as String? ?? '';
   }
 
   Map<String, Object> get _data => {
@@ -114,6 +134,7 @@ class SettingsController extends ChangeNotifier {
         'nearbyRecommendation': _nearbyRecommendation,
         'themeMode': _themeMode.name,
         'textSize': _textSize.name,
+        'customApiKey': _customApiKey,
       };
 
   Future<void> _persist() async {
@@ -121,7 +142,10 @@ class SettingsController extends ChangeNotifier {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
-        {'settings': _data},
+        {
+          'settings': _data,
+          'customPhrases': _customPhrases,
+        },
         SetOptions(merge: true),
       );
     } catch (_) {
@@ -196,6 +220,44 @@ class SettingsController extends ChangeNotifier {
   Future<void> setTextSize(AppTextSize value) async {
     if (_textSize == value) return;
     _textSize = value;
+    notifyListeners();
+    await _persist();
+  }
+
+  Future<void> setCustomApiKey(String value) async {
+    if (_customApiKey == value) return;
+    _customApiKey = value.trim();
+    notifyListeners();
+    await _persist();
+  }
+
+  Future<void> addCustomPhrase({
+    required String source,
+    required String target,
+    String sourceLang = 'English',
+    String targetLang = 'Vietnamese',
+  }) async {
+    final cleanSource = source.trim();
+    final cleanTarget = target.trim();
+    if (cleanSource.isEmpty || cleanTarget.isEmpty) return;
+
+    _customPhrases.removeWhere(
+      (item) => item['source']?.toLowerCase() == cleanSource.toLowerCase(),
+    );
+    _customPhrases.insert(0, {
+      'source': cleanSource,
+      'target': cleanTarget,
+      'sourceLang': sourceLang,
+      'targetLang': targetLang,
+    });
+    notifyListeners();
+    await _persist();
+  }
+
+  Future<void> removeCustomPhrase(String source) async {
+    _customPhrases.removeWhere(
+      (item) => item['source']?.toLowerCase() == source.trim().toLowerCase(),
+    );
     notifyListeners();
     await _persist();
   }

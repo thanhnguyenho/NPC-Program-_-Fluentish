@@ -6,6 +6,9 @@ import 'package:http/http.dart' as http;
 import 'corpus/travel_corpus.dart';
 import 'corpus/expanded_corpus.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'ml_kit_translator.dart';
+import 'phrase_library.dart';
+import '../../services/settings_controller.dart';
 
 class TranslatorEngine {
   // Exhaustive bidirectional dictionary covering 700+ core vocabulary concepts & travel landmarks
@@ -272,9 +275,21 @@ class TranslatorEngine {
     'thirsty': 'Khát nước',
     'khát nước': 'Thirsty',
     'menu': 'Thực đơn',
-    'thực đơn': 'Menu',
     'menu please': 'Cho tôi xin thực đơn',
     'cho tôi xem thực đơn': 'May I see the menu, please?',
+    'apple': 'Quả táo',
+    'apples': 'Quả táo',
+    'táo': 'Apple',
+    'quả táo': 'Apple',
+    'adult': 'Người lớn',
+    'adults': 'Người lớn',
+    'người lớn': 'Adults',
+    'child': 'Trẻ em',
+    'children': 'Trẻ em',
+    'trẻ em': 'Children',
+    'ticket': 'Vé',
+    'tickets': 'Vé',
+    'vé': 'Ticket / Tickets',
     'check please': 'Tính tiền',
     'bill please': 'Xin hóa đơn / Tính tiền',
     'tính tiền': 'Check please / Bill please',
@@ -531,8 +546,6 @@ class TranslatorEngine {
     'road': 'Con đường',
     'order': 'Gọi món / Đặt',
     'gọi món': 'Order food',
-    'ticket': 'Vé',
-    'vé': 'Ticket',
     'giá': 'Price / Cost',
     'recommend': 'Giới thiệu / Gợi ý',
     'giới thiệu': 'Recommend / Introduce',
@@ -1221,16 +1234,36 @@ class TranslatorEngine {
   static Future<String> translateWithGemini(
       String text, String sourceLang, String targetLang) async {
     if (text.trim().isEmpty) return '';
+    final normText = PhraseLibrary.normalizeTypo(text);
+
+    // 0. Fast check inside User's Custom Phrases
+    try {
+      final customList = SettingsController.instance.customPhrases;
+      for (final item in customList) {
+        if (item['source']?.toLowerCase().trim() == normText.toLowerCase().trim() &&
+            item['target'] != null &&
+            item['target']!.isNotEmpty) {
+          return _capitalize(item['target']!);
+        }
+      }
+    } catch (_) {}
 
     // Fast check inside ExpandedCorpus before network
-    final fastOffline = ExpandedCorpus.lookup(text, sourceLang, targetLang);
+    final fastOffline = ExpandedCorpus.lookup(normText, sourceLang, targetLang);
     if (fastOffline != null) {
       return _capitalize(fastOffline);
     }
 
+    // Fast check inside PhraseLibrary curated entries
+    final phraseRes = PhraseLibrary.lookup(normText, sourceLang, targetLang);
+    if (phraseRes != null) {
+      return _capitalize(phraseRes);
+    }
+
     // Fast check inside translateSync local progressive grammar/dictionary engine
-    final syncRes = translateSync(text, sourceLang, targetLang);
+    final syncRes = translateSync(normText, sourceLang, targetLang);
     if (syncRes.isNotEmpty &&
+        syncRes.toLowerCase() != normText.trim().toLowerCase() &&
         syncRes.toLowerCase() != text.trim().toLowerCase()) {
       return _capitalize(syncRes);
     }
@@ -1243,19 +1276,48 @@ class TranslatorEngine {
             res.isNotEmpty &&
             !res.startsWith('⚠️') &&
             res.toLowerCase() != 'weigh?' &&
+            res.toLowerCase() != normText.trim().toLowerCase() &&
             res.toLowerCase() != text.trim().toLowerCase()) {
           completer.complete(_capitalize(res));
         }
       }).catchError((_) {});
     }
 
-    // 1. TIER 1 RACE (Siêu tốc < 100ms): Kích hoạt ngay Google Translate GTX
-    tryComplete(_callGoogleTranslateGtx(text, sourceLang, targetLang));
+    // 1. TIER 1 RACE (Siêu tốc offline & GTX < 100ms): Kích hoạt ngay Google ML Kit On-Device + Google Translate GTX
+    tryComplete(MlKitTranslator.translate(normText, sourceLang, targetLang));
+    tryComplete(_callGoogleTranslateGtx(normText, sourceLang, targetLang));
 
-    // 2. TIER 2 RACE (LLM Cloud): Đồng thời kích hoạt các AI Cloud đang hoạt động như một lớp bổ trợ song song
     final promptSystem =
         'You are a professional medical and daily life translator. Output ONLY the translated text, no explanations, notes, or markdown formatting. Preserve exact paragraph spacing and line breaks.';
-    final promptUser = 'Translate the following text from $sourceLang to $targetLang:\n\n$text';
+    final promptUser = 'Translate the following text from $sourceLang to $targetLang:\n\n$normText';
+
+    // 1.5. Check User's Custom API Key if provided
+    try {
+      final customKey = SettingsController.instance.customApiKey;
+      if (customKey.isNotEmpty) {
+        if (customKey.startsWith('AIza')) {
+          // Custom Gemini API Key
+          tryComplete(_callGeminiRestWithKey(normText, sourceLang, targetLang, customKey));
+        } else if (customKey.startsWith('sk-') || customKey.startsWith('gsk_')) {
+          // Custom OpenAI or Groq API Key
+          final url = customKey.startsWith('gsk_')
+              ? 'https://api.groq.com/openai/v1/chat/completions'
+              : 'https://api.openai.com/v1/chat/completions';
+          final model = customKey.startsWith('gsk_') ? 'qwen-2.5-32b' : 'gpt-4o-mini';
+          tryComplete(_callOpenAICompatible(
+            providerKey: 'CustomKey',
+            url: url,
+            apiKey: customKey,
+            model: model,
+            systemPrompt: promptSystem,
+            userPrompt: promptUser,
+            timeoutSeconds: 3,
+          ));
+        }
+      }
+    } catch (_) {}
+
+    // 2. TIER 2 RACE (LLM Cloud): Đồng thời kích hoạt các AI Cloud đang hoạt động như một lớp bổ trợ song song
 
     if (!_isProviderDisabled('OpenAI')) {
       tryComplete(_callOpenAICompatible(
@@ -1389,6 +1451,45 @@ class TranslatorEngine {
     return '';
   }
 
+  static Future<String> _callGeminiRestWithKey(
+      String text, String sourceLang, String targetLang, String apiKey) async {
+    try {
+      final url = Uri.parse(
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey');
+      final prompt =
+          'You are a professional translator. Translate the following text from $sourceLang to $targetLang.\n'
+          'Rules: Output ONLY the translated text, no notes or explanations. Preserve exact spacing and line breaks.\n\n$text';
+      final body = jsonEncode({
+        'contents': [
+          {
+            'parts': [
+              {'text': prompt}
+            ]
+          }
+        ],
+        'generationConfig': {
+          'temperature': 0.1,
+          'maxOutputTokens': 2048,
+        }
+      });
+      final response = await http
+          .post(url, headers: const {'Content-Type': 'application/json'}, body: body)
+          .timeout(const Duration(seconds: 3));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        final candidates = data['candidates'] as List<dynamic>?;
+        if (candidates != null && candidates.isNotEmpty) {
+          final parts = candidates[0]['content']?['parts'] as List<dynamic>?;
+          if (parts != null && parts.isNotEmpty) {
+            final translated = (parts[0]['text'] as String?)?.trim() ?? '';
+            if (translated.isNotEmpty) return _capitalize(translated);
+          }
+        }
+      }
+    } catch (_) {}
+    return '';
+  }
+
   // Helper cho giao thức OpenAI Chat Completions (hỗ trợ Circuit Breaker + UTF-8 fix + chuẩn hóa params cho GPT-5)
   static Future<String> _callOpenAICompatible({
     required String providerKey,
@@ -1463,7 +1564,19 @@ class TranslatorEngine {
   static String translateSync(String text, String sourceLang, String targetLang, {bool isSubclause = false}) {
     if (text.trim().isEmpty) return '';
     
-    var clean = text.trim().toLowerCase();
+    var clean = PhraseLibrary.normalizeTypo(text).toLowerCase();
+
+    // 0. Check User's Custom Phrases
+    try {
+      final customList = SettingsController.instance.customPhrases;
+      for (final item in customList) {
+        if (item['source']?.toLowerCase().trim() == clean.trim() &&
+            item['target'] != null &&
+            item['target']!.isNotEmpty) {
+          return _formatResult(item['target']!, isSubclause);
+        }
+      }
+    } catch (_) {}
     
     // Normalize consecutive duplicate prefixes
     while (clean.startsWith('bạn có thể bạn có thể ')) {
@@ -2394,6 +2507,54 @@ class TranslatorEngine {
     }
     if (words.length <= 3 && (clean.contains('tính tiền') || clean.contains('hóa đơn') || clean.contains('thanh toán'))) {
       return 'Check please / Bill please';
+    }
+
+    // Dynamic Room Booking & Number Patterns ("đặt phòng X người Y ngày")
+    if (clean.contains('đặt phòng') || clean.contains('book room') || clean.contains('thuê phòng')) {
+      final numRegex = RegExp(r'(\d+)\s*(người|guest|people)');
+      final dayRegex = RegExp(r'(\d+)\s*(ngày|đêm|day|night|nights|days)');
+      final numMatch = numRegex.firstMatch(clean);
+      final dayMatch = dayRegex.firstMatch(clean);
+      
+      if (numMatch != null || dayMatch != null) {
+        final peopleCount = numMatch?.group(1) ?? '2';
+        final daysCount = dayMatch?.group(1) ?? '2';
+        final isNight = clean.contains('đêm') || clean.contains('night');
+        final timeUnit = isNight ? (daysCount == '1' ? 'night' : 'nights') : (daysCount == '1' ? 'day' : 'days');
+        final personUnit = peopleCount == '1' ? 'person' : 'people';
+        
+        if (clean.startsWith('tôi muốn') || clean.startsWith('cho tôi') || clean.startsWith('i want') || clean.startsWith('i would like')) {
+          return 'I would like to book a room for $peopleCount $personUnit for $daysCount $timeUnit';
+        }
+        return 'Book a room for $peopleCount $personUnit for $daysCount $timeUnit';
+      }
+      return 'I would like to book a room, please';
+    }
+
+    // Universal Dynamic Quantifiers ("X người lớn Y trẻ em", "X quả táo", "X vé")
+    final adultChildMatch = RegExp(r'(\d+)\s*(người lớn|adult|adults).*?(\d+)\s*(trẻ em|child|children)').firstMatch(clean);
+    if (adultChildMatch != null) {
+      final aCount = adultChildMatch.group(1) ?? '2';
+      final cCount = adultChildMatch.group(3) ?? '1';
+      final aUnit = aCount == '1' ? 'adult' : 'adults';
+      final cUnit = cCount == '1' ? 'child' : 'children';
+      if (clean.startsWith('tôi muốn') || clean.startsWith('cho tôi')) {
+        return 'I would like table/tickets for $aCount $aUnit and $cCount $cUnit';
+      }
+      return '$aCount $aUnit and $cCount $cUnit';
+    }
+
+    final generalQuantMatch = RegExp(r'(\d+)\s*(quả táo|táo|vé|chiếc|phần|apple|apples|ticket|tickets)').firstMatch(clean);
+    if (generalQuantMatch != null) {
+      final qCount = generalQuantMatch.group(1) ?? '1';
+      final rawUnit = generalQuantMatch.group(2)!.toLowerCase();
+      String enUnit = rawUnit.contains('táo') || rawUnit.contains('apple')
+          ? (qCount == '1' ? 'apple' : 'apples')
+          : (qCount == '1' ? 'ticket' : 'tickets');
+      if (clean.startsWith('tôi muốn mua') || clean.startsWith('cho tôi mua')) {
+        return 'I would like to buy $qCount $enUnit';
+      }
+      return '$qCount $enUnit';
     }
 
     // Intent & Desires Patterns

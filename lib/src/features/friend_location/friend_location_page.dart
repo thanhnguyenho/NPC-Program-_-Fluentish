@@ -1183,6 +1183,7 @@ class _MapLocationClusterMarker extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _GuideMarker extends StatelessWidget {
   const _GuideMarker({required this.place});
 
