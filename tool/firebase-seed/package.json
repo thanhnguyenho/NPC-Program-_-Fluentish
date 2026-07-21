@@ -5,7 +5,8 @@
   "scripts": {
     "dry-run": "node seed.mjs --project fluentish-9d857",
     "apply": "node seed.mjs --project fluentish-9d857 --apply",
-    "test": "node --test firestore.rules.test.mjs"
+    "test": "node --test firestore.rules.test.mjs",
+    "test:storage": "node --test storage.rules.test.mjs"
   },
   "dependencies": {
     "@firebase/rules-unit-testing": "^5.0.1",

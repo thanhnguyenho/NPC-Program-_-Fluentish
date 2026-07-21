@@ -16,6 +16,9 @@ class LanguagePage extends StatelessWidget {
   final String? initialSourceLang;
   final String? initialTargetLang;
   final String? initialQuery;
+  final String? initialFavouriteId;
+  final AuthGateway? auth;
+  final FavouriteDataSource? favouriteRepository;
 
   const LanguagePage({
     super.key,
@@ -24,6 +27,9 @@ class LanguagePage extends StatelessWidget {
     this.initialSourceLang,
     this.initialTargetLang,
     this.initialQuery,
+    this.initialFavouriteId,
+    this.auth,
+    this.favouriteRepository,
   });
 
   @override
@@ -34,6 +40,9 @@ class LanguagePage extends StatelessWidget {
       initialSourceLang: initialSourceLang,
       initialTargetLang: initialTargetLang,
       initialQuery: initialQuery,
+      initialFavouriteId: initialFavouriteId,
+      auth: auth,
+      favouriteRepository: favouriteRepository,
     );
   }
 }
@@ -44,6 +53,9 @@ class LanguageTranslatorScreen extends StatefulWidget {
   final String? initialSourceLang;
   final String? initialTargetLang;
   final String? initialQuery;
+  final String? initialFavouriteId;
+  final AuthGateway? auth;
+  final FavouriteDataSource? favouriteRepository;
 
   const LanguageTranslatorScreen({
     super.key,
@@ -52,6 +64,9 @@ class LanguageTranslatorScreen extends StatefulWidget {
     this.initialSourceLang,
     this.initialTargetLang,
     this.initialQuery,
+    this.initialFavouriteId,
+    this.auth,
+    this.favouriteRepository,
   });
 
   @override
@@ -68,6 +83,8 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
   String _translatedText = '';
 
   bool _isTargetStarred = false;
+  bool _favouriteBusy = false;
+  String? _savedFavouriteId;
   String? _spellingCorrectionSuggestion;
   bool _isTranslating = false;
   Timer? _translationDebounceTimer;
@@ -75,6 +92,8 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
   Timer? _historyDebounceTimer;
   int _translateRequestId = 0;
   FlutterTts? _flutterTts;
+  late final AuthGateway _auth;
+  late final FavouriteDataSource _favourites;
 
   // Clean initial history & favourites
   final List<Map<String, String>> _historyList = [];
@@ -82,6 +101,10 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
   @override
   void initState() {
     super.initState();
+    _auth = widget.auth ?? Auth.instance;
+    _favourites = widget.favouriteRepository ?? FavouriteRepository();
+    _savedFavouriteId = widget.initialFavouriteId;
+    _isTargetStarred = _savedFavouriteId != null;
     _sourceLang =
         widget.initialSourceLang ?? SettingsController.instance.sourceLanguage;
     _targetLang =
@@ -113,6 +136,61 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
     final tts = FlutterTts();
     _flutterTts = tts;
     return tts;
+  }
+
+  Future<void> _toggleFavourite() async {
+    if (_favouriteBusy ||
+        _sourceController.text.trim().isEmpty ||
+        _translatedText.trim().isEmpty) {
+      return;
+    }
+    final uid = _auth.currentUserId;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to save favourites.')),
+      );
+      return;
+    }
+
+    setState(() => _favouriteBusy = true);
+    try {
+      final savedId = _savedFavouriteId;
+      if (savedId != null) {
+        await _favourites.removeFavouritePhrase(uid, savedId);
+        if (!mounted) return;
+        setState(() {
+          _savedFavouriteId = null;
+          _isTargetStarred = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Removed from Favourites')),
+        );
+      } else {
+        final favouriteId = await _favourites.saveFavouritePhrase(
+          uid,
+          sourceText: _sourceController.text.trim(),
+          translatedText: _translatedText.trim(),
+          sourceLanguage: _sourceLang,
+          targetLanguage: _targetLang,
+        );
+        if (!mounted) return;
+        setState(() {
+          _savedFavouriteId = favouriteId;
+          _isTargetStarred = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Saved to Favourites!')),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      debugPrint('Could not update favourite phrase: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not update Favourites.')),
+      );
+    } finally {
+      if (mounted) setState(() => _favouriteBusy = false);
+    }
   }
 
   bool _looksLikeVietnamese(String text) {
@@ -258,7 +336,10 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
         // Tuyệt đối KHÔNG xóa câu hoàn chỉnh trong lịch sử khi người dùng bấm phím Backspace/xóa chữ.
         _historyList.removeWhere((item) =>
             item['source']!.toLowerCase() == source.toLowerCase() ||
-            (source.length > item['source']!.length && source.toLowerCase().startsWith(item['source']!.toLowerCase())));
+            (source.length > item['source']!.length &&
+                source
+                    .toLowerCase()
+                    .startsWith(item['source']!.toLowerCase())));
         _historyList.insert(0, {
           'source': source,
           'target': target,
@@ -386,8 +467,7 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
 
     // Check if the text is Vietnamese
     final isVi = lang.toLowerCase().contains('vi') ||
-        RegExp(r'[ăâđêôơưáàảãạéèẻẽẹíìỉĩịóòỏõọúùủũụýỳỷỹỵ]',
-                caseSensitive: false)
+        RegExp(r'[ăâđêôơưáàảãạéèẻẽẹíìỉĩịóòỏõọúùủũụýỳỷỹỵ]', caseSensitive: false)
             .hasMatch(textToSpeak);
 
     if (isVi) {
@@ -770,7 +850,6 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = context.fluentishColors;
-    final primaryGreen = colors.header;
 
     return GestureDetector(
         onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
@@ -1172,25 +1251,14 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                                             ),
                                           ),
                                         const SizedBox(width: 8),
-                                        GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              _isTargetStarred =
-                                                  !_isTargetStarred;
-                                            });
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              SnackBar(
-                                                content: Text(_isTargetStarred
-                                                    ? '⭐ Saved "$_translatedText" to Favourites!'
-                                                    : 'Removed from Favourites'),
-                                                duration:
-                                                    const Duration(seconds: 1),
-                                                backgroundColor: primaryGreen,
-                                              ),
-                                            );
-                                          },
-                                          child: Icon(
+                                        IconButton(
+                                          tooltip: _isTargetStarred
+                                              ? 'Remove from favourites'
+                                              : 'Save to favourites',
+                                          onPressed: _favouriteBusy
+                                              ? null
+                                              : _toggleFavourite,
+                                          icon: Icon(
                                             _isTargetStarred
                                                 ? Icons.star
                                                 : Icons.star_border,
