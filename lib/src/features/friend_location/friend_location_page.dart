@@ -1035,20 +1035,13 @@ class _ProfileAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final image = avatarImageProvider(
+    return AvatarImage(
+      radius: radius,
       base64Data: profile.avatarBase64,
       url: profile.avatarUrl,
-    );
-    return CircleAvatar(
-      radius: radius,
       backgroundColor: AppColors.blush,
-      backgroundImage: image,
-      child: image == null
-          ? Text(
-              profile.displayName.characters.first.toUpperCase(),
-              style: AppTextStyles.title.copyWith(color: AppColors.pine),
-            )
-          : null,
+      fallbackText: profile.displayName,
+      textStyle: AppTextStyles.title.copyWith(color: AppColors.pine),
     );
   }
 }

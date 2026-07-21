@@ -1357,18 +1357,13 @@ class _HomeAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final image = avatarImageProvider(
+    final colors = context.fluentishColors;
+    return AvatarImage(
+      radius: 28,
       base64Data: profile.avatarBase64,
       url: profile.avatarUrl,
-    );
-    final colors = context.fluentishColors;
-    return CircleAvatar(
-      radius: 28,
       backgroundColor: colors.surfaceStrong,
-      backgroundImage: image,
-      child: image == null
-          ? Text(profile.displayName.characters.first.toUpperCase())
-          : null,
+      fallbackText: profile.displayName,
     );
   }
 }

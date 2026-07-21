@@ -89,10 +89,6 @@ class _ProfilePageState extends State<ProfilePage> {
               (profileAvatarUrl != null && profileAvatarUrl.isNotEmpty
                   ? profileAvatarUrl
                   : _avatarOverrideUrl ?? _firebaseAvatarUrl);
-          final avatarImage = avatarImageProvider(
-            base64Data: profile?.avatarBase64,
-            url: avatarUrl,
-          );
 
           return CustomScrollView(
             slivers: [
@@ -128,21 +124,16 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        CircleAvatar(
+                        AvatarImage(
                           radius: 62,
                           backgroundColor: colors.accent,
-                          backgroundImage: avatarImage,
-                          child: avatarImage == null
-                              ? Text(
-                                  name.isNotEmpty
-                                      ? name.substring(0, 1).toUpperCase()
-                                      : '?',
-                                  style: AppTextStyles.title.copyWith(
-                                    color: colors.header,
-                                    fontSize: 34,
-                                  ),
-                                )
-                              : null,
+                          base64Data: profile?.avatarBase64,
+                          url: avatarUrl,
+                          fallbackText: name,
+                          textStyle: AppTextStyles.title.copyWith(
+                            color: colors.header,
+                            fontSize: 34,
+                          ),
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         Text(

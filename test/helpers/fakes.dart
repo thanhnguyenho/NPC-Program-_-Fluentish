@@ -467,7 +467,7 @@ class FakeFavouriteDataSource implements FavouriteDataSource {
   }
 
   @override
-  Future<void> saveFavouritePhrase(
+  Future<String> saveFavouritePhrase(
     String uid, {
     required String sourceText,
     required String translatedText,
@@ -485,6 +485,7 @@ class FakeFavouriteDataSource implements FavouriteDataSource {
     );
     phrases.add(record);
     _phraseChanges.add(List.unmodifiable(phrases));
+    return id;
   }
 
   @override

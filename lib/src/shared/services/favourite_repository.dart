@@ -13,7 +13,7 @@ abstract class FavouriteDataSource {
 
   Future<void> removeFavouriteSoundboardBite(String uid, String favouriteId);
 
-  Future<void> saveFavouritePhrase(
+  Future<String> saveFavouritePhrase(
     String uid, {
     required String sourceText,
     required String translatedText,
@@ -98,7 +98,7 @@ class FavouriteRepository implements FavouriteDataSource {
   }
 
   @override
-  Future<void> saveFavouritePhrase(
+  Future<String> saveFavouritePhrase(
     String uid, {
     required String sourceText,
     required String translatedText,
@@ -117,6 +117,7 @@ class FavouriteRepository implements FavouriteDataSource {
       'targetLanguage': targetLanguage,
       'createdAt': FieldValue.serverTimestamp(),
     });
+    return docRef.id;
   }
 
   @override

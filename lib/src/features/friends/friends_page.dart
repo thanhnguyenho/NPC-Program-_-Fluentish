@@ -469,16 +469,12 @@ class _Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final image = avatarImageProvider(
+    return AvatarImage(
+      radius: 20,
       base64Data: profile.avatarBase64,
       url: profile.avatarUrl,
-    );
-    return CircleAvatar(
       backgroundColor: AppColors.shell,
-      backgroundImage: image,
-      child: image == null
-          ? Text(profile.displayName.characters.first.toUpperCase())
-          : null,
+      fallbackText: profile.displayName,
     );
   }
 }
