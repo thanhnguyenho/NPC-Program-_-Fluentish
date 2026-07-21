@@ -9,7 +9,7 @@ import '../../shared/shared.dart';
 import '../guides_review/guides_review_page.dart';
 import 'maps_launcher.dart';
 
-enum MapContentFilter { all, friends, locations, guides }
+enum MapContentFilter { all, friends, locations }
 
 class FriendLocationPage extends StatefulWidget {
   const FriendLocationPage({
@@ -658,8 +658,6 @@ class _FriendLocationPageState extends State<FriendLocationPage>
                       _filter == MapContentFilter.friends;
                   final showLocations = _filter == MapContentFilter.all ||
                       _filter == MapContentFilter.locations;
-                  final showGuides = _filter == MapContentFilter.all ||
-                      _filter == MapContentFilter.guides;
                   final locationClusters = showLocations
                       ? _clusterMapLocations(mapLocations, _mapZoom)
                       : const <_MapLocationCluster>[];
@@ -781,20 +779,6 @@ class _FriendLocationPageState extends State<FriendLocationPage>
                                           : _MapLocationClusterMarker(
                                               cluster: cluster,
                                             ),
-                                    ),
-                                  ),
-                              if (showGuides)
-                                for (final place in places)
-                                  fm.Marker(
-                                    point: ll.LatLng(
-                                      place.point.latitude,
-                                      place.point.longitude,
-                                    ),
-                                    width: 52,
-                                    height: 52,
-                                    child: GestureDetector(
-                                      onTap: () => _showPlace(place),
-                                      child: _GuideMarker(place: place),
                                     ),
                                   ),
                               for (final stop in _activeStops)
@@ -950,12 +934,11 @@ class _MapHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Friends, Places & Guides',
+                    'Friends & Places',
                     style: AppTextStyles.title.copyWith(fontSize: 18),
                   ),
                   Text(
-                    '$friendCount friends · $locationCount places · '
-                    '$guideCount guides',
+                    '$friendCount friends · $locationCount places',
                     style: AppTextStyles.body.copyWith(fontSize: 11),
                   ),
                 ],
@@ -992,7 +975,6 @@ class _MapFilters extends StatelessWidget {
               MapContentFilter.all => 'All',
               MapContentFilter.friends => 'Friends',
               MapContentFilter.locations => 'Places',
-              MapContentFilter.guides => 'Guides',
             }),
             selected: selected == filter,
             showCheckmark: false,
