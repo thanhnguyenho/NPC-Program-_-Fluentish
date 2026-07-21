@@ -9,10 +9,13 @@ import 'package:fluentish/src/services/auth_service.dart';
 import 'package:fluentish/src/services/location_language_service.dart';
 import 'package:fluentish/src/services/push_notification_service.dart';
 import 'package:fluentish/src/services/settings_controller.dart';
+import 'package:fluentish/src/shared/services/account_deletion_service.dart';
 import 'package:fluentish/src/shared/shared.dart';
 
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
+  const SettingsPage({super.key, this.accountDeletion});
+
+  final AccountDeletionDataSource? accountDeletion;
 
   Future<void> _togglePushNotifications(
     BuildContext context,
@@ -247,48 +250,15 @@ class SettingsPage extends StatelessWidget {
     }
   }
 
-  void _confirmDelete(BuildContext context) {
-    showDialog(
+  Future<void> _confirmDelete(BuildContext context) async {
+    final deletion = accountDeletion ?? AccountDeletionService();
+    final deleted = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Account'),
-        content: const Text(
-          'Are you sure you want to permanently delete your account?\n\nThis action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              try {
-                await AuthService().currentUser?.delete();
-                if (context.mounted) {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Could not delete account: $e. You may need to '
-                        'log in again before deleting.',
-                      ),
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.red),
-            ),
-          ),
-        ],
-      ),
+      builder: (_) => _DeleteAccountDialog(deletion: deletion),
     );
+    if (deleted == true && context.mounted) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
   }
 
   @override
@@ -627,6 +597,109 @@ class _NavRow extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _DeleteAccountDialog extends StatefulWidget {
+  const _DeleteAccountDialog({required this.deletion});
+
+  final AccountDeletionDataSource deletion;
+
+  @override
+  State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
+}
+
+class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
+  static const _safeMessages = {
+    'Enter your password to continue.',
+    'The password is incorrect.',
+    'Please sign in again and retry.',
+    'Could not verify your account.',
+  };
+
+  final _passwordController = TextEditingController();
+  bool _deleting = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _delete() async {
+    setState(() {
+      _deleting = true;
+      _errorMessage = null;
+    });
+    try {
+      await widget.deletion.deleteAccount(
+        password:
+            widget.deletion.requiresPassword ? _passwordController.text : null,
+      );
+      if (mounted) Navigator.pop(context, true);
+    } catch (error) {
+      if (!mounted) return;
+      final stateMessage = error is StateError ? error.message : null;
+      setState(() {
+        _deleting = false;
+        _errorMessage = _safeMessages.contains(stateMessage)
+            ? stateMessage
+            : 'Could not delete your account.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Delete Account'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'This permanently deletes your profile, friends, locations, '
+            'history, favourites, saved guides, and sign-in account.',
+          ),
+          if (widget.deletion.requiresPassword) ...[
+            const SizedBox(height: AppSpacing.md),
+            TextField(
+              controller: _passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Confirm your password',
+              ),
+            ),
+          ],
+          if (_errorMessage != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              _errorMessage!,
+              style: const TextStyle(color: Colors.red),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _deleting ? null : () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: _deleting ? null : _delete,
+          child: _deleting
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.red),
+                ),
+        ),
+      ],
     );
   }
 }
