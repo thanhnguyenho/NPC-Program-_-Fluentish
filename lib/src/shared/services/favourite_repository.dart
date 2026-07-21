@@ -5,14 +5,6 @@ import '../models/favourite_models.dart';
 abstract class FavouriteDataSource {
   Stream<List<FavouritePhraseRecord>> watchFavouritePhrases(String uid);
 
-  Future<void> saveFavouritePhrase(
-    String uid, {
-    required String sourceText,
-    required String translatedText,
-    required String sourceLanguage,
-    required String targetLanguage,
-  });
-
   Stream<List<FavouriteSoundboardRecord>> watchFavouriteSoundboardBites(
     String uid,
   );
@@ -20,6 +12,24 @@ abstract class FavouriteDataSource {
   Future<void> removeFavouritePhrase(String uid, String favouriteId);
 
   Future<void> removeFavouriteSoundboardBite(String uid, String favouriteId);
+
+  Future<String> saveFavouritePhrase(
+    String uid, {
+    required String sourceText,
+    required String translatedText,
+    required String sourceLanguage,
+    required String targetLanguage,
+  });
+
+  Future<void> saveFavouriteSoundboardBite(
+    String uid, {
+    required String english,
+    required String vietnamese,
+    required String category,
+    required String englishAudio,
+    required String vietnameseAudio,
+    required String preferredLanguage,
+  });
 }
 
 class FavouriteRepository implements FavouriteDataSource {
@@ -27,31 +37,6 @@ class FavouriteRepository implements FavouriteDataSource {
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
-
-  @override
-  Future<void> saveFavouritePhrase(
-    String uid, {
-    required String sourceText,
-    required String translatedText,
-    required String sourceLanguage,
-    required String targetLanguage,
-  }) {
-    final id = _phraseDocumentId(
-      '$sourceText|$translatedText|$sourceLanguage|$targetLanguage',
-    );
-    return _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('favouritePhrases')
-        .doc(id)
-        .set({
-      'sourceText': sourceText.trim(),
-      'translatedText': translatedText.trim(),
-      'sourceLanguage': sourceLanguage,
-      'targetLanguage': targetLanguage,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-  }
 
   @override
   Stream<List<FavouritePhraseRecord>> watchFavouritePhrases(String uid) {
@@ -111,15 +96,55 @@ class FavouriteRepository implements FavouriteDataSource {
         .doc(favouriteId)
         .delete();
   }
-}
 
-String _phraseDocumentId(String value) {
-  var hash = 0x811c9dc5;
-  for (final codeUnit in value.trim().toLowerCase().codeUnits) {
-    hash ^= codeUnit;
-    hash = (hash * 0x01000193) & 0x7fffffff;
+  @override
+  Future<String> saveFavouritePhrase(
+    String uid, {
+    required String sourceText,
+    required String translatedText,
+    required String sourceLanguage,
+    required String targetLanguage,
+  }) async {
+    final docRef = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('favouritePhrases')
+        .doc();
+    await docRef.set({
+      'sourceText': sourceText,
+      'translatedText': translatedText,
+      'sourceLanguage': sourceLanguage,
+      'targetLanguage': targetLanguage,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    return docRef.id;
   }
-  return hash.toRadixString(16);
+
+  @override
+  Future<void> saveFavouriteSoundboardBite(
+    String uid, {
+    required String english,
+    required String vietnamese,
+    required String category,
+    required String englishAudio,
+    required String vietnameseAudio,
+    required String preferredLanguage,
+  }) async {
+    final docRef = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('favouriteSoundboardBites')
+        .doc();
+    await docRef.set({
+      'english': english,
+      'vietnamese': vietnamese,
+      'category': category,
+      'englishAudio': englishAudio,
+      'vietnameseAudio': vietnameseAudio,
+      'preferredLanguage': preferredLanguage,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
 }
 
 void _sortNewestFirst<T>(

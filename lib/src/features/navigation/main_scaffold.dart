@@ -59,6 +59,7 @@ class _MainScaffoldState extends State<MainScaffold> {
           initialTargetText: _selectedFavouritePhrase?.translatedText,
           initialSourceLang: _selectedFavouritePhrase?.sourceLanguage,
           initialTargetLang: _selectedFavouritePhrase?.targetLanguage,
+          initialFavouriteId: _selectedFavouritePhrase?.id,
           auth: widget.auth,
           favouriteRepository: widget.favouriteRepository,
         );
@@ -98,9 +99,17 @@ class _MainScaffoldState extends State<MainScaffold> {
     });
   }
 
-  void _openSoundboard() => setState(() => _currentIndex = 2);
+  void _openSoundboard() {
+    setState(() {
+      _currentIndex = 2;
+    });
+  }
 
-  void _openMap() => setState(() => _currentIndex = 3);
+  void _openMap() {
+    setState(() {
+      _currentIndex = 3;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

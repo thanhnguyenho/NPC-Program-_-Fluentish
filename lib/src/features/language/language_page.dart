@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
-import 'dart:io';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:fluentish/src/features/language/translator_engine.dart';
 import 'package:fluentish/src/features/language/phrase_library.dart';
 import 'package:fluentish/src/features/common/smart_search_bar.dart';
@@ -16,6 +16,7 @@ class LanguagePage extends StatelessWidget {
   final String? initialSourceLang;
   final String? initialTargetLang;
   final String? initialQuery;
+  final String? initialFavouriteId;
   final AuthGateway? auth;
   final FavouriteDataSource? favouriteRepository;
 
@@ -26,6 +27,7 @@ class LanguagePage extends StatelessWidget {
     this.initialSourceLang,
     this.initialTargetLang,
     this.initialQuery,
+    this.initialFavouriteId,
     this.auth,
     this.favouriteRepository,
   });
@@ -38,6 +40,7 @@ class LanguagePage extends StatelessWidget {
       initialSourceLang: initialSourceLang,
       initialTargetLang: initialTargetLang,
       initialQuery: initialQuery,
+      initialFavouriteId: initialFavouriteId,
       auth: auth,
       favouriteRepository: favouriteRepository,
     );
@@ -50,6 +53,7 @@ class LanguageTranslatorScreen extends StatefulWidget {
   final String? initialSourceLang;
   final String? initialTargetLang;
   final String? initialQuery;
+  final String? initialFavouriteId;
   final AuthGateway? auth;
   final FavouriteDataSource? favouriteRepository;
 
@@ -60,6 +64,7 @@ class LanguageTranslatorScreen extends StatefulWidget {
     this.initialSourceLang,
     this.initialTargetLang,
     this.initialQuery,
+    this.initialFavouriteId,
     this.auth,
     this.favouriteRepository,
   });
@@ -77,54 +82,29 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
   String _targetLang = 'Vietnamese';
   String _translatedText = '';
 
-  bool _isSourceStarred = false;
   bool _isTargetStarred = false;
-  bool _isFavouriteBusy = false;
-  late final AuthGateway _auth;
-  late final FavouriteDataSource _favourites;
-  StreamSubscription<List<FavouritePhraseRecord>>? _favouriteSubscription;
-  List<FavouritePhraseRecord> _savedPhrases = const [];
+  bool _favouriteBusy = false;
+  String? _savedFavouriteId;
   String? _spellingCorrectionSuggestion;
   bool _isTranslating = false;
   Timer? _translationDebounceTimer;
   // Debounce timer: only record to history AFTER user stops typing for 800ms
   Timer? _historyDebounceTimer;
   int _translateRequestId = 0;
+  FlutterTts? _flutterTts;
+  late final AuthGateway _auth;
+  late final FavouriteDataSource _favourites;
 
   // Clean initial history & favourites
-  final List<Map<String, String>> _historyList = [
-    {
-      'source': 'How much is this?',
-      'target': 'Cái này giá bao nhiêu?',
-      'time': 'Just now'
-    },
-    {
-      'source': 'Can you speak slower?',
-      'target': 'Bạn có thể nói chậm lại không?',
-      'time': '2 mins ago'
-    },
-    {
-      'source': 'Where is the nearest hospital?',
-      'target': 'Bệnh viện gần nhất ở đâu?',
-      'time': '10 mins ago'
-    },
-    {
-      'source': 'Thank you very much',
-      'target': 'Xin cảm ơn rất nhiều',
-      'time': '1 hour ago'
-    },
-    {
-      'source': 'Can you explain it again?',
-      'target': 'Bạn có thể giải thích lại không?',
-      'time': 'Yesterday'
-    },
-  ];
+  final List<Map<String, String>> _historyList = [];
 
   @override
   void initState() {
     super.initState();
     _auth = widget.auth ?? Auth.instance;
     _favourites = widget.favouriteRepository ?? FavouriteRepository();
+    _savedFavouriteId = widget.initialFavouriteId;
+    _isTargetStarred = _savedFavouriteId != null;
     _sourceLang =
         widget.initialSourceLang ?? SettingsController.instance.sourceLanguage;
     _targetLang =
@@ -139,27 +119,78 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
         _onSourceTextChanged(initText);
       }
     }
-    final uid = _auth.currentUserId;
-    if (uid != null) {
-      _favouriteSubscription =
-          _favourites.watchFavouritePhrases(uid).listen((phrases) {
-        if (!mounted) return;
-        setState(() {
-          _savedPhrases = phrases;
-          _syncStarredState();
-        });
-      });
-    }
   }
 
   @override
   void dispose() {
+    _flutterTts?.stop();
     _translationDebounceTimer?.cancel();
     _historyDebounceTimer?.cancel();
     _searchController.dispose();
     _sourceController.dispose();
-    _favouriteSubscription?.cancel();
     super.dispose();
+  }
+
+  FlutterTts _getTts() {
+    if (_flutterTts != null) return _flutterTts!;
+    final tts = FlutterTts();
+    _flutterTts = tts;
+    return tts;
+  }
+
+  Future<void> _toggleFavourite() async {
+    if (_favouriteBusy ||
+        _sourceController.text.trim().isEmpty ||
+        _translatedText.trim().isEmpty) {
+      return;
+    }
+    final uid = _auth.currentUserId;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to save favourites.')),
+      );
+      return;
+    }
+
+    setState(() => _favouriteBusy = true);
+    try {
+      final savedId = _savedFavouriteId;
+      if (savedId != null) {
+        await _favourites.removeFavouritePhrase(uid, savedId);
+        if (!mounted) return;
+        setState(() {
+          _savedFavouriteId = null;
+          _isTargetStarred = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Removed from Favourites')),
+        );
+      } else {
+        final favouriteId = await _favourites.saveFavouritePhrase(
+          uid,
+          sourceText: _sourceController.text.trim(),
+          translatedText: _translatedText.trim(),
+          sourceLanguage: _sourceLang,
+          targetLanguage: _targetLang,
+        );
+        if (!mounted) return;
+        setState(() {
+          _savedFavouriteId = favouriteId;
+          _isTargetStarred = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Saved to Favourites!')),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      debugPrint('Could not update favourite phrase: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not update Favourites.')),
+      );
+    } finally {
+      if (mounted) setState(() => _favouriteBusy = false);
+    }
   }
 
   bool _looksLikeVietnamese(String text) {
@@ -203,6 +234,13 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
       return;
     }
 
+    // Khi người dùng gõ câu mới hoặc chỉnh sửa, lập tức reset ngôi sao về trạng thái chưa lưu (☆)
+    if (_isTargetStarred) {
+      setState(() {
+        _isTargetStarred = false;
+      });
+    }
+
     // Auto-detect direction
     if (_looksLikeVietnamese(rawText)) {
       _sourceLang = 'Vietnamese';
@@ -216,8 +254,6 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
     setState(() {
       _spellingCorrectionSuggestion =
           TranslatorEngine.findSpellingCorrection(rawText, _sourceLang);
-      _isSourceStarred = false;
-      _isTargetStarred = false;
     });
 
     // LAYER 1: Check phrase library cục bộ (instant, <1ms)
@@ -227,11 +263,24 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
       setState(() {
         _translatedText = phraseResult;
         _isTranslating = false;
-        _syncStarredState();
       });
       _translationDebounceTimer?.cancel();
       // Lưu lịch sử
       _saveToHistory(rawText.trim(), phraseResult);
+      return;
+    }
+
+    // LAYER 1.5: Check sync progressive dictionary & grammar engine (instant, <1ms)
+    final syncResult =
+        TranslatorEngine.translateSync(rawText, _sourceLang, _targetLang);
+    if (syncResult.isNotEmpty &&
+        syncResult.toLowerCase() != rawText.trim().toLowerCase()) {
+      setState(() {
+        _translatedText = syncResult;
+        _isTranslating = false;
+      });
+      _translationDebounceTimer?.cancel();
+      _saveToHistory(rawText.trim(), syncResult);
       return;
     }
 
@@ -261,7 +310,6 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
         setState(() {
           _translatedText = result;
           _isTranslating = false;
-          _syncStarredState();
         });
         _saveToHistory(cleanSrc, result);
       } else {
@@ -276,20 +324,30 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
   }
 
   void _saveToHistory(String source, String target) {
-    if (source.length >= 3 &&
+    if (source.length >= 2 &&
         target.isNotEmpty &&
-        target != source &&
+        target.toLowerCase() != source.toLowerCase() &&
         !target.startsWith('⚠️')) {
+      final now = DateTime.now();
+      final timeStr =
+          '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
       setState(() {
+        // Chỉ ghi đè mục lịch sử nếu câu đang gõ là bản mở rộng hoàn chỉnh hơn của một câu ngắn trước đó.
+        // Tuyệt đối KHÔNG xóa câu hoàn chỉnh trong lịch sử khi người dùng bấm phím Backspace/xóa chữ.
         _historyList.removeWhere((item) =>
-            item['time'] == 'Just now' &&
-            (source.contains(item['source']!) ||
-                item['source']!.contains(source)));
+            item['source']!.toLowerCase() == source.toLowerCase() ||
+            (source.length > item['source']!.length &&
+                source
+                    .toLowerCase()
+                    .startsWith(item['source']!.toLowerCase())));
         _historyList.insert(0, {
           'source': source,
           'target': target,
-          'time': 'Just now',
+          'time': timeStr,
         });
+        if (_historyList.length > 50) {
+          _historyList.removeLast();
+        }
       });
       unawaited(_persistHistory(source, target));
     }
@@ -331,85 +389,6 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
     return hash.toRadixString(16);
   }
 
-  FavouritePhraseRecord? _matchingFavourite() {
-    final source = _sourceController.text.trim().toLowerCase();
-    final target = _translatedText.trim().toLowerCase();
-    if (source.isEmpty || target.isEmpty) return null;
-    for (final phrase in _savedPhrases) {
-      if (phrase.sourceText.trim().toLowerCase() == source &&
-          phrase.translatedText.trim().toLowerCase() == target &&
-          phrase.sourceLanguage == _sourceLang &&
-          phrase.targetLanguage == _targetLang) {
-        return phrase;
-      }
-    }
-    return null;
-  }
-
-  void _syncStarredState() {
-    final isSaved = _matchingFavourite() != null;
-    _isSourceStarred = isSaved;
-    _isTargetStarred = isSaved;
-  }
-
-  Future<void> _toggleFavourite() async {
-    if (_isFavouriteBusy) return;
-    final source = _sourceController.text.trim();
-    final target = _translatedText.trim();
-    if (source.isEmpty ||
-        target.isEmpty ||
-        target.startsWith('⚠️') ||
-        _isTranslating) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Translate a phrase before saving it.')),
-      );
-      return;
-    }
-    final uid = _auth.currentUserId;
-    if (uid == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sign in to save favourite phrases.')),
-      );
-      return;
-    }
-    final existing = _matchingFavourite();
-    setState(() {
-      _isFavouriteBusy = true;
-      _isSourceStarred = existing == null;
-      _isTargetStarred = existing == null;
-    });
-    try {
-      if (existing != null) {
-        await _favourites.removeFavouritePhrase(uid, existing.id);
-      } else {
-        await _favourites.saveFavouritePhrase(
-          uid,
-          sourceText: source,
-          translatedText: target,
-          sourceLanguage: _sourceLang,
-          targetLanguage: _targetLang,
-        );
-      }
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(existing == null
-              ? 'Phrase saved to favourites.'
-              : 'Phrase removed from favourites.'),
-        ),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      setState(_syncStarredState);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not update favourite phrase.')),
-      );
-      debugPrint('Could not update favourite phrase: $error');
-    } finally {
-      if (mounted) setState(() => _isFavouriteBusy = false);
-    }
-  }
-
   void _swapLanguages() {
     FocusManager.instance.primaryFocus?.unfocus();
     setState(() {
@@ -421,9 +400,7 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
       _sourceController.text = _translatedText;
       _translatedText = tempText;
 
-      final tempStar = _isSourceStarred;
-      _isSourceStarred = _isTargetStarred;
-      _isTargetStarred = tempStar;
+      _isTargetStarred = false;
     });
     SettingsController.instance.setLanguagePair(_sourceLang, _targetLang);
   }
@@ -433,7 +410,6 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
     setState(() {
       _sourceController.clear();
       _translatedText = '';
-      _isSourceStarred = false;
       _isTargetStarred = false;
       _spellingCorrectionSuggestion = null;
     });
@@ -485,58 +461,36 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
     if (text.trim().isEmpty) return;
     final colors = context.fluentishColors;
 
-    // 1. Tìm câu tiếng Anh chuẩn chỉnh đúng chính tả (canonical English)
+    // Determine the text to speak and the TTS locale
     String textToSpeak = text.trim();
-    final canonical = PhraseLibrary.getCanonicalEnglish(textToSpeak);
-    if (canonical != null && canonical.isNotEmpty) {
-      textToSpeak = canonical;
-    } else if (_spellingCorrectionSuggestion != null &&
-        _spellingCorrectionSuggestion!.isNotEmpty &&
-        lang.toLowerCase().contains('en')) {
-      // Nếu có gợi ý sửa lỗi chính tả tiếng Anh, phát âm câu đã sửa đúng chính tả
-      textToSpeak = _spellingCorrectionSuggestion!;
+    String ttsLocale;
+
+    // Check if the text is Vietnamese
+    final isVi = lang.toLowerCase().contains('vi') ||
+        RegExp(r'[ăâđêôơưáàảãạéèẻẽẹíìỉĩịóòỏõọúùủũụýỳỷỹỵ]', caseSensitive: false)
+            .hasMatch(textToSpeak);
+
+    if (isVi) {
+      ttsLocale = 'vi-VN';
     } else {
-      // Nếu không tìm thấy trong kho và text đang là tiếng Việt (lang là Vietnamese hoặc chứa ký tự tiếng Việt),
-      // kiểm tra xem bên kia (source hoặc target) có câu tiếng Anh chuẩn không để phát âm.
-      final isVi = lang.toLowerCase().contains('vi') ||
-          RegExp(r'[ăâđêôơưáàảãạéèẻẽẹíìỉĩịóòỏõọúùủũụýỳỷỹỵ]',
-                  caseSensitive: false)
-              .hasMatch(textToSpeak);
-      if (isVi) {
-        // Thử tìm tiếng Anh chuẩn từ ô còn lại
-        final otherText = (_sourceController.text.trim() == textToSpeak)
-            ? _translatedText
-            : _sourceController.text;
-        final otherCanonical = PhraseLibrary.getCanonicalEnglish(otherText);
-        if (otherCanonical != null && otherCanonical.isNotEmpty) {
-          textToSpeak = otherCanonical;
-        } else if (!otherText.toLowerCase().contains('ă') &&
-            RegExp(r'^[a-zA-Z0-9\s.,?!"-]+$').hasMatch(otherText)) {
-          textToSpeak = otherText;
-        } else {
-          // Chỉ phát âm các câu và chữ đúng chính tả tiếng Anh -> Không phát âm tiếng Việt hoặc câu lỗi
-          return;
-        }
+      ttsLocale = 'en-AU';
+      // Try to find canonical English for better pronunciation
+      final canonical = PhraseLibrary.getCanonicalEnglish(textToSpeak);
+      if (canonical != null && canonical.isNotEmpty) {
+        textToSpeak = canonical;
+      } else if (_spellingCorrectionSuggestion != null &&
+          _spellingCorrectionSuggestion!.isNotEmpty) {
+        textToSpeak = _spellingCorrectionSuggestion!;
       }
     }
 
-    // 2. Phát âm chuẩn tiếng Anh trên macOS / Mobile
+    // Speak using FlutterTts (cross-platform: iOS, Android, macOS)
     try {
-      if (Platform.isMacOS) {
-        // Dừng lệnh say cũ ngay lập tức (dùng runSync để đảm bảo không bị xung đột khi lặp lại)
-        try {
-          Process.runSync('killall', ['say']);
-        } catch (_) {}
-
-        // Sử dụng giọng tiếng Anh chuẩn (Samantha hoặc Eddy / Alex) với tốc độ rõ ràng tự nhiên (-r 175)
-        Process.run('say', ['-v', 'Samantha', '-r', '175', textToSpeak])
-            .then((res) {
-          if (res.exitCode != 0) {
-            // Fallback nếu Samantha không khả dụng hoặc lỗi tham số
-            Process.run('say', [textToSpeak]);
-          }
-        });
-      }
+      final tts = _getTts();
+      tts.setLanguage(ttsLocale);
+      tts.setSpeechRate(0.45);
+      tts.setVolume(1.0);
+      tts.speak(textToSpeak);
     } catch (_) {}
 
     showModalBottomSheet(
@@ -833,50 +787,58 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
               ),
               const Divider(),
               Expanded(
-                child: ListView.builder(
-                  itemCount: _historyList.length,
-                  itemBuilder: (context, index) {
-                    final item = _historyList[index];
-                    return Card(
-                      color: colors.surfaceStrong,
-                      elevation: 1,
-                      margin: const EdgeInsets.symmetric(vertical: 6),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      child: ListTile(
-                        title: Text(
-                          item['source']!,
+                child: _historyList.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No translation history yet.',
                           style: TextStyle(
-                            color: colors.textPrimary,
-                            fontWeight: FontWeight.bold,
-                          ),
+                              color: colors.textSecondary, fontSize: 15),
                         ),
-                        subtitle: Text(item['target']!,
-                            style: TextStyle(
-                              color: colors.textSecondary,
-                              fontSize: 15,
-                            )),
-                        trailing: Text(item['time']!,
-                            style: TextStyle(
-                              color: colors.textSecondary,
-                              fontSize: 12,
-                            )),
-                        onTap: () {
-                          setState(() {
-                            _sourceController.text = item['source']!;
-                            _translatedText = item['target']!;
-                          });
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text(
-                                    'Loaded "${item['source']}" from history!')),
+                      )
+                    : ListView.builder(
+                        itemCount: _historyList.length,
+                        itemBuilder: (context, index) {
+                          final item = _historyList[index];
+                          return Card(
+                            color: colors.surfaceStrong,
+                            elevation: 1,
+                            margin: const EdgeInsets.symmetric(vertical: 6),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            child: ListTile(
+                              title: Text(
+                                item['source']!,
+                                style: TextStyle(
+                                  color: colors.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Text(item['target']!,
+                                  style: TextStyle(
+                                    color: colors.textSecondary,
+                                    fontSize: 15,
+                                  )),
+                              trailing: Text(item['time']!,
+                                  style: TextStyle(
+                                    color: colors.textSecondary,
+                                    fontSize: 12,
+                                  )),
+                              onTap: () {
+                                setState(() {
+                                  _sourceController.text = item['source']!;
+                                  _translatedText = item['target']!;
+                                });
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text(
+                                          'Loaded "${item['source']}" from history!')),
+                                );
+                              },
+                            ),
                           );
                         },
                       ),
-                    );
-                  },
-                ),
               ),
             ],
           ),
@@ -1069,19 +1031,6 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                                               ),
                                             ),
                                           ),
-                                        const SizedBox(width: 8),
-                                        GestureDetector(
-                                          onTap: _toggleFavourite,
-                                          child: Icon(
-                                            _isSourceStarred
-                                                ? Icons.star
-                                                : Icons.star_border,
-                                            color: _isSourceStarred
-                                                ? Colors.amber
-                                                : colors.textPrimary,
-                                            size: 26,
-                                          ),
-                                        ),
                                       ],
                                     ),
                                   ],
@@ -1302,9 +1251,14 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                                             ),
                                           ),
                                         const SizedBox(width: 8),
-                                        GestureDetector(
-                                          onTap: _toggleFavourite,
-                                          child: Icon(
+                                        IconButton(
+                                          tooltip: _isTargetStarred
+                                              ? 'Remove from favourites'
+                                              : 'Save to favourites',
+                                          onPressed: _favouriteBusy
+                                              ? null
+                                              : _toggleFavourite,
+                                          icon: Icon(
                                             _isTargetStarred
                                                 ? Icons.star
                                                 : Icons.star_border,

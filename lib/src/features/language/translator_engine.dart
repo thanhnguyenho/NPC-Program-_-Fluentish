@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'corpus/travel_corpus.dart';
 import 'corpus/expanded_corpus.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class TranslatorEngine {
   // Exhaustive bidirectional dictionary covering 700+ core vocabulary concepts & travel landmarks
@@ -136,6 +137,18 @@ class TranslatorEngine {
     'đồn cảnh sát': 'Police station',
     'beach': 'Bãi biển',
     'bãi biển': 'Beach',
+    'we like fish': 'Chúng ta thích ăn cá',
+    'chúng ta thích ăn cá': 'We like fish',
+    'we like eating fish': 'Chúng ta thích ăn cá',
+    'why dont we go for a walk': 'Tại sao chúng ta không đi dạo nhỉ?',
+    'why don\'t we go for a walk': 'Tại sao chúng ta không đi dạo nhỉ?',
+    'tại sao chúng ta không đi dạo nhỉ': 'Why don\'t we go for a walk?',
+    'go for a walk': 'Đi dạo',
+    'đi dạo': 'Go for a walk',
+    'fish': 'Cá',
+    'cá': 'Fish',
+    'eating': 'Ăn',
+    'ăn': 'Eat / Eating',
     'museum': 'Bảo tàng',
     'bảo tàng': 'Museum',
     'park': 'Công viên',
@@ -436,6 +449,10 @@ class TranslatorEngine {
     'nói lại': 'Say it again',
     'where is the nearest bank?': 'Ngân hàng gần nhất nằm ở đâu?',
     'where is the nearest bank': 'Ngân hàng gần nhất nằm ở đâu?',
+    'where is the parking lot near the hotel?': 'Bãi đỗ xe gần khách sạn nằm ở đâu?',
+    'where is the parking lot near the hotel': 'Bãi đỗ xe gần khách sạn nằm ở đâu?',
+    'parking lot near the hotel': 'bãi đỗ xe gần khách sạn',
+    'parking lot': 'bãi đỗ xe',
     'i would like to rent a motorbike to travel around the city tomorrow': 'Tôi muốn thuê một chiếc xe máy đi vòng quanh thành phố vào ngày mai',
     'tôi muốn thuê một chiếc xe máy đi vòng quanh thành phố vào ngày mai': 'I would like to rent a motorbike to travel around the city tomorrow',
     'can you recommend a good restaurant?': 'Bạn có thể giới thiệu một nhà hàng ngon không?',
@@ -527,7 +544,6 @@ class TranslatorEngine {
     'go': 'Đi',
     'đi': 'Go / Walk',
     'eat': 'Ăn',
-    'ăn': 'Eat',
     'drink': 'Uống',
     'uống': 'Drink',
     'bán': 'Sell',
@@ -1109,26 +1125,20 @@ class TranslatorEngine {
     return s[0].toUpperCase() + s.substring(1);
   }
 
-  // Google Gemini API keys (base64 encoded to protect against automated secret scanning while preserving fast-path access)
-  static String _decodeApiKey() => utf8.decode(base64Decode(_geminiApiKeysEncoded[_currentApiKeyIndex]));
+  static List<String> get _geminiApiKeys {
+    const buildTimeKeys = String.fromEnvironment('GEMINI_API_KEYS');
+    final keysString = buildTimeKeys.isNotEmpty
+        ? buildTimeKeys
+        : dotenv.env['GEMINI_API_KEYS'] ?? '';
+    final keys = keysString.split(',').map((k) => k.trim()).where((k) => k.isNotEmpty).toList();
+    return keys;
+  }
 
-  static final List<String> _geminiApiKeysEncoded = [
-    'QUl6YVN5Q0MzbFA4TDhPQUQ3NEJGUDJDT0FJLWlseFppQWxJUDRv',
-    'QUl6YVN5RFJaRGx0X2MyUHB1STdmNWM4TGVkNlhmVW5SM3M0Y0FB',
-    'QUl6YVN5QmYxVFlQYUJ4eDc5TkRpQU1MZGlsRzV0RjM2dlkxdndJ',
-    'QUl6YVN5QlB4VmZjTUgtbUt4OTNxa29SQnI2Q0o3MEVyQ1hxYVJB',
-    'QUl6YVN5QTNpRGl4UmZ4WHpPRjNHLUl0b0dtSkpacVlTRnJxd0lJ',
-    'QUl6YVN5QTU2dDZuR0ZsSmZzNXJCX3RnLXJOTG9KTlBlUzhiMzQ0',
-    'QUl6YVN5RGR5YTBBVmdmOXl5Yk9zZnUyaDRMaUtWOFQ5bU9iZlJj',
-    'QVEuQWI4Uk42SnFiLUpLYkZ6MzJhYmhhbzBQd1d2ZFBkRDNOZHZBRFY4ZmVWVFpzY2tOVkE=',
-    'QVEuQWI4Uk42TFVVb0NjeEktVXViZm9WTjJBbnZYZ09JRUp6YjByaXBhU0l3d3pDQ01KR0E=',
-    'QVEuQWI4Uk42SjZPeW5wcVFHQmFDWEJWay0xMllrTG5FQnJ0TWpmQ1c3RWpNU0d6d2hnQ1E=',
-    'QVEuQWI4Uk42SzNOWlA3N3MyQWhNZ1hnOW5CMGRIR1ZWY2NjMTMtUWtUUllIYjEwbk4yM2c=',
-    'QVEuQWI4Uk42SVdIMmVSdWlxOWFSSm1nakJTY3Jfc2xacDFOc3FwSEhTMU1pMjg2LUUtQWc=',
-    'QVEuQWI4Uk42TDFUcmVnWTQ0cERQdWJORjhtbFl1MVdtNTRWNFhCTmtNSzBJX2xlRDM3TUE=',
-    'QVEuQWI4Uk42TFF0cGZaS1pDczBNSzJUd2hoeHRrV0I5Z3VLX3ptODZURXM0XzFuT2Z6VlE=',
-    'QVEuQWI4Uk42SnQxUTZBOHhxZVFzSW1CYU1SYm96OV9pR3pZLXdQX3dWV191bXRfMnhucWc=',
-  ];
+  static String _decodeApiKey() {
+    final keys = _geminiApiKeys;
+    if (keys.isEmpty) return '';
+    return keys[_currentApiKeyIndex % keys.length];
+  }
   static int _currentApiKeyIndex = 0;
 
   // Models xoay tua chính thức cho Gemini (tính đến 2026 trên v1beta API)
@@ -1180,16 +1190,12 @@ class TranslatorEngine {
       final url = Uri.parse(
           'https://translate.googleapis.com/translate_a/single?client=gtx&sl=$sl&tl=$tl&dt=t&q=$encoded');
 
-      final client = HttpClient();
-      client.connectionTimeout = const Duration(milliseconds: 2500);
-      final request = await client.getUrl(url);
-      request.headers.set('User-Agent', 'Mozilla/5.0');
-      final response = await request.close();
-      final responseBody = await response.transform(utf8.decoder).join();
-      client.close();
+      final response = await http.get(url).timeout(
+            const Duration(milliseconds: 2500),
+          );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(responseBody) as List<dynamic>?;
+        final data = jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>?;
         if (data != null && data.isNotEmpty && data[0] is List) {
           final segments = data[0] as List<dynamic>;
           final buffer = StringBuffer();
@@ -1220,6 +1226,13 @@ class TranslatorEngine {
     final fastOffline = ExpandedCorpus.lookup(text, sourceLang, targetLang);
     if (fastOffline != null) {
       return _capitalize(fastOffline);
+    }
+
+    // Fast check inside translateSync local progressive grammar/dictionary engine
+    final syncRes = translateSync(text, sourceLang, targetLang);
+    if (syncRes.isNotEmpty &&
+        syncRes.toLowerCase() != text.trim().toLowerCase()) {
+      return _capitalize(syncRes);
     }
 
     final completer = Completer<String>();
@@ -1302,14 +1315,11 @@ class TranslatorEngine {
     // 3. FALLBACK CUỐI CÙNG: Gemini REST API (trong trường hợp offline hoặc tất cả engine trên bị chặn)
     for (int attempt = 0; attempt < 3; attempt++) {
       final apiKey = _decodeApiKey();
+      if (apiKey.isEmpty) break;
       final model = _geminiModels[_currentModelIndex];
       try {
         final url = Uri.parse(
             'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey');
-        final client = HttpClient();
-        client.connectionTimeout = const Duration(seconds: 3);
-        final request = await client.postUrl(url);
-        request.headers.set('Content-Type', 'application/json');
 
         final prompt =
             'You are a professional translator. Translate the following text from $sourceLang to $targetLang.\n'
@@ -1336,10 +1346,14 @@ class TranslatorEngine {
           }
         });
 
-        request.add(utf8.encode(body));
-        final response = await request.close();
-        final responseBody = await response.transform(utf8.decoder).join();
-        client.close();
+        final response = await http
+            .post(
+              url,
+              headers: const {'Content-Type': 'application/json'},
+              body: body,
+            )
+            .timeout(const Duration(seconds: 3));
+        final responseBody = utf8.decode(response.bodyBytes);
 
         if (response.statusCode == 200) {
           final data = jsonDecode(responseBody);
@@ -1359,13 +1373,15 @@ class TranslatorEngine {
           if (response.statusCode == 404 || response.statusCode == 400) {
             _currentModelIndex = (_currentModelIndex + 1) % _geminiModels.length;
           } else {
-            _currentApiKeyIndex = (_currentApiKeyIndex + 1) % _geminiApiKeysEncoded.length;
+            final keysLength = _geminiApiKeys.isNotEmpty ? _geminiApiKeys.length : 1;
+            _currentApiKeyIndex = (_currentApiKeyIndex + 1) % keysLength;
           }
           continue;
         }
       } catch (e) {
         debugPrint('🔴 [GEMINI EXCEPTION] Attempt $attempt -> $e');
-        _currentApiKeyIndex = (_currentApiKeyIndex + 1) % _geminiApiKeysEncoded.length;
+        final keysLength = _geminiApiKeys.isNotEmpty ? _geminiApiKeys.length : 1;
+        _currentApiKeyIndex = (_currentApiKeyIndex + 1) % keysLength;
       }
     }
 
@@ -1385,12 +1401,7 @@ class TranslatorEngine {
     bool useMaxCompletionTokens = false,
   }) async {
     try {
-      final client = HttpClient();
-      client.connectionTimeout = Duration(seconds: timeoutSeconds);
       final uri = Uri.parse(url);
-      final request = await client.postUrl(uri);
-      request.headers.set('Content-Type', 'application/json; charset=utf-8');
-      request.headers.set('Authorization', 'Bearer $apiKey');
 
       final Map<String, dynamic> requestBody = {
         'model': model,
@@ -1408,11 +1419,17 @@ class TranslatorEngine {
       }
 
       final body = jsonEncode(requestBody);
-
-      request.add(utf8.encode(body));
-      final response = await request.close();
-      final responseBody = await response.transform(utf8.decoder).join();
-      client.close();
+      final response = await http
+          .post(
+            uri,
+            headers: {
+              'Content-Type': 'application/json; charset=utf-8',
+              'Authorization': 'Bearer $apiKey',
+            },
+            body: body,
+          )
+          .timeout(Duration(seconds: timeoutSeconds));
+      final responseBody = utf8.decode(response.bodyBytes);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(responseBody);
@@ -1571,6 +1588,7 @@ class TranslatorEngine {
 
       final translatedWords = <String>[];
       bool anyTranslated = false;
+      var untranslatedCount = 0;
       for (int i = 0; i < words.length; i++) {
         final w = words[i];
         if (w.isEmpty) continue;
@@ -1600,6 +1618,7 @@ class TranslatorEngine {
           translatedWords.add(primary);
           anyTranslated = true;
         } else {
+          untranslatedCount++;
           var wordToAdd = w;
           if (translatedWords.isNotEmpty || isSubclause) {
             wordToAdd = _isProperNoun(wordToAdd) ? wordToAdd : wordToAdd.toLowerCase();
@@ -1608,8 +1627,13 @@ class TranslatorEngine {
         }
       }
 
-      if (anyTranslated || words.length == 1) {
-        // Step 4B: Reorder & Format Question/Modal Structures from English to Vietnamese so we NEVER produce word salad like "What can Chúng tôi Ăn Hôm nay"
+      // Chỉ trả về bản dịch ghép từ (word-by-word) nếu dịch được hết, hoặc chỉ sót tối đa 1 từ trên câu dài,
+      // tuyệt đối tránh tạo ra "râu ông nọ cắm cằm bà kia" kiểu nửa Anh nửa Việt (VD: "Tại sao dont chúng ta đi for a đi bộ").
+      final canReturnWordByWord = (words.length == 1 && anyTranslated) ||
+          (words.length == 2 && anyTranslated && untranslatedCount == 0) ||
+          (words.length > 2 && anyTranslated && untranslatedCount == 0);
+
+      if (canReturnWordByWord) {
         if (targetLang == 'Vietnamese' && words.length > 1) {
           final first = words.first;
           if (first == 'what' || first == 'where' || first == 'when' || first == 'how' || first == 'why' || first == 'who' || first == 'can' || first == 'should' || first == 'will' || first == 'do') {
@@ -1722,6 +1746,11 @@ class TranslatorEngine {
         return null;
       }
     }
+    for (final item in _vectorCorpus) {
+      if (item['vi']!.toLowerCase() == cleanLower || item['en']!.toLowerCase() == cleanLower) {
+        return null;
+      }
+    }
 
     // Run manual typo normalizations BEFORE checking allWordsValid
     final rawWords = clean.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
@@ -1779,25 +1808,29 @@ class TranslatorEngine {
 
     // If no manual typo matched, check each word and fix unknown words via Levenshtein
     final cleanedInput = cleanLower.replaceAll(
-        RegExp(r'[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ\s]'), ' ');
-    final inputWords = cleanedInput.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
-    
+        RegExp(
+            r'[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ\s]'),
+        ' ');
+    final inputWords = cleanedInput
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .toList();
+
     final known = _getKnownWords();
     bool anyWordFixed = false;
     final correctedWords = <String>[];
-    
+
     for (final w in inputWords) {
       final isNumber = int.tryParse(w) != null;
-      if (isNumber || known.contains(w) || w.length <= 1) {
+      if (isNumber || known.contains(w) || w.length <= 4) {
         correctedWords.add(w);
         continue;
       }
-      // Word not recognized → find closest known word by Levenshtein distance
+      // Word not recognized → only correct if edit distance is exactly 1 (to avoid replacing valid unknown words like 'drive' -> 'driver')
       String bestWord = w;
-      int bestDist = 3; // max edit distance allowed
+      int bestDist = 2; // only allow distance 1
       for (final kw in known) {
-        // Only compare words of similar length (optimization)
-        if ((kw.length - w.length).abs() > 2) continue;
+        if ((kw.length - w.length).abs() > 1) continue;
         final dist = _editDistance(w, kw);
         if (dist < bestDist) {
           bestDist = dist;
@@ -1809,12 +1842,13 @@ class TranslatorEngine {
       }
       correctedWords.add(bestWord);
     }
-    
+
     if (anyWordFixed) {
       return correctedWords.join(' ');
     }
+    if (!hasTypoWord) return null;
 
-    // Check VSM Cosine Similarity for closest sentence/phrase match (range [0.74, 0.99])
+    // Check VSM Cosine Similarity for closest sentence/phrase match (range [0.88, 0.99])
     final queryVector = _vectorize(cleanLower);
     double maxSim = 0.0;
     String bestCandidate = '';
@@ -1824,8 +1858,11 @@ class TranslatorEngine {
       final candidate = pair[srcKey]!;
       final corpusVector = _vectorize(candidate);
       final sim = _cosineSimilarity(queryVector, corpusVector);
-      if (sim > maxSim && sim >= 0.74 && sim < 0.99 && candidate.toLowerCase() != cleanLower) {
-        if (!candidate.toLowerCase().startsWith(cleanLower) || sim >= 0.84) {
+      if (sim > maxSim &&
+          sim >= 0.88 &&
+          sim < 0.99 &&
+          candidate.toLowerCase() != cleanLower) {
+        if (!candidate.toLowerCase().startsWith(cleanLower) || sim >= 0.92) {
           maxSim = sim;
           bestCandidate = candidate;
         }
@@ -1836,15 +1873,18 @@ class TranslatorEngine {
       final candidate = item[srcKey]!;
       final corpusVector = _vectorize(candidate);
       final sim = _cosineSimilarity(queryVector, corpusVector);
-      if (sim > maxSim && sim >= 0.74 && sim < 0.99 && candidate.toLowerCase() != cleanLower) {
-        if (!candidate.toLowerCase().startsWith(cleanLower) || sim >= 0.84) {
+      if (sim > maxSim &&
+          sim >= 0.88 &&
+          sim < 0.99 &&
+          candidate.toLowerCase() != cleanLower) {
+        if (!candidate.toLowerCase().startsWith(cleanLower) || sim >= 0.92) {
           maxSim = sim;
           bestCandidate = candidate;
         }
       }
     }
 
-    if (maxSim >= 0.74 && bestCandidate.isNotEmpty) {
+    if (maxSim >= 0.88 && bestCandidate.isNotEmpty) {
       return bestCandidate;
     }
 

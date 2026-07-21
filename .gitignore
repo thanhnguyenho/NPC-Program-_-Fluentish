@@ -31,3 +31,6 @@ firebase-admin-key*.json
 tool/firebase-seed/node_modules/
 /firestore_import
 /firestore_import
+
+.env
+.env.sample
