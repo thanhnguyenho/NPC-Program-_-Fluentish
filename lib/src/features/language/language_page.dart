@@ -16,6 +16,8 @@ class LanguagePage extends StatelessWidget {
   final String? initialSourceLang;
   final String? initialTargetLang;
   final String? initialQuery;
+  final AuthGateway? auth;
+  final FavouriteDataSource? favouriteRepository;
 
   const LanguagePage({
     super.key,
@@ -24,6 +26,8 @@ class LanguagePage extends StatelessWidget {
     this.initialSourceLang,
     this.initialTargetLang,
     this.initialQuery,
+    this.auth,
+    this.favouriteRepository,
   });
 
   @override
@@ -34,6 +38,8 @@ class LanguagePage extends StatelessWidget {
       initialSourceLang: initialSourceLang,
       initialTargetLang: initialTargetLang,
       initialQuery: initialQuery,
+      auth: auth,
+      favouriteRepository: favouriteRepository,
     );
   }
 }
@@ -44,6 +50,8 @@ class LanguageTranslatorScreen extends StatefulWidget {
   final String? initialSourceLang;
   final String? initialTargetLang;
   final String? initialQuery;
+  final AuthGateway? auth;
+  final FavouriteDataSource? favouriteRepository;
 
   const LanguageTranslatorScreen({
     super.key,
@@ -52,6 +60,8 @@ class LanguageTranslatorScreen extends StatefulWidget {
     this.initialSourceLang,
     this.initialTargetLang,
     this.initialQuery,
+    this.auth,
+    this.favouriteRepository,
   });
 
   @override
@@ -69,6 +79,11 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
 
   bool _isSourceStarred = false;
   bool _isTargetStarred = false;
+  bool _isFavouriteBusy = false;
+  late final AuthGateway _auth;
+  late final FavouriteDataSource _favourites;
+  StreamSubscription<List<FavouritePhraseRecord>>? _favouriteSubscription;
+  List<FavouritePhraseRecord> _savedPhrases = const [];
   String? _spellingCorrectionSuggestion;
   bool _isTranslating = false;
   Timer? _translationDebounceTimer;
@@ -108,6 +123,8 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
   @override
   void initState() {
     super.initState();
+    _auth = widget.auth ?? Auth.instance;
+    _favourites = widget.favouriteRepository ?? FavouriteRepository();
     _sourceLang =
         widget.initialSourceLang ?? SettingsController.instance.sourceLanguage;
     _targetLang =
@@ -122,6 +139,17 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
         _onSourceTextChanged(initText);
       }
     }
+    final uid = _auth.currentUserId;
+    if (uid != null) {
+      _favouriteSubscription =
+          _favourites.watchFavouritePhrases(uid).listen((phrases) {
+        if (!mounted) return;
+        setState(() {
+          _savedPhrases = phrases;
+          _syncStarredState();
+        });
+      });
+    }
   }
 
   @override
@@ -130,6 +158,7 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
     _historyDebounceTimer?.cancel();
     _searchController.dispose();
     _sourceController.dispose();
+    _favouriteSubscription?.cancel();
     super.dispose();
   }
 
@@ -187,6 +216,8 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
     setState(() {
       _spellingCorrectionSuggestion =
           TranslatorEngine.findSpellingCorrection(rawText, _sourceLang);
+      _isSourceStarred = false;
+      _isTargetStarred = false;
     });
 
     // LAYER 1: Check phrase library cục bộ (instant, <1ms)
@@ -196,6 +227,7 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
       setState(() {
         _translatedText = phraseResult;
         _isTranslating = false;
+        _syncStarredState();
       });
       _translationDebounceTimer?.cancel();
       // Lưu lịch sử
@@ -229,6 +261,7 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
         setState(() {
           _translatedText = result;
           _isTranslating = false;
+          _syncStarredState();
         });
         _saveToHistory(cleanSrc, result);
       } else {
@@ -296,6 +329,85 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
       hash = (hash * 0x01000193) & 0x7fffffff;
     }
     return hash.toRadixString(16);
+  }
+
+  FavouritePhraseRecord? _matchingFavourite() {
+    final source = _sourceController.text.trim().toLowerCase();
+    final target = _translatedText.trim().toLowerCase();
+    if (source.isEmpty || target.isEmpty) return null;
+    for (final phrase in _savedPhrases) {
+      if (phrase.sourceText.trim().toLowerCase() == source &&
+          phrase.translatedText.trim().toLowerCase() == target &&
+          phrase.sourceLanguage == _sourceLang &&
+          phrase.targetLanguage == _targetLang) {
+        return phrase;
+      }
+    }
+    return null;
+  }
+
+  void _syncStarredState() {
+    final isSaved = _matchingFavourite() != null;
+    _isSourceStarred = isSaved;
+    _isTargetStarred = isSaved;
+  }
+
+  Future<void> _toggleFavourite() async {
+    if (_isFavouriteBusy) return;
+    final source = _sourceController.text.trim();
+    final target = _translatedText.trim();
+    if (source.isEmpty ||
+        target.isEmpty ||
+        target.startsWith('⚠️') ||
+        _isTranslating) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Translate a phrase before saving it.')),
+      );
+      return;
+    }
+    final uid = _auth.currentUserId;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to save favourite phrases.')),
+      );
+      return;
+    }
+    final existing = _matchingFavourite();
+    setState(() {
+      _isFavouriteBusy = true;
+      _isSourceStarred = existing == null;
+      _isTargetStarred = existing == null;
+    });
+    try {
+      if (existing != null) {
+        await _favourites.removeFavouritePhrase(uid, existing.id);
+      } else {
+        await _favourites.saveFavouritePhrase(
+          uid,
+          sourceText: source,
+          translatedText: target,
+          sourceLanguage: _sourceLang,
+          targetLanguage: _targetLang,
+        );
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(existing == null
+              ? 'Phrase saved to favourites.'
+              : 'Phrase removed from favourites.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(_syncStarredState);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not update favourite phrase.')),
+      );
+      debugPrint('Could not update favourite phrase: $error');
+    } finally {
+      if (mounted) setState(() => _isFavouriteBusy = false);
+    }
   }
 
   void _swapLanguages() {
@@ -776,7 +888,6 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = context.fluentishColors;
-    final primaryGreen = colors.header;
 
     return GestureDetector(
         onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
@@ -960,23 +1071,7 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                                           ),
                                         const SizedBox(width: 8),
                                         GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              _isSourceStarred =
-                                                  !_isSourceStarred;
-                                            });
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              SnackBar(
-                                                content: Text(_isSourceStarred
-                                                    ? '⭐ Starred source: "${_sourceController.text}"'
-                                                    : 'Unstarred source phrase'),
-                                                duration:
-                                                    const Duration(seconds: 1),
-                                                backgroundColor: primaryGreen,
-                                              ),
-                                            );
-                                          },
+                                          onTap: _toggleFavourite,
                                           child: Icon(
                                             _isSourceStarred
                                                 ? Icons.star
@@ -1208,23 +1303,7 @@ class _LanguageTranslatorScreenState extends State<LanguageTranslatorScreen> {
                                           ),
                                         const SizedBox(width: 8),
                                         GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              _isTargetStarred =
-                                                  !_isTargetStarred;
-                                            });
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              SnackBar(
-                                                content: Text(_isTargetStarred
-                                                    ? '⭐ Saved "$_translatedText" to Favourites!'
-                                                    : 'Removed from Favourites'),
-                                                duration:
-                                                    const Duration(seconds: 1),
-                                                backgroundColor: primaryGreen,
-                                              ),
-                                            );
-                                          },
+                                          onTap: _toggleFavourite,
                                           child: Icon(
                                             _isTargetStarred
                                                 ? Icons.star

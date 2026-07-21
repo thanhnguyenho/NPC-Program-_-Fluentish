@@ -426,6 +426,7 @@ class FakeFavouriteDataSource implements FavouriteDataSource {
   final List<FavouritePhraseRecord> phrases;
   final List<FavouriteSoundboardRecord> soundboardBites;
   final List<String> removedPhraseIds = [];
+  final List<FavouritePhraseRecord> savedPhrases = [];
   final List<String> removedSoundboardIds = [];
   final StreamController<List<FavouritePhraseRecord>> _phraseChanges =
       StreamController.broadcast();
@@ -444,6 +445,27 @@ class FakeFavouriteDataSource implements FavouriteDataSource {
   ) async* {
     yield List.unmodifiable(soundboardBites);
     yield* _soundboardChanges.stream;
+  }
+
+  @override
+  Future<void> saveFavouritePhrase(
+    String uid, {
+    required String sourceText,
+    required String translatedText,
+    required String sourceLanguage,
+    required String targetLanguage,
+  }) async {
+    final phrase = FavouritePhraseRecord(
+      id: 'phrase_${phrases.length + 1}',
+      sourceText: sourceText,
+      translatedText: translatedText,
+      sourceLanguage: sourceLanguage,
+      targetLanguage: targetLanguage,
+      createdAt: DateTime.now(),
+    );
+    phrases.add(phrase);
+    savedPhrases.add(phrase);
+    _phraseChanges.add(List.unmodifiable(phrases));
   }
 
   @override
