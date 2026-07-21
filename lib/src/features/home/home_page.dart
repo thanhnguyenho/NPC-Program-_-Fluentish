@@ -101,6 +101,7 @@ class HomeScreen extends StatefulWidget {
     this.friendRepository,
     this.favouriteRepository,
     this.locationRepository,
+    this.guideRepository,
     this.launchDirections,
     this.phrasePlayback,
     this.soundboardPlayback,
@@ -114,6 +115,7 @@ class HomeScreen extends StatefulWidget {
   final FriendDataSource? friendRepository;
   final FavouriteDataSource? favouriteRepository;
   final LocationDataSource? locationRepository;
+  final GuideDataSource? guideRepository;
   final Future<bool> Function(ll.LatLng)? launchDirections;
   final Future<void> Function(FavouritePhraseRecord)? phrasePlayback;
   final Future<void> Function(FavouriteSoundboardRecord)? soundboardPlayback;
@@ -127,6 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late final FriendDataSource _friends;
   late final FavouriteDataSource _favourites;
   late final LocationDataSource _locations;
+  late final GuideDataSource _guides;
   Future<Position>? _positionFuture;
   AudioPlayer? _audioPlayer;
   FlutterTts? _flutterTts;
@@ -140,6 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _friends = widget.friendRepository ?? FriendRepository();
     _favourites = widget.favouriteRepository ?? FavouriteRepository();
     _locations = widget.locationRepository ?? LocationRepository();
+    _guides = widget.guideRepository ?? GuideRepository();
     if (SettingsController.instance.nearbyRecommendation) {
       _positionFuture = _locations.currentPosition();
     }
@@ -158,12 +162,10 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> _openDirections(MapLocationRecord location) async {
+  Future<void> _openDirections(ll.LatLng destination) async {
     try {
       final launch = widget.launchDirections ?? launchGoogleMapsDirections;
-      final launched = await launch(
-        ll.LatLng(location.point.latitude, location.point.longitude),
-      );
+      final launched = await launch(destination);
       if (!launched && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Could not open Google Maps.')),
@@ -404,6 +406,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _NearbyRecommendations(
                 positionFuture: _positionFuture!,
                 locations: _locations,
+                guides: _guides,
                 onRetryPosition: _retryPosition,
                 onOpenDirections: _openDirections,
               ),
@@ -525,7 +528,8 @@ class _FavouritePhrasesSection extends StatelessWidget {
   final ValueChanged<FavouritePhraseRecord> onRemove;
   final VoidCallback? onBrowse;
 
-  void _showAllPhrasesSheet(BuildContext context, List<FavouritePhraseRecord> phrases) {
+  void _showAllPhrasesSheet(
+      BuildContext context, List<FavouritePhraseRecord> phrases) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -537,10 +541,16 @@ class _FavouritePhrasesSection extends StatelessWidget {
         String searchQuery = '';
         return StatefulBuilder(
           builder: (context, setModalState) {
-            final filtered = phrases.where((p) =>
-                p.sourceText.toLowerCase().contains(searchQuery.toLowerCase()) ||
-                p.translatedText.toLowerCase().contains(searchQuery.toLowerCase()) ||
-                p.id.toLowerCase().contains(searchQuery.toLowerCase())).toList();
+            final filtered = phrases
+                .where((p) =>
+                    p.sourceText
+                        .toLowerCase()
+                        .contains(searchQuery.toLowerCase()) ||
+                    p.translatedText
+                        .toLowerCase()
+                        .contains(searchQuery.toLowerCase()) ||
+                    p.id.toLowerCase().contains(searchQuery.toLowerCase()))
+                .toList();
 
             return Container(
               height: MediaQuery.of(context).size.height * 0.8,
@@ -568,15 +578,18 @@ class _FavouritePhrasesSection extends StatelessWidget {
                   const SizedBox(height: 12),
                   TextField(
                     decoration: InputDecoration(
-                      hintText: 'Search your ${phrases.length} saved phrases...',
-                      prefixIcon: const Icon(Icons.search, color: Color(0xFF3E4E31)),
+                      hintText:
+                          'Search your ${phrases.length} saved phrases...',
+                      prefixIcon:
+                          const Icon(Icons.search, color: Color(0xFF3E4E31)),
                       filled: true,
                       fillColor: Colors.white,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(15),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 16),
                     ),
                     onChanged: (val) => setModalState(() => searchQuery = val),
                   ),
@@ -586,7 +599,8 @@ class _FavouritePhrasesSection extends StatelessWidget {
                         ? const Center(
                             child: Text(
                               'No matching phrases found.',
-                              style: TextStyle(color: Colors.grey, fontSize: 15),
+                              style:
+                                  TextStyle(color: Colors.grey, fontSize: 15),
                             ),
                           )
                         : ListView.builder(
@@ -598,7 +612,8 @@ class _FavouritePhrasesSection extends StatelessWidget {
                                 child: _FavouritePhraseCard(
                                   phrase: phrase,
                                   isPlaying: playingId == 'phrase:${phrase.id}',
-                                  isRemoving: removingIds.contains('phrase:${phrase.id}'),
+                                  isRemoving: removingIds
+                                      .contains('phrase:${phrase.id}'),
                                   onOpen: () {
                                     Navigator.pop(context);
                                     onOpen(phrase);
@@ -707,7 +722,8 @@ class _FavouritePhrasesSection extends StatelessWidget {
                         radius: 18,
                         backgroundColor: AppColors.blush,
                         foregroundColor: AppColors.pine,
-                        child: Icon(Icons.add, size: 22, fontWeight: FontWeight.bold),
+                        child: Icon(Icons.add,
+                            size: 22, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(width: AppSpacing.md),
                       Text(
@@ -758,8 +774,7 @@ class _FavouriteSoundboardSection extends StatelessWidget {
     return StreamBuilder<List<FavouriteSoundboardRecord>>(
       stream: favourites.watchFavouriteSoundboardBites(userId),
       builder: (context, snapshot) {
-        final bites =
-            snapshot.data ?? const <FavouriteSoundboardRecord>[];
+        final bites = snapshot.data ?? const <FavouriteSoundboardRecord>[];
         if (snapshot.connectionState == ConnectionState.waiting &&
             bites.isEmpty) {
           return const Center(child: CircularProgressIndicator());
@@ -995,14 +1010,16 @@ class _NearbyRecommendations extends StatelessWidget {
   const _NearbyRecommendations({
     required this.positionFuture,
     required this.locations,
+    required this.guides,
     required this.onRetryPosition,
     required this.onOpenDirections,
   });
 
   final Future<Position> positionFuture;
   final LocationDataSource locations;
+  final GuideDataSource guides;
   final VoidCallback onRetryPosition;
-  final ValueChanged<MapLocationRecord> onOpenDirections;
+  final ValueChanged<ll.LatLng> onOpenDirections;
 
   @override
   Widget build(BuildContext context) {
@@ -1027,37 +1044,50 @@ class _NearbyRecommendations extends StatelessWidget {
           builder: (context, locationSnapshot) {
             final mapLocations =
                 locationSnapshot.data ?? const <MapLocationRecord>[];
-            if (locationSnapshot.connectionState == ConnectionState.waiting &&
-                mapLocations.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.all(AppSpacing.lg),
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
-            if (locationSnapshot.hasError) {
-              return const _EmptyCard(
-                'Nearby places could not be loaded. Please try again.',
-              );
-            }
-            final recommendations = _nearestByGroup(
-              mapLocations,
-              position.latitude,
-              position.longitude,
-            );
-            if (recommendations.isEmpty) {
-              return const _EmptyCard('No nearby places are available yet.');
-            }
-            return Column(
-              children: [
-                for (final recommendation in recommendations)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                    child: _RecommendationCard(
-                      recommendation: recommendation,
-                      onTap: () => onOpenDirections(recommendation.location),
-                    ),
-                  ),
-              ],
+            return StreamBuilder<List<PlaceRecord>>(
+              stream: guides.watchPublishedPlaces(),
+              builder: (context, placeSnapshot) {
+                final places = placeSnapshot.data ?? const <PlaceRecord>[];
+                final waiting = locationSnapshot.connectionState ==
+                        ConnectionState.waiting ||
+                    placeSnapshot.connectionState == ConnectionState.waiting;
+                if (waiting && mapLocations.isEmpty && places.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.all(AppSpacing.lg),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                final recommendations = _nearestByGroup(
+                  mapLocations,
+                  places,
+                  position.latitude,
+                  position.longitude,
+                );
+                if (recommendations.isEmpty &&
+                    locationSnapshot.hasError &&
+                    placeSnapshot.hasError) {
+                  return const _EmptyCard(
+                    'Nearby places could not be loaded. Please try again.',
+                  );
+                }
+                if (recommendations.isEmpty) {
+                  return const _EmptyCard(
+                    'No nearby places are available yet.',
+                  );
+                }
+                return Column(
+                  children: [
+                    for (final recommendation in recommendations)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                        child: _RecommendationCard(
+                          recommendation: recommendation,
+                          onTap: () => onOpenDirections(recommendation.point),
+                        ),
+                      ),
+                  ],
+                );
+              },
             );
           },
         );
@@ -1068,40 +1098,95 @@ class _NearbyRecommendations extends StatelessWidget {
 
 class _NearbyRecommendation {
   const _NearbyRecommendation({
-    required this.location,
+    required this.name,
+    required this.categoryLabel,
+    required this.description,
+    required this.group,
+    required this.iconKey,
+    required this.point,
     required this.distanceMeters,
   });
 
-  final MapLocationRecord location;
+  final String name;
+  final String categoryLabel;
+  final String description;
+  final String group;
+  final String iconKey;
+  final ll.LatLng point;
   final double distanceMeters;
 }
 
 List<_NearbyRecommendation> _nearestByGroup(
   List<MapLocationRecord> locations,
+  List<PlaceRecord> places,
   double latitude,
   double longitude,
 ) {
   const groups = ['food_drink', 'entertainment', 'culture'];
+  final candidates = <_NearbyRecommendation>[];
+  for (final location in locations) {
+    if (!location.isActive || !location.hasValidPoint) continue;
+    final distance = Geolocator.distanceBetween(
+      latitude,
+      longitude,
+      location.point.latitude,
+      location.point.longitude,
+    );
+    candidates.add(
+      _NearbyRecommendation(
+        name: location.name,
+        categoryLabel: location.categoryLabel,
+        description: _recommendationDescription(location),
+        group: location.group,
+        iconKey: location.iconKey,
+        point: ll.LatLng(
+          location.point.latitude,
+          location.point.longitude,
+        ),
+        distanceMeters: distance,
+      ),
+    );
+  }
+  for (final place in places) {
+    if (place.point.latitude == 0 && place.point.longitude == 0) continue;
+    final group = switch (place.category) {
+      'food' || 'cafe' => 'food_drink',
+      'entertainment' => 'entertainment',
+      _ => 'culture',
+    };
+    final distance = Geolocator.distanceBetween(
+      latitude,
+      longitude,
+      place.point.latitude,
+      place.point.longitude,
+    );
+    candidates.add(
+      _NearbyRecommendation(
+        name: place.name,
+        categoryLabel: switch (place.category) {
+          'food' => 'Food guide',
+          'cafe' => 'Cafe guide',
+          'route' => 'Walking route',
+          _ => 'Local guide',
+        },
+        description: place.address.isEmpty
+            ? '${place.guideCount} published guide(s).'
+            : place.address,
+        group: group,
+        iconKey: place.category,
+        point: ll.LatLng(place.point.latitude, place.point.longitude),
+        distanceMeters: distance,
+      ),
+    );
+  }
   final recommendations = <_NearbyRecommendation>[];
   for (final group in groups) {
     _NearbyRecommendation? nearest;
-    for (final location in locations) {
-      if (!location.isActive ||
-          !location.hasValidPoint ||
-          location.group != group) {
-        continue;
-      }
-      final distance = Geolocator.distanceBetween(
-        latitude,
-        longitude,
-        location.point.latitude,
-        location.point.longitude,
-      );
-      if (nearest == null || distance < nearest.distanceMeters) {
-        nearest = _NearbyRecommendation(
-          location: location,
-          distanceMeters: distance,
-        );
+    for (final candidate in candidates) {
+      if (candidate.group != group) continue;
+      if (nearest == null ||
+          candidate.distanceMeters < nearest.distanceMeters) {
+        nearest = candidate;
       }
     }
     if (nearest != null) recommendations.add(nearest);
@@ -1120,7 +1205,6 @@ class _RecommendationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final location = recommendation.location;
     return AppCard(
       width: double.infinity,
       onTap: onTap,
@@ -1129,9 +1213,9 @@ class _RecommendationCard extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 25,
-            backgroundColor: mapLocationColor(location.group),
+            backgroundColor: mapLocationColor(recommendation.group),
             foregroundColor: Colors.white,
-            child: Icon(mapLocationIcon(location.iconKey), size: 25),
+            child: Icon(mapLocationIcon(recommendation.iconKey), size: 25),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -1139,21 +1223,21 @@ class _RecommendationCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  location.name,
+                  recommendation.name,
                   style: AppTextStyles.title.copyWith(fontSize: 20),
                 ),
                 const SizedBox(height: AppSpacing.xxs),
                 Text(
                   '${_distanceLabel(recommendation.distanceMeters)} · '
-                  '${location.categoryLabel}',
+                  '${recommendation.categoryLabel}',
                   style: AppTextStyles.body.copyWith(
-                    color: mapLocationColor(location.group),
+                    color: mapLocationColor(recommendation.group),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  _recommendationDescription(location),
+                  recommendation.description,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.body,

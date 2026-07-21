@@ -55,7 +55,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.byType(FriendLocationPage), findsOneWidget);
-    expect(find.text('Friends & Places'), findsOneWidget);
+    expect(find.text('Friends, Places & Guides'), findsOneWidget);
     expect(find.byType(AppBottomNav), findsOneWidget);
   });
 
@@ -66,7 +66,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.byType(FriendLocationPage), findsOneWidget);
-    expect(find.text('Friends & Places'), findsOneWidget);
+    expect(find.text('Friends, Places & Guides'), findsOneWidget);
   });
 
   // testWidgets('favourite phrase opens Language with both boxes prefilled', (

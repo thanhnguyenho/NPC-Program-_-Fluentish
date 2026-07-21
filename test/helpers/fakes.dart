@@ -385,17 +385,20 @@ class FakeGuideDataSource implements GuideDataSource {
     this.guides = const [sampleFoodGuide, sampleRouteGuide],
     this.places = const [sampleFoodPlace, sampleRoutePlace],
     this.savedIds = const [],
+    this.placesError,
   });
 
   final List<GuideRecord> guides;
   final List<PlaceRecord> places;
   final List<String> savedIds;
+  final Object? placesError;
 
   @override
   Stream<List<GuideRecord>> watchPublishedGuides() => Stream.value(guides);
 
   @override
-  Stream<List<PlaceRecord>> watchPublishedPlaces() => Stream.value(places);
+  Stream<List<PlaceRecord>> watchPublishedPlaces() =>
+      placesError == null ? Stream.value(places) : Stream.error(placesError!);
 
   @override
   Stream<List<String>> watchSavedGuideIds(String uid) => Stream.value(savedIds);
@@ -516,12 +519,14 @@ class FakeLocationDataSource implements LocationDataSource {
     this.mapLocations = sampleMapLocations,
     this.currentPositionError,
     this.startSharingError,
+    this.mapLocationsError,
   });
 
   bool sharing;
   final List<MapLocationRecord> mapLocations;
   final Object? currentPositionError;
   final Object? startSharingError;
+  final Object? mapLocationsError;
   final StreamController<bool> _sharingChanges = StreamController.broadcast();
   int currentPositionCalls = 0;
 
@@ -546,7 +551,9 @@ class FakeLocationDataSource implements LocationDataSource {
 
   @override
   Stream<List<MapLocationRecord>> watchMapLocations() =>
-      Stream.value(mapLocations);
+      mapLocationsError == null
+          ? Stream.value(mapLocations)
+          : Stream.error(mapLocationsError!);
 
   @override
   Future<void> setSharing(String uid, bool enabled) async {

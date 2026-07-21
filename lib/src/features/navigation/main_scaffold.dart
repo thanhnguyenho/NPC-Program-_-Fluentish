@@ -50,6 +50,7 @@ class _MainScaffoldState extends State<MainScaffold> {
           auth: widget.auth,
           friendRepository: widget.friendRepository,
           favouriteRepository: widget.favouriteRepository,
+          guideRepository: widget.guideRepository,
           locationRepository: widget.locationRepository,
         );
       case 1:

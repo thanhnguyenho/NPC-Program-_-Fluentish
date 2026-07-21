@@ -9,7 +9,7 @@ import '../../shared/shared.dart';
 import '../guides_review/guides_review_page.dart';
 import 'maps_launcher.dart';
 
-enum MapContentFilter { all, friends, locations }
+enum MapContentFilter { all, friends, locations, guides }
 
 class FriendLocationPage extends StatefulWidget {
   const FriendLocationPage({
@@ -56,6 +56,7 @@ class _FriendLocationPageState extends State<FriendLocationPage>
   bool _focusedInitialPlace = false;
   bool _focusedInitialMapLocation = false;
   fm.LatLngBounds? _visibleBounds;
+  double _mapZoom = 14.4;
 
   @override
   void initState() {
@@ -240,7 +241,7 @@ class _FriendLocationPageState extends State<FriendLocationPage>
       showDragHandle: true,
       backgroundColor: AppColors.shell,
       builder: (sheetContext) => FractionallySizedBox(
-        heightFactor: 0.82,
+        heightFactor: 0.68,
         child: SafeArea(
           top: false,
           child: SingleChildScrollView(
@@ -324,69 +325,6 @@ class _FriendLocationPageState extends State<FriendLocationPage>
                       ),
                   ],
                 ),
-                if (location.sourceCategory.isNotEmpty &&
-                    location.sourceCategory != location.categoryLabel) ...[
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    'Google category: ${location.sourceCategory}',
-                    style: AppTextStyles.body,
-                  ),
-                ],
-                if (location.openingHours.isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    'Opening hours',
-                    style: AppTextStyles.title.copyWith(fontSize: 19),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  for (final entry in location.openingHours.entries)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            width: 92,
-                            child: Text(
-                              _capitalise(entry.key),
-                              style: AppTextStyles.body.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(entry.value, style: AppTextStyles.body),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-                if ((location.phone?.isNotEmpty ?? false) ||
-                    (location.website?.isNotEmpty ?? false)) ...[
-                  const SizedBox(height: AppSpacing.lg),
-                  Wrap(
-                    spacing: AppSpacing.sm,
-                    runSpacing: AppSpacing.sm,
-                    children: [
-                      if (location.phone?.isNotEmpty ?? false)
-                        FilledButton.tonalIcon(
-                          onPressed: () => _launchExternal(
-                            Uri(scheme: 'tel', path: location.phone),
-                          ),
-                          icon: const Icon(Icons.phone),
-                          label: const Text('Call'),
-                        ),
-                      if (location.website?.isNotEmpty ?? false)
-                        FilledButton.tonalIcon(
-                          onPressed: () => _launchExternal(
-                            _websiteUri(location.website!),
-                          ),
-                          icon: const Icon(Icons.language),
-                          label: const Text('Website'),
-                        ),
-                    ],
-                  ),
-                ],
                 const SizedBox(height: AppSpacing.lg),
                 AppButton(
                   label: 'Route',
@@ -395,6 +333,96 @@ class _FriendLocationPageState extends State<FriendLocationPage>
                   foregroundColor: Colors.white,
                   onPressed: () => launchGoogleMapsDirections(point),
                 ),
+                if (location.sourceCategory.isNotEmpty ||
+                    location.openingHours.isNotEmpty ||
+                    (location.phone?.isNotEmpty ?? false) ||
+                    (location.website?.isNotEmpty ?? false)) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    childrenPadding: EdgeInsets.zero,
+                    title: Text(
+                      'More details',
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.pine,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    children: [
+                      if (location.sourceCategory.isNotEmpty &&
+                          location.sourceCategory != location.categoryLabel)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            location.sourceCategory,
+                            style: AppTextStyles.body,
+                          ),
+                        ),
+                      if (location.openingHours.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Opening hours',
+                            style: AppTextStyles.title.copyWith(fontSize: 18),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        for (final entry in location.openingHours.entries)
+                          Padding(
+                            padding:
+                                const EdgeInsets.only(bottom: AppSpacing.xs),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(
+                                  width: 92,
+                                  child: Text(
+                                    _capitalise(entry.key),
+                                    style: AppTextStyles.body.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    entry.value,
+                                    style: AppTextStyles.body,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                      if ((location.phone?.isNotEmpty ?? false) ||
+                          (location.website?.isNotEmpty ?? false)) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        Wrap(
+                          spacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.sm,
+                          children: [
+                            if (location.phone?.isNotEmpty ?? false)
+                              FilledButton.tonalIcon(
+                                onPressed: () => _launchExternal(
+                                  Uri(scheme: 'tel', path: location.phone),
+                                ),
+                                icon: const Icon(Icons.phone),
+                                label: const Text('Call'),
+                              ),
+                            if (location.website?.isNotEmpty ?? false)
+                              FilledButton.tonalIcon(
+                                onPressed: () => _launchExternal(
+                                  _websiteUri(location.website!),
+                                ),
+                                icon: const Icon(Icons.language),
+                                label: const Text('Website'),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -630,6 +658,11 @@ class _FriendLocationPageState extends State<FriendLocationPage>
                       _filter == MapContentFilter.friends;
                   final showLocations = _filter == MapContentFilter.all ||
                       _filter == MapContentFilter.locations;
+                  final showGuides = _filter == MapContentFilter.all ||
+                      _filter == MapContentFilter.guides;
+                  final locationClusters = showLocations
+                      ? _clusterMapLocations(mapLocations, _mapZoom)
+                      : const <_MapLocationCluster>[];
                   final visibleFriends = friends.where((friend) {
                     final point = friend.location.point;
                     return _visibleBounds?.contains(
@@ -666,9 +699,10 @@ class _FriendLocationPageState extends State<FriendLocationPage>
                           maxZoom: 19,
                           onPositionChanged: (camera, _) {
                             if (!mounted) return;
-                            setState(
-                              () => _visibleBounds = camera.visibleBounds,
-                            );
+                            setState(() {
+                              _visibleBounds = camera.visibleBounds;
+                              _mapZoom = camera.zoom;
+                            });
                           },
                         ),
                         children: [
@@ -719,19 +753,48 @@ class _FriendLocationPageState extends State<FriendLocationPage>
                                     ),
                                   ),
                               if (showLocations)
-                                for (final location in mapLocations)
+                                for (final cluster in locationClusters)
+                                  fm.Marker(
+                                    point: cluster.center,
+                                    width: cluster.isSingle ? 48 : 54,
+                                    height: cluster.isSingle ? 48 : 54,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        if (cluster.isSingle) {
+                                          _showMapLocation(
+                                            cluster.locations.single,
+                                          );
+                                        } else {
+                                          _mapController.move(
+                                            cluster.center,
+                                            (_mapZoom + 2)
+                                                .clamp(11, 17)
+                                                .toDouble(),
+                                          );
+                                        }
+                                      },
+                                      child: cluster.isSingle
+                                          ? _MapLocationMarker(
+                                              location:
+                                                  cluster.locations.single,
+                                            )
+                                          : _MapLocationClusterMarker(
+                                              cluster: cluster,
+                                            ),
+                                    ),
+                                  ),
+                              if (showGuides)
+                                for (final place in places)
                                   fm.Marker(
                                     point: ll.LatLng(
-                                      location.point.latitude,
-                                      location.point.longitude,
+                                      place.point.latitude,
+                                      place.point.longitude,
                                     ),
-                                    width: 62,
-                                    height: 62,
+                                    width: 52,
+                                    height: 52,
                                     child: GestureDetector(
-                                      onTap: () => _showMapLocation(location),
-                                      child: _MapLocationMarker(
-                                        location: location,
-                                      ),
+                                      onTap: () => _showPlace(place),
+                                      child: _GuideMarker(place: place),
                                     ),
                                   ),
                               for (final stop in _activeStops)
@@ -774,6 +837,30 @@ class _FriendLocationPageState extends State<FriendLocationPage>
                                 onSelected: (filter) =>
                                     setState(() => _filter = filter),
                               ),
+                              if (locationSnapshot.hasError ||
+                                  placeSnapshot.hasError ||
+                                  friendSnapshot.hasError) ...[
+                                const SizedBox(height: AppSpacing.sm),
+                                Wrap(
+                                  alignment: WrapAlignment.center,
+                                  spacing: AppSpacing.xs,
+                                  runSpacing: AppSpacing.xs,
+                                  children: [
+                                    if (locationSnapshot.hasError)
+                                      const _MapDataWarning(
+                                        message: 'Imported places unavailable.',
+                                      ),
+                                    if (placeSnapshot.hasError)
+                                      const _MapDataWarning(
+                                        message: 'Guides unavailable.',
+                                      ),
+                                    if (friendSnapshot.hasError)
+                                      const _MapDataWarning(
+                                        message: 'Friends unavailable.',
+                                      ),
+                                  ],
+                                ),
+                              ],
                               if (_activeRoute != null) ...[
                                 const SizedBox(height: AppSpacing.sm),
                                 _ActiveRouteBanner(
@@ -863,11 +950,12 @@ class _MapHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Friends & Places',
+                    'Friends, Places & Guides',
                     style: AppTextStyles.title.copyWith(fontSize: 18),
                   ),
                   Text(
-                    '$friendCount friends · $locationCount places',
+                    '$friendCount friends · $locationCount places · '
+                    '$guideCount guides',
                     style: AppTextStyles.body.copyWith(fontSize: 11),
                   ),
                 ],
@@ -904,12 +992,37 @@ class _MapFilters extends StatelessWidget {
               MapContentFilter.all => 'All',
               MapContentFilter.friends => 'Friends',
               MapContentFilter.locations => 'Places',
+              MapContentFilter.guides => 'Guides',
             }),
             selected: selected == filter,
             showCheckmark: false,
             onSelected: (_) => onSelected(filter),
           ),
       ],
+    );
+  }
+}
+
+class _MapDataWarning extends StatelessWidget {
+  const _MapDataWarning({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.orange.shade100,
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
+        child: Text(
+          message,
+          style: AppTextStyles.body.copyWith(fontSize: 11),
+        ),
+      ),
     );
   }
 }
@@ -976,6 +1089,66 @@ class _FriendMarker extends StatelessWidget {
   }
 }
 
+class _MapLocationCluster {
+  const _MapLocationCluster({
+    required this.locations,
+    required this.center,
+  });
+
+  final List<MapLocationRecord> locations;
+  final ll.LatLng center;
+
+  bool get isSingle => locations.length == 1;
+}
+
+List<_MapLocationCluster> _clusterMapLocations(
+  List<MapLocationRecord> locations,
+  double zoom,
+) {
+  if (locations.length <= 20 || zoom >= 16.5) {
+    return [
+      for (final location in locations)
+        _MapLocationCluster(
+          locations: [location],
+          center: ll.LatLng(
+            location.point.latitude,
+            location.point.longitude,
+          ),
+        ),
+    ];
+  }
+
+  final cellSize = switch (zoom) {
+    <= 12 => 0.025,
+    <= 13 => 0.015,
+    <= 15 => 0.01,
+    _ => 0.004,
+  };
+  final groups = <String, List<MapLocationRecord>>{};
+  for (final location in locations) {
+    final latitudeCell = (location.point.latitude / cellSize).floor();
+    final longitudeCell = (location.point.longitude / cellSize).floor();
+    groups.putIfAbsent('$latitudeCell:$longitudeCell', () => []).add(location);
+  }
+
+  return groups.values.map((group) {
+    final latitude = group.fold<double>(
+          0,
+          (sum, location) => sum + location.point.latitude,
+        ) /
+        group.length;
+    final longitude = group.fold<double>(
+          0,
+          (sum, location) => sum + location.point.longitude,
+        ) /
+        group.length;
+    return _MapLocationCluster(
+      locations: List.unmodifiable(group),
+      center: ll.LatLng(latitude, longitude),
+    );
+  }).toList();
+}
+
 class _MapLocationMarker extends StatelessWidget {
   const _MapLocationMarker({required this.location});
 
@@ -986,23 +1159,111 @@ class _MapLocationMarker extends StatelessWidget {
     return Tooltip(
       message: location.name,
       child: Container(
-        height: 46,
-        width: 46,
+        height: 38,
+        width: 38,
         decoration: BoxDecoration(
           color: _mapLocationColor(location.group),
-          border: Border.all(color: Colors.white, width: 3),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(23),
-            topRight: Radius.circular(23),
-            bottomLeft: Radius.circular(23),
-          ),
-          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
+          border: Border.all(color: Colors.white, width: 2),
+          shape: BoxShape.circle,
+          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 5)],
         ),
         child: Icon(
           _mapLocationIcon(location.iconKey),
           color: Colors.white,
-          size: 23,
+          size: 19,
         ),
+      ),
+    );
+  }
+}
+
+class _MapLocationClusterMarker extends StatelessWidget {
+  const _MapLocationClusterMarker({required this.cluster});
+
+  final _MapLocationCluster cluster;
+
+  @override
+  Widget build(BuildContext context) {
+    final firstLocation = cluster.locations.first;
+    return Tooltip(
+      message: '${cluster.locations.length} places',
+      child: Container(
+        decoration: BoxDecoration(
+          color: _mapLocationColor(firstLocation.group),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 3),
+          boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 8)],
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          '${cluster.locations.length}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GuideMarker extends StatelessWidget {
+  const _GuideMarker({required this.place});
+
+  final PlaceRecord place;
+
+  IconData get icon => switch (place.category) {
+        'food' => Icons.restaurant,
+        'cafe' => Icons.local_cafe,
+        'route' => Icons.route,
+        _ => Icons.place,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: place.name,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            height: 42,
+            width: 42,
+            decoration: BoxDecoration(
+              color: AppColors.pine,
+              border: Border.all(color: AppColors.blush, width: 3),
+              shape: BoxShape.circle,
+              boxShadow: const [
+                BoxShadow(color: Colors.black26, blurRadius: 8),
+              ],
+            ),
+            child: Icon(icon, color: Colors.white, size: 21),
+          ),
+          Positioned(
+            right: -2,
+            top: -4,
+            child: Container(
+              height: 18,
+              constraints: const BoxConstraints(minWidth: 18),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: AppColors.blush,
+                borderRadius: BorderRadius.circular(9),
+                border: Border.all(color: AppColors.pine),
+              ),
+              child: Text(
+                place.guideCount > 1 ? '${place.guideCount}' : 'G',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: AppColors.pine,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
