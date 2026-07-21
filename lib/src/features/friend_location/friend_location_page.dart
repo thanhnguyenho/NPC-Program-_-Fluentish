@@ -1183,6 +1183,67 @@ class _MapLocationClusterMarker extends StatelessWidget {
   }
 }
 
+class _GuideMarker extends StatelessWidget {
+  const _GuideMarker({required this.place});
+
+  final PlaceRecord place;
+
+  IconData get icon => switch (place.category) {
+        'food' => Icons.restaurant,
+        'cafe' => Icons.local_cafe,
+        'route' => Icons.route,
+        _ => Icons.place,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: place.name,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            height: 42,
+            width: 42,
+            decoration: BoxDecoration(
+              color: AppColors.pine,
+              border: Border.all(color: AppColors.blush, width: 3),
+              shape: BoxShape.circle,
+              boxShadow: const [
+                BoxShadow(color: Colors.black26, blurRadius: 8),
+              ],
+            ),
+            child: Icon(icon, color: Colors.white, size: 21),
+          ),
+          Positioned(
+            right: -2,
+            top: -4,
+            child: Container(
+              height: 18,
+              constraints: const BoxConstraints(minWidth: 18),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: AppColors.blush,
+                borderRadius: BorderRadius.circular(9),
+                border: Border.all(color: AppColors.pine),
+              ),
+              child: Text(
+                place.guideCount > 1 ? '${place.guideCount}' : 'G',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: AppColors.pine,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CurrentUserMarker extends StatelessWidget {
   const _CurrentUserMarker();
 
