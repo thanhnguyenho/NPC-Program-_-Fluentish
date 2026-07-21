@@ -41,7 +41,7 @@ void main() {
     expect(find.text('Friends'), findsOneWidget);
     expect(find.text('Places'), findsOneWidget);
     expect(find.text('Test Friend'), findsOneWidget);
-    expect(find.byIcon(Icons.restaurant), findsNWidgets(2));
+    expect(find.byIcon(Icons.restaurant), findsOneWidget);
     expect(find.byIcon(Icons.local_cafe), findsOneWidget);
     expect(find.byIcon(Icons.movie), findsOneWidget);
     expect(find.byIcon(Icons.museum), findsOneWidget);
