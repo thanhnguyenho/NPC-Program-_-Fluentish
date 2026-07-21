@@ -4,7 +4,7 @@
 
 # Fluentish
 
-**An all-in-one Flutter language-learning community app.**
+**An all-in-one Flutter translation & community app.**
 
 <img src="https://readme-typing-svg.demolab.com?font=Inter&weight=800&size=24&duration=2800&pause=800&color=F7B7C8&center=true&vCenter=true&width=760&lines=Practice+everyday+phrases;Learn+with+friends+and+community+guides;Build+confidence+through+social+language+learning" alt="Fluentish typing intro" />
 
@@ -27,8 +27,6 @@
 ---
 
 ## Overview
-
-The app is planned around a language-learning flow with a strong community layer:
 
 | Area | Planned features |
 | --- | --- |
